@@ -1,0 +1,15 @@
+# Deploy this folder as a Static Site on Render, then attach telephantix.com
+# https://dashboard.render.com
+services:
+  - type: web
+    name: telephantim-hub
+    runtime: static
+    staticPublishPath: public
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
