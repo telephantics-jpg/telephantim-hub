@@ -13,9 +13,642 @@
   <meta name="twitter:card" content="summary" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
   <link rel="canonical" href="https://telephantim.com/" />
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+:root {
+  --gold: #c9a227;
+  --gold-bright: #f0d060;
+  --bg: #05070c;
+  --panel: rgba(8, 12, 22, 0.72);
+  --text: #e8eef8;
+  --muted: #8b97ad;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+a { color: inherit; text-decoration: none; }
+
+#canvas-wrap {
+  position: fixed;
+  inset: 0;
+}
+
+canvas { display: block; width: 100%; height: 100%; }
+
+.vignette {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(180deg, rgba(5,8,16,0.35) 0%, transparent 18%, transparent 78%, rgba(5,8,16,0.55) 100%);
+  z-index: 2;
+}
+
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.title-block h1 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: linear-gradient(120deg, var(--gold-bright), var(--gold), #8a6a18);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.title-block p {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+}
+
+.badge {
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.panel {
+  position: fixed;
+  z-index: 10;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(138, 155, 176, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+
+.controls {
+  left: 1.25rem;
+  bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  width: min(280px, calc(100vw - 2.5rem));
+}
+
+.controls h2 {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.85rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.row:last-of-type { margin-bottom: 0; }
+
+.row label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+button {
+  appearance: none;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  background: linear-gradient(180deg, rgba(201,162,39,0.18), rgba(201,162,39,0.06));
+  color: var(--gold-bright);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+button:hover {
+  border-color: var(--gold-bright);
+  background: linear-gradient(180deg, rgba(201,162,39,0.3), rgba(201,162,39,0.12));
+  transform: translateY(-1px);
+}
+
+button:active { transform: translateY(0); }
+
+button.ghost {
+  border-color: rgba(138, 155, 176, 0.3);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+}
+
+input[type="range"] {
+  width: 110px;
+  accent-color: var(--gold);
+}
+
+.toggle {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(138, 155, 176, 0.25);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.toggle.on {
+  background: rgba(201, 162, 39, 0.35);
+  border-color: rgba(201, 162, 39, 0.55);
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dfe7f5;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.toggle.on::after {
+  transform: translateX(18px);
+  background: var(--gold-bright);
+}
+
+.hint {
+  right: 1.25rem;
+  bottom: 1.25rem;
+  max-width: 260px;
+  padding: 0.9rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.hint strong {
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+
+.flash {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: radial-gradient(circle at 50% 40%, rgba(180, 220, 255, 0.55), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.08s ease;
+}
+
+.flash.active { opacity: 1; }
+
+@media (max-width: 640px) {
+  .hint { display: none; }
+  header { padding: 1rem; }
+  .controls { left: 0.75rem; bottom: 0.75rem; }
+}
+
+/* ---------- Bio / Beacons links overlay ---------- */
+.bio-shell {
+  position: fixed;
+  z-index: 20;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 42vw);
+  min-width: 280px;
+  padding: 1rem;
+  padding-top: 5.5rem;
+  padding-bottom: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,162,39,0.4) transparent;
+  background: linear-gradient(270deg, rgba(5,7,12,0.55) 0%, transparent 100%);
+}
+
+.bio-shell > * { pointer-events: auto; }
+
+.bio-card {
+  background: rgba(6, 10, 18, 0.78);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  border-radius: 20px;
+  padding: 1.1rem 1rem 1.25rem;
+  box-shadow: 0 16px 50px rgba(0,0,0,0.5);
+}
+
+.bio-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.bio-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(201, 162, 39, 0.55);
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.25);
+  background: #111;
+}
+
+.bio-meta h1 {
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.bio-meta .handle {
+  color: var(--gold-bright);
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+
+.bio-meta .tagline {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.bio-section {
+  margin-top: 0.9rem;
+}
+
+.bio-section h2 {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.55rem;
+}
+
+.bio-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bio-link {
+  --link-accent: var(--gold);
+  display: grid;
+  grid-template-columns: 36px 1fr 18px;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(138, 155, 176, 0.2);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--link-accent) 14%, transparent), rgba(255,255,255,0.03));
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.bio-link:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--link-accent) 55%, #fff 10%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--link-accent) 24%, transparent), rgba(255,255,255,0.05));
+}
+
+.bio-link.compact {
+  padding: 0.5rem 0.6rem;
+  grid-template-columns: 28px 1fr 14px;
+}
+
+.bio-link-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.25);
+  font-size: 1rem;
+}
+
+.bio-link.compact .bio-link-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 0.85rem;
+}
+
+.bio-link-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bio-link-text strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bio-link-text small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bio-link-arrow {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.bio-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.bio-social {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(138, 155, 176, 0.25);
+  background: rgba(255,255,255,0.04);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.bio-social:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.bio-foot {
+  margin-top: 1rem;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.bio-foot a {
+  color: var(--gold-bright);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Layout tweaks when bio is present */
+body.has-bio .controls {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  width: 100%;
+  max-width: none;
+}
+
+body.has-bio .hint.desktop-hint {
+  left: 50%;
+  right: auto;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  max-width: 280px;
+  text-align: center;
+}
+
+body.embed .bio-shell {
+  width: min(320px, 100%);
+  padding-top: 0.75rem;
+  padding-right: 0.6rem;
+  padding-left: 0.6rem;
+}
+
+body.embed .bio-card {
+  padding: 0.85rem 0.75rem 1rem;
+}
+
+/* ---------- Left dock: Luna Camp ---------- */
+.side-dock {
+  position: fixed;
+  z-index: 20;
+  left: 1rem;
+  top: 5.25rem;
+  width: min(280px, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  pointer-events: none;
+}
+
+.side-dock > * { pointer-events: auto; }
+
+.luna-camp-btn {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px 1fr 22px;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(120, 200, 255, 0.45);
+  background:
+    linear-gradient(135deg, rgba(40, 90, 160, 0.55), rgba(12, 24, 48, 0.9) 55%, rgba(8, 40, 60, 0.85));
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(80, 180, 255, 0.2);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.luna-camp-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(180, 230, 255, 0.85);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(100, 200, 255, 0.35);
+}
+
+.luna-camp-glow {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 30% 40%, rgba(120, 210, 255, 0.35), transparent 55%);
+  pointer-events: none;
+  animation: luna-pulse 3.2s ease-in-out infinite;
+}
+
+@keyframes luna-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.luna-camp-icon {
+  position: relative;
+  font-size: 1.55rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(140, 220, 255, 0.6));
+}
+
+.luna-camp-copy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.luna-camp-copy strong {
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  color: #e8f6ff;
+}
+
+.luna-camp-copy small {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: rgba(190, 220, 245, 0.85);
+}
+
+.luna-camp-arrow {
+  position: relative;
+  color: #b8e4ff;
+  font-size: 1.15rem;
+}
+
+.dock-secondary {
+  display: block;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 155, 176, 0.2);
+  background: rgba(8, 12, 22, 0.55);
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.dock-secondary:hover {
+  color: var(--gold-bright);
+  border-color: rgba(201, 162, 39, 0.4);
+}
+
+.dock-controls {
+  position: relative !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  margin: 0;
+}
+
+.mobile-luna-only { display: none; }
+
+.bio-link.luna-inline {
+  --link-accent: #4aa8ff;
+  border-color: rgba(100, 190, 255, 0.45);
+}
+
+@media (max-width: 1100px) {
+  body.has-bio .hint.desktop-hint { display: none; }
+}
+
+@media (max-width: 900px) {
+  .side-dock {
+    top: auto;
+    bottom: auto;
+    left: 0.75rem;
+    right: auto;
+    width: auto;
+    z-index: 25;
+  }
+
+  .side-dock .dock-controls,
+  .side-dock .dock-secondary {
+    display: none;
+  }
+
+  .luna-camp-btn {
+    padding: 0.7rem 0.85rem;
+    grid-template-columns: 36px 1fr 18px;
+  }
+
+  .luna-camp-copy strong { font-size: 0.95rem; }
+  .luna-camp-copy small { display: none; }
+
+  .bio-shell {
+    width: 100%;
+    min-width: 0;
+    top: auto;
+    height: 46vh;
+    padding-top: 0.5rem;
+    background: linear-gradient(180deg, transparent, rgba(5,7,12,0.9) 14%);
+  }
+
+  .mobile-luna-only { display: block; }
+
+  body.has-bio header .title-block p { display: none; }
+
+  /* floating mini 3D controls top-left under header */
+  body.site-home .dock-controls {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .bio-shell { height: 50vh; }
+  .side-dock { left: 0.5rem; top: 4.25rem; }
+}
+
+</style>
+
+<style>
+/* emergency always-visible Luna button (even if other CSS fails) */
+#luna-camp-fixed{
+  position:fixed!important;z-index:99999!important;left:12px!important;top:72px!important;
+  display:inline-flex!important;align-items:center!important;gap:10px!important;
+  padding:14px 18px!important;border-radius:14px!important;
+  background:#1a4a7a!important;color:#fff!important;font:700 16px/1.2 system-ui,sans-serif!important;
+  border:2px solid #7ec8ff!important;text-decoration:none!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.55)!important;
+}
+#luna-camp-fixed:hover{background:#2563a8!important}
+</style>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body class="has-bio site-home">
+  <a id="luna-camp-fixed" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">🏕️ Open Luna Camp →</a>
+
   <div id="canvas-wrap"></div>
   <div class="vignette"></div>
   <div class="flash" id="flash"></div>
