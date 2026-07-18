@@ -1,9 +1,16 @@
-BIO BACKGROUND MEDIA (Beacons-style)
-====================================
+BACKGROUND MEDIA (Relics stage + Bio page)
+==========================================
 
-Put your background files HERE (same names as below, or edit bio-config.js):
+Current clip: media/bg.mp4
+  (compressed from your Downloads “1.30 second clip.mp4” — ~90s loop, muted)
 
-  media/bg.mp4        Looping video (muted autoplay — works like Beacons)
+Used as:
+  • Relics stage 3D background (Mjolnir + Caduceus stay interactive on top)
+  • Bio tab full-screen Beacons-style background
+
+Put / replace files HERE:
+
+  media/bg.mp4        Looping video (muted autoplay)
   media/bg.jpg        Still image fallback or main image
   media/bg-poster.jpg Optional poster frame while video loads
 
