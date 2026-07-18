@@ -48,107 +48,69 @@ a { color: inherit; text-decoration: none; }
 .scene-fallback[hidden] { display: none !important; }
 body.scene-native .scene-fallback { display: none !important; }
 
-/* Worlds dropdown — always on top of every scene (clears badge stack on hub) */
+/* Compact 3-tab world bar — always on top (hub + over Luna iframe), mobile-safe */
 .world-switch {
   position: fixed;
-  z-index: 40;
-  top: max(0.5rem, env(safe-area-inset-top, 0px));
-  right: 0.55rem;
+  z-index: 100;
+  top: max(4px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-  pointer-events: none;
-}
-body.scene-native .badge-stack {
-  margin-right: 7.25rem; /* room for Worlds pill */
-}
-.world-switch > * { pointer-events: auto; }
-
-.world-toggle {
-  appearance: none;
-  display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.7rem;
+  gap: 2px;
+  padding: 3px;
   border-radius: 999px;
-  border: 1px solid rgba(201, 162, 39, 0.55);
-  background: rgba(8, 12, 22, 0.92);
-  color: #f0e6c8;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  background: rgba(6, 10, 18, 0.92);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  max-width: calc(100vw - 10px);
+  pointer-events: auto;
 }
-.world-toggle.open,
-.world-toggle[aria-expanded="true"] {
-  border-color: rgba(240, 208, 96, 0.85);
-  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
+body.scene-native .topbar {
+  padding-top: 2.35rem; /* clear compact world tabs */
 }
-.world-toggle-mark {
-  color: var(--gold-bright);
-  font-size: 0.85rem;
-}
-.world-caret {
-  opacity: 0.75;
-  font-size: 0.7rem;
+body.scene-native .badge-stack {
+  margin-right: 0;
 }
 
-.world-menu {
-  min-width: min(92vw, 260px);
-  padding: 0.55rem;
-  border-radius: 14px;
-  border: 1px solid rgba(201, 162, 39, 0.35);
-  background: rgba(8, 12, 22, 0.96);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(10px);
-}
-.world-menu[hidden] { display: none !important; }
-.world-menu-title {
-  margin: 0 0 0.4rem 0.25rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.world-opt {
+.world-tab {
   appearance: none;
-  width: 100%;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-  padding: 0.55rem 0.6rem;
-  margin: 0 0 0.3rem;
-  border-radius: 10px;
-  border: 1px solid rgba(138, 155, 176, 0.2);
-  background: rgba(255, 255, 255, 0.03);
-  color: inherit;
-  font: inherit;
+  border: 0;
   cursor: pointer;
-}
-.world-opt:last-child { margin-bottom: 0; }
-.world-opt strong {
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-.world-opt span {
+  font: inherit;
   font-size: 0.68rem;
-  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 0.42rem 0.62rem;
+  min-height: 30px;
+  min-width: 3rem;
+  border-radius: 999px;
+  color: #d7deea;
+  background: transparent;
+  white-space: nowrap;
 }
-.world-opt:hover {
-  border-color: rgba(201, 162, 39, 0.45);
-  background: rgba(201, 162, 39, 0.08);
+.world-tab:active { transform: scale(0.97); }
+.world-tab.active {
+  color: #0b1220;
+  background: linear-gradient(135deg, #f0d060, #c9a227);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.35);
 }
-.world-opt.active {
-  border-color: rgba(126, 200, 255, 0.55);
-  background: linear-gradient(135deg, rgba(26, 74, 122, 0.45), rgba(12, 24, 47, 0.9));
+.world-tab[data-scene="luna-2d"].active,
+.world-tab[data-scene="luna-3d"].active {
+  color: #e8f6ff;
+  background: linear-gradient(135deg, #1a4a7a, #0c2848);
+  box-shadow: 0 0 12px rgba(80, 160, 255, 0.3);
 }
-.world-opt.active strong { color: #e8f6ff; }
+@media (max-width: 380px) {
+  .world-tab {
+    font-size: 0.62rem;
+    padding: 0.38rem 0.5rem;
+    min-width: 2.6rem;
+  }
+}
 
 /* When Luna fills the screen, park the relic stage */
 body.scene-external .stage {
@@ -158,12 +120,20 @@ body.scene-external .stage {
 body.scene-external .float-actions {
   display: none;
 }
+/* Luna pages inject their own Relics|2D|3D bar — hide hub copy to avoid double */
+body.scene-external .world-switch {
+  display: none;
+}
 body.scene-external .music-player {
   /* keep music available over camp if user opened it */
   z-index: 30;
 }
 body.scene-external .sheet {
   z-index: 35;
+}
+/* Leave a thin top safe zone so Luna's world-nav isn't under notches */
+body.scene-external .scene-frame {
+  /* full bleed; world-nav lives inside the camp page */
 }
 
 /* ===== FULLSCREEN 3D ===== */
