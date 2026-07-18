@@ -1,3 +1,3 @@
-// Public dual-brain API base (set by GO_PUBLIC_BRAINS.bat when Ollama is shared to the world).
-// Empty = same-origin only (local server.py). Live site needs this set for any visitor.
-window.TELEPHANTIM_API = window.TELEPHANTIM_API || "";
+// Public dual-brain API on Render (works for any visitor — no home PC server)
+// Service: telephantim-ai  →  set GROQ_API_KEY or XAI_API_KEY in Render dashboard
+window.TELEPHANTIM_API = "https://telephantim-ai.onrender.com";

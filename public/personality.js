@@ -10,8 +10,8 @@ function resolveApiBase() {
   }
   const h = (typeof location !== "undefined" && location.hostname) || "";
   if (h === "localhost" || h === "127.0.0.1") return "";
-  // Live pages: same-origin has no /api — need TELEPHANTIM_API from api-config.js
-  return "";
+  // Live site default: Render dual-brain service (no visitor PC / no your PC)
+  return "https://telephantim-ai.onrender.com";
 }
 
 const API_BASE = resolveApiBase();

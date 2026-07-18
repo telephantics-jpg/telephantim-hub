@@ -1,0 +1,38 @@
+CONNECT dual minds on RENDER (any browser, PC OFF is fine)
+==========================================================
+
+You cannot run Ollama on free Render (no home GPU). On Render the dual minds
+use cloud models instead — same characters, works for every visitor:
+
+  Mjolnir  → llama-3.1 (Groq free)  OR  Grok (xAI paid)
+  Caduceus → llama-3.3 (Groq free)  OR  Grok (xAI paid)
+
+Easiest free path: Groq
+-----------------------
+1. Open https://console.groq.com  (sign up free)
+2. Create API key → copy it
+
+Create the Render service
+-------------------------
+1. https://dashboard.render.com → New → Web Service
+2. Connect repo: telephantics-jpg / telephantim-hub
+3. Settings:
+   Name:           telephantim-ai
+   Branch:         master
+   Runtime:        Python
+   Build command:  pip install -r requirements.txt
+   Start command:  python server.py
+   Instance:       Free
+4. Environment variables:
+   PREFER_CLOUD     = 1
+   GROQ_API_KEY     = (paste your free Groq key)
+   (optional) XAI_API_KEY = (if you use xAI instead / as well)
+5. Create Web Service → wait until Live
+6. URL must be:  https://telephantim-ai.onrender.com
+   Test:         https://telephantim-ai.onrender.com/api/health
+   Should say:   "server":"telephantim-ai","brains":true
+
+Frontend is already pointed at that URL (api-config.js).
+Hard refresh https://telephantim.com/  → Relic duel → real talk.
+
+Note: Free Render sleeps after idle; first chat can take ~30–60s to wake.

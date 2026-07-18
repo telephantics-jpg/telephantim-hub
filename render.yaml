@@ -1,19 +1,33 @@
-﻿# Render Static Site — MUST publish repo ROOT (dual Mjolnir + Caduceus LIVE v24)
+# Telephantim dual-brain API — runs on Render (no home PC)
+# Blueprint: New → Blueprint → this repo
+# Or: New Web Service → startCommand below + env keys
 services:
   - type: web
-    name: telephantim-hub
-    runtime: static
+    name: telephantim-ai
+    runtime: python
+    plan: free
+    region: oregon
     branch: master
-    staticPublishPath: .
-    buildCommand: ""
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: "no-store, no-cache, must-revalidate, max-age=0"
-      - path: /*
-        name: Pragma
-        value: "no-cache"
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: PREFER_XAI
+        value: "1"
+      - key: PREFER_CLOUD
+        value: "1"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Set ONE of these in Render dashboard (secret):
+      # XAI_API_KEY  = from https://console.x.ai  (needs credits)
+      # GROQ_API_KEY = from https://console.groq.com (free tier available)
+      - key: XAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: XAI_MODEL
+        value: grok-3
+      - key: GROQ_MODEL_MJOLNIR
+        value: llama-3.1-8b-instant
+      - key: GROQ_MODEL_CADUCEUS
+        value: llama-3.3-70b-versatile

@@ -56,9 +56,14 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 XAI_API_KEY = (os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY") or "").strip()
 XAI_MODEL = os.getenv("XAI_MODEL") or os.getenv("GROK_MODEL") or "grok-3"
 XAI_URL = os.getenv("XAI_URL", "https://api.x.ai/v1/chat/completions")
+# Free cloud option (https://console.groq.com) — works on Render without your PC
+GROQ_API_KEY = (os.getenv("GROQ_API_KEY") or "").strip()
+GROQ_URL = os.getenv("GROQ_URL", "https://api.groq.com/openai/v1/chat/completions")
+GROQ_MODEL_MJOLNIR = os.getenv("GROQ_MODEL_MJOLNIR", "llama-3.1-8b-instant")
+GROQ_MODEL_CADUCEUS = os.getenv("GROQ_MODEL_CADUCEUS", "llama-3.3-70b-versatile")
 # Prefer cloud brains on live hosts; local keeps Ollama first unless forced
-PREFER_XAI = os.getenv("PREFER_XAI", "").strip() in ("1", "true", "yes") or bool(
-    os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT")
+PREFER_CLOUD = os.getenv("PREFER_XAI", "").strip() in ("1", "true", "yes") or bool(
+    os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PREFER_CLOUD")
 )
 
 # Prefer different local minds when both exist
@@ -241,11 +246,11 @@ def chat_ollama(system: str, user: str, model: str) -> str:
     return sanitize_reply(((data.get("message") or {}).get("content") or "").strip())
 
 
-def chat_xai(system: str, user: str) -> str:
+def chat_openai_compat(url: str, api_key: str, model: str, system: str, user: str) -> str:
     data = http_json(
-        XAI_URL,
+        url,
         {
-            "model": XAI_MODEL,
+            "model": model,
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -253,13 +258,22 @@ def chat_xai(system: str, user: str) -> str:
             "temperature": 0.8,
             "max_tokens": 220,
         },
-        headers={"Authorization": f"Bearer {XAI_API_KEY}"},
+        headers={"Authorization": f"Bearer {api_key}"},
         timeout=90.0,
     )
     choices = data.get("choices") or []
     if not choices:
         return ""
     return sanitize_reply(((choices[0].get("message") or {}).get("content") or "").strip())
+
+
+def chat_xai(system: str, user: str) -> str:
+    return chat_openai_compat(XAI_URL, XAI_API_KEY, XAI_MODEL, system, user)
+
+
+def chat_groq(system: str, user: str, persona_id: str) -> str:
+    model = GROQ_MODEL_CADUCEUS if persona_id == "caduceus" else GROQ_MODEL_MJOLNIR
+    return chat_openai_compat(GROQ_URL, GROQ_API_KEY, model, system, user)
 
 
 def offline(persona: str, event: str, power: int | None = None) -> str:
@@ -339,6 +353,18 @@ def speak(persona_id: str, user_msg: str, model: str | None, models: list[str]) 
             print("[telephantim] xAI error:", e)
         return None
 
+    def try_groq() -> tuple[str, str, str | None] | None:
+        if not GROQ_API_KEY:
+            return None
+        try:
+            model = GROQ_MODEL_CADUCEUS if persona_id == "caduceus" else GROQ_MODEL_MJOLNIR
+            text = chat_groq(system, full_user, persona_id)
+            if text:
+                return text, "groq", model
+        except Exception as e:
+            print("[telephantim] Groq error:", e)
+        return None
+
     def try_ollama() -> tuple[str, str, str | None] | None:
         if not resolved:
             return None
@@ -350,8 +376,11 @@ def speak(persona_id: str, user_msg: str, model: str | None, models: list[str]) 
             print("[telephantim] ollama error:", e)
         return None
 
-    # Local: Ollama first (unless PREFER_XAI). Cloud/Render: xAI first, then Ollama.
-    order = [try_xai, try_ollama] if PREFER_XAI else [try_ollama, try_xai]
+    # Local PC: Ollama first. Render/cloud: cloud keys first (no home PC needed).
+    if PREFER_CLOUD:
+        order = [try_xai, try_groq, try_ollama]
+    else:
+        order = [try_ollama, try_xai, try_groq]
     for fn in order:
         hit = fn()
         if hit:
@@ -406,18 +435,26 @@ class Handler(SimpleHTTPRequestHandler):
                     },
                     "all_models": models[:16],
                     "xai": bool(XAI_API_KEY),
+                    "groq": bool(GROQ_API_KEY),
                     "prefer": (
-                        "xai"
-                        if (PREFER_XAI and XAI_API_KEY)
-                        else ("ollama" if models else ("xai" if XAI_API_KEY else "offline"))
+                        "cloud"
+                        if PREFER_CLOUD and (XAI_API_KEY or GROQ_API_KEY)
+                        else ("ollama" if models else ("xai" if XAI_API_KEY else ("groq" if GROQ_API_KEY else "offline")))
                     ),
                     "memory": len(MEMORY),
-                    "brains": bool(models) or bool(XAI_API_KEY),
+                    "brains": bool(models) or bool(XAI_API_KEY) or bool(GROQ_API_KEY),
                 },
             )
             return
         if path == "/api/health":
-            self._json(200, {"ok": True, "server": "telephantim-ai", "brains": bool(ollama_models()) or bool(XAI_API_KEY)})
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "server": "telephantim-ai",
+                    "brains": bool(ollama_models()) or bool(XAI_API_KEY) or bool(GROQ_API_KEY),
+                },
+            )
             return
         if path == "/api/memory":
             self._json(200, {"ok": True, "lines": MEMORY[-20:], "power": dict(POWER)})
