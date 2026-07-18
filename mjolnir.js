@@ -27,7 +27,28 @@ if (stageBgVideo) {
   stageBgVideo.loop = true;
   stageBgVideo.playsInline = true;
   stageBgVideo.setAttribute("playsinline", "");
+  stageBgVideo.setAttribute("loop", "");
   const kick = () => stageBgVideo.play().catch(() => {});
+  // Some browsers / VideoTexture ignore the loop attribute — force replay
+  const replay = () => {
+    try {
+      stageBgVideo.currentTime = 0;
+    } catch (_) {}
+    kick();
+  };
+  stageBgVideo.addEventListener("ended", replay);
+  // Fallback if "ended" never fires near the end
+  stageBgVideo.addEventListener("timeupdate", () => {
+    const d = stageBgVideo.duration;
+    if (!d || !Number.isFinite(d)) return;
+    if (d - stageBgVideo.currentTime < 0.12 && !stageBgVideo.loopingFix) {
+      stageBgVideo.loopingFix = true;
+      replay();
+      setTimeout(() => {
+        stageBgVideo.loopingFix = false;
+      }, 400);
+    }
+  });
   stageBgVideo.addEventListener("loadeddata", kick);
   stageBgVideo.addEventListener("canplay", kick);
   kick();
