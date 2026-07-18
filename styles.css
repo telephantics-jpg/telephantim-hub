@@ -120,10 +120,223 @@ body.scene-external .stage {
 body.scene-external .float-actions {
   display: none;
 }
-/* Keep hub Relics|2D|3D bar over Luna iframe (always available) */
-body.scene-external .world-switch {
+/* Keep hub world bar over Luna / Bio */
+body.scene-external .world-switch,
+body.scene-bio .world-switch {
   display: flex;
   z-index: 120;
+}
+
+/* ===== BEACONS-STYLE BIO (video/image bg + scroll content) ===== */
+.bio-page {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(100, 70, 200, 0.35), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 20% 80%, rgba(201, 162, 39, 0.12), transparent 50%),
+    #05070c;
+}
+body.scene-bio .bio-page {
+  display: flex;
+}
+body.scene-bio .stage {
+  visibility: hidden;
+  pointer-events: none;
+}
+body.scene-bio .float-actions,
+body.scene-bio .sheet {
+  display: none !important;
+}
+.bio-page[hidden] {
+  display: none !important;
+}
+
+.bio-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+.bio-video,
+.bio-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.bio-image {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0a0c14;
+}
+.bio-image.has-media {
+  background-color: transparent;
+}
+.bio-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(5, 7, 12, 0.55) 0%, rgba(5, 7, 12, 0.35) 35%, rgba(5, 7, 12, 0.75) 100%),
+    radial-gradient(ellipse at 50% 40%, transparent 20%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+.bio-scroll {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(3.1rem + env(safe-area-inset-top, 0px)) 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+.bio-card {
+  width: min(100%, 420px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+  padding-bottom: 2rem;
+}
+.bio-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(240, 208, 96, 0.65);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  background: #111;
+}
+.bio-name {
+  margin: 0.35rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(120deg, var(--gold-bright), var(--gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.bio-handle {
+  margin: 0;
+  color: #b8c4d8;
+  font-size: 0.9rem;
+}
+.bio-quote {
+  margin: 0.85rem 0 0.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  background: rgba(8, 12, 22, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  text-align: left;
+}
+.bio-quote p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #f2f0eb;
+}
+.bio-quote cite {
+  display: block;
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  font-style: normal;
+  color: var(--gold-bright);
+  opacity: 0.9;
+}
+.bio-hint {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 0.68rem;
+  color: #7a879c;
+  max-width: 28rem;
+  line-height: 1.35;
+}
+.bio-links {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+.bio-links-label {
+  margin: 0.65rem 0 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9aa8bf;
+  text-align: left;
+  width: 100%;
+}
+.bio-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.85rem 0.95rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 14, 24, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: inherit;
+  text-decoration: none;
+  text-align: left;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+.bio-link:hover,
+.bio-link:focus-visible {
+  border-color: rgba(201, 162, 39, 0.55);
+  outline: none;
+}
+.bio-link:active {
+  transform: scale(0.985);
+}
+.bio-link-btn {
+  appearance: none;
+}
+.bio-link-ico {
+  flex: 0 0 auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: linear-gradient(145deg, rgba(201, 162, 39, 0.35), rgba(26, 74, 122, 0.45));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.bio-link-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+.bio-link-copy strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.bio-link-copy small {
+  font-size: 0.72rem;
+  color: #8b97ad;
 }
 body.scene-external .music-player {
   /* keep music available over camp if user opened it */
