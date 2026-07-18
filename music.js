@@ -4,7 +4,7 @@
  * Get UUID from a song share URL: suno.com/song/UUID
  */
 
-const SUNO_PROFILE = "https://suno.com/@telephantix-demo";
+const SUNO_PROFILE = "https://suno.com/@telephantix";
 
 /** Default playable set (in-browser). Swap/add Suno song IDs anytime. */
 export const PLAYLIST = [
