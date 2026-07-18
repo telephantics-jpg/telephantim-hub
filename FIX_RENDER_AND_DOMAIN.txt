@@ -1,53 +1,31 @@
-Get the GOOD site (github.io) onto Render + telephantim.com
-============================================================
+﻿CONNECT dual Mjolnir+Caduceus LIVE v24 to telephantim.com
+========================================================
 
-The working site is always here first:
-  https://telephantics-jpg.github.io/telephantim-hub/
-  (look for badge: BUILD v8)
+STATUS NOW
+- Dual build LIVE on: https://telephantics-jpg.github.io/telephantim-hub/  (badge LIVE v24)
+- telephantim.com DNS -> Render 216.24.57.1 (OLD single-hammer site)
+- www -> telephantim-hub.onrender.com (same old site)
 
-------------------------------------------------
-A) RENDER (telephantim-hub.onrender.com)
-------------------------------------------------
+FASTEST FIX (keep Render + telephantim.com)
 1. https://dashboard.render.com
-2. Open service "telephantim-hub" (Static Site)
-3. Settings -> Build & Deploy
-4. Connect / change repository to:
-     telephantics-jpg / telephantim-hub
-5. Branch: master
-6. Root Directory: (leave BLANK)
-7. Publish Directory: (leave BLANK)   << important
-8. Auto-Deploy: Yes
-9. Manual Deploy -> Deploy latest commit
-10. Wait Live, then open:
-     https://telephantim-hub.onrender.com
-     Badge should say BUILD v8
+2. Service: telephantim-hub (Static Site)
+3. Settings -> Build & Deploy:
+   - Repo: telephantics-jpg/telephantim-hub
+   - Branch: master
+   - Root Directory: (blank)
+   - Publish Directory: (blank)
+   - Auto-Deploy: Yes
+4. Manual Deploy -> Deploy latest commit
+5. Wait until Live
+6. Hard refresh https://telephantim.com  (badge must say LIVE v24, both relics)
 
-If Publish Directory is "public" and root is blank, either works
-IF files are in both places (they are). Prefer BLANK publish dir.
+OR switch domain to GitHub Pages instead
+DNS (Squarespace / Cloudflare):
+  A  @  185.199.108.153
+  A  @  185.199.109.153
+  A  @  185.199.110.153
+  A  @  185.199.111.153
+  CNAME  www  telephantics-jpg.github.io
+GitHub repo already has CNAME=telephantim.com on gh-pages.
 
-------------------------------------------------
-B) TELEPHANTIM.COM (pretty name)
-------------------------------------------------
-Easiest: point domain at GitHub Pages (same files as .io)
-
-Squarespace DNS for telephantim.com — DELETE old A/CNAME junk, then:
-
-  Type A     Name @     Data 185.199.108.153
-  Type A     Name @     Data 185.199.109.153
-  Type A     Name @     Data 185.199.110.153
-  Type A     Name @     Data 185.199.111.153
-  Type CNAME Name www   Data telephantics-jpg.github.io
-
-Then GitHub repo Settings -> Pages -> Custom domain: telephantim.com
-  (check Enforce HTTPS after DNS works)
-
-OR keep pointing at Render (A @ = 216.24.57.1) AFTER step A works.
-
-------------------------------------------------
-Support links (v8 — no duplicates)
-------------------------------------------------
-  PayPal (one)
-  Cash App $Telephantix (one)
-  Venmo (one)
-  GoFundMe (one)
-  Buy Me a Coffee (one)
+Offline dual files also copied to: C:\Users\Stood\TELEPHANTIM_UPLOAD\
