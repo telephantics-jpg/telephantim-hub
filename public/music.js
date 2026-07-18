@@ -1,58 +1,22 @@
 /**
- * On-page music player — Suno songs + Spotify / YouTube embeds.
- * Profile (correct): https://suno.com/@telephantix  (NOT @telephantix-demo)
- * Add more Suno tracks: { title, type: "suno", songId: "SONG_UUID" }
- * UUID from share URL: suno.com/song/UUID
+ * On-page music player — full @telephantix Suno catalog + Spotify / YouTube albums.
+ *
+ * Suno songs load from suno-catalog.json (every public clip we can list).
+ * Refresh catalog anytime:  python refresh-suno-catalog.py
+ * Profile: https://suno.com/@telephantix  (never @telephantix-demo)
  */
 
 const SUNO_PROFILE = "https://suno.com/@telephantix";
-/** Reliable same-origin open page (avoids blank new-tab on phones). */
 const SUNO_OPEN = "go-suno.html";
+const SUNO_CATALOG_URL = "suno-catalog.json";
 
-/** Default playable set (in-browser). Swap/add Suno song IDs anytime. */
-export const PLAYLIST = [
-  // Public @telephantix Suno tracks (embed plays on-page)
-  {
-    id: "suno-taccata",
-    title: "Taccata",
-    artist: "Suno · @telephantix",
-    type: "suno",
-    songId: "7642aa82-4650-4776-aca5-36e65e343e33",
-  },
-  {
-    id: "suno-desperation",
-    title: "Desperation",
-    artist: "Suno · @telephantix",
-    type: "suno",
-    songId: "c03108ad-f7a6-404f-b0f4-e6792e681818",
-  },
-  {
-    id: "suno-faint-whispers",
-    title: "Faint whispers",
-    artist: "Suno · @telephantix",
-    type: "suno",
-    songId: "c424705a-1002-40b0-a5a1-fbeab6865c68",
-  },
-  {
-    id: "suno-for-the-home",
-    title: "For the Home",
-    artist: "Suno · @telephantix",
-    type: "suno",
-    songId: "2f62b61b-aa1c-47ca-bbb7-c3916d3fd00e",
-  },
-  {
-    id: "suno-lucid-dreams",
-    title: "Lucid Dreams",
-    artist: "Suno · @telephantix",
-    type: "suno",
-    songId: "891fb230-b620-4825-8755-cd762463608b",
-  },
+/** Fixed albums (embeds). Suno tracks are injected from the catalog. */
+const BASE_ALBUMS = [
   {
     id: "spotify-album",
     title: "Telephantix — Spotify Album",
     artist: "Telephantix",
     type: "spotify",
-    // open.spotify.com/album/0TQgbKYS4r0fDmciMoiqKt
     embedId: "album/0TQgbKYS4r0fDmciMoiqKt",
   },
   {
@@ -60,7 +24,6 @@ export const PLAYLIST = [
     title: "Telephantix Album — YouTube Music",
     artist: "Telephantix",
     type: "youtube",
-    // music.youtube playlist → youtube embed list
     listId: "OLAK5uy_nOw1iUh26P4Zj_Odt1SjaLloUo7C9j4FY",
   },
   {
@@ -72,8 +35,96 @@ export const PLAYLIST = [
   },
 ];
 
+/** Live playlist (Suno queue + albums). Mutated after catalog load. */
+export let PLAYLIST = [...BASE_ALBUMS];
+
+/** Full published Suno set from suno-catalog.json (source of truth for "play all"). */
+let allSunoTracks = [];
+
+/** "all" = suno then albums; "suno" = only published Suno songs */
+let mode = "all";
+let index = 0;
+let open = false;
+let sunoCount = 0;
+let catalogLoaded = false;
+
 function $(id) {
   return document.getElementById(id);
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function isSunoTrack(t) {
+  return t && (t.type === "suno" || t.type === "audio");
+}
+
+function rebuildPlaylist() {
+  sunoCount = allSunoTracks.length;
+  if (mode === "suno") {
+    PLAYLIST = allSunoTracks.length ? [...allSunoTracks] : [...BASE_ALBUMS];
+  } else {
+    PLAYLIST = [...allSunoTracks, ...BASE_ALBUMS];
+  }
+  if (index >= PLAYLIST.length) index = 0;
+}
+
+function sunoFromCatalog(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((row, i) => {
+      const id = row.id || row.songId;
+      if (!id) return null;
+      const url = row.audio_url || row.url || `https://cdn1.suno.ai/${id}.mp3`;
+      return {
+        id: `suno-${id}`,
+        songId: id,
+        title: row.title || `Suno track ${i + 1}`,
+        artist: row.artist || "Suno · @telephantix",
+        // Native audio — full queue play + auto-next (Suno profile pages cannot be embedded)
+        type: "audio",
+        url,
+      };
+    })
+    .filter(Boolean);
+}
+
+async function loadSunoCatalog() {
+  const sub = $("music-now-sub");
+  if (sub && !catalogLoaded) sub.textContent = "Loading all Suno songs…";
+  try {
+    const res = await fetch(`${SUNO_CATALOG_URL}?v=${Date.now()}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`catalog ${res.status}`);
+    const rows = await res.json();
+    allSunoTracks = sunoFromCatalog(rows);
+    rebuildPlaylist();
+    catalogLoaded = true;
+    updateSunoChip();
+    renderList();
+    // Prefer landing on the full Suno queue once catalog is ready
+    if (allSunoTracks.length && !isSunoTrack(current())) {
+      index = 0;
+    }
+    loadTrack(false);
+    return allSunoTracks.length;
+  } catch (err) {
+    console.warn("Suno catalog load failed", err);
+    catalogLoaded = true;
+    updateSunoChip();
+    if (sub) sub.textContent = "Suno list offline — albums still play";
+    return 0;
+  }
+}
+
+function current() {
+  return PLAYLIST[index] || null;
 }
 
 function embedSrc(track) {
@@ -85,45 +136,73 @@ function embedSrc(track) {
     return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(track.listId)}&rel=0`;
   }
   if (track.type === "suno" && track.songId) {
-    // Suno share embed (works for public songs)
     return `https://suno.com/embed/${encodeURIComponent(track.songId)}`;
-  }
-  if (track.type === "audio" && track.url) {
-    return track.url;
   }
   return "";
 }
 
-let index = 0;
-let open = false;
+function updateSunoChip() {
+  const sunoLink = $("music-suno-link");
+  if (!sunoLink) return;
+  sunoLink.href = SUNO_OPEN;
+  if (sunoCount > 0) {
+    sunoLink.textContent =
+      mode === "suno"
+        ? `Suno · ${sunoCount} songs`
+        : `Play all Suno (${sunoCount})`;
+  } else {
+    sunoLink.textContent = "Suno @telephantix";
+  }
+  sunoLink.title =
+    mode === "suno"
+      ? "Playing full @telephantix Suno queue — click for profile page"
+      : `Play all ${sunoCount || ""} published Suno songs from @telephantix`.trim();
+}
 
-function current() {
-  return PLAYLIST[index] || null;
+function updateHint() {
+  const hint = document.querySelector(".music-hint");
+  if (!hint) return;
+  if (sunoCount > 0) {
+    hint.textContent =
+      mode === "suno"
+        ? `Suno queue: ${sunoCount} published songs · auto-next · profile ${SUNO_PROFILE.replace("https://", "")}`
+        : `${sunoCount} Suno songs + albums · tap “Play all Suno” for the full queue`;
+  } else {
+    hint.textContent = `Loading Suno catalog… or open ${SUNO_PROFILE.replace("https://", "")}`;
+  }
 }
 
 function renderList() {
   const list = $("music-track-list");
   if (!list) return;
   list.innerHTML = "";
+
+  // Group label for long Suno lists
+  if (sunoCount > 0) {
+    const head = document.createElement("div");
+    head.className = "music-list-head";
+    head.textContent =
+      mode === "suno"
+        ? `All published Suno · ${sunoCount}`
+        : `Suno (${sunoCount}) + albums`;
+    list.appendChild(head);
+  }
+
   PLAYLIST.forEach((t, i) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "music-track" + (i === index ? " active" : "");
-    btn.innerHTML = `<strong>${escapeHtml(t.title)}</strong><span>${escapeHtml(t.artist || t.type)}</span>`;
+    if (isSunoTrack(t)) btn.classList.add("is-suno");
+    btn.innerHTML = `<strong>${escapeHtml(t.title)}</strong><span>${escapeHtml(
+      t.artist || t.type
+    )}</span>`;
     btn.addEventListener("click", () => {
       index = i;
       loadTrack(true);
     });
     list.appendChild(btn);
   });
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  updateHint();
 }
 
 function loadTrack(autoPlayHint) {
@@ -135,9 +214,18 @@ function loadTrack(autoPlayHint) {
   const sunoLink = $("music-suno-link");
 
   if (title) title.textContent = t ? t.title : "No tracks";
-  if (sub) sub.textContent = t ? t.artist || t.type : "";
-  // Profile open uses go-suno.html (correct @telephantix, no -demo, reliable on phones)
+  if (sub) {
+    if (!t) sub.textContent = "";
+    else if (isSunoTrack(t) && sunoCount) {
+      const sunoIndex =
+        PLAYLIST.slice(0, index + 1).filter(isSunoTrack).length || 1;
+      sub.textContent = `${t.artist || "Suno"} · ${sunoIndex}/${sunoCount}`;
+    } else {
+      sub.textContent = t.artist || t.type || "";
+    }
+  }
   if (sunoLink) sunoLink.href = SUNO_OPEN;
+  updateSunoChip();
 
   if (!t) return;
 
@@ -145,7 +233,9 @@ function loadTrack(autoPlayHint) {
     frame.hidden = true;
     frame.removeAttribute("src");
     audio.hidden = false;
-    audio.src = t.url;
+    if (audio.src !== t.url) {
+      audio.src = t.url;
+    }
     if (autoPlayHint) {
       audio.play().catch(() => {});
     }
@@ -179,14 +269,7 @@ function setOpen(v) {
   if (open) loadTrack(true);
   else {
     const audio = $("music-audio");
-    const frame = $("music-embed");
-    if (audio) {
-      audio.pause();
-    }
-    // keep last embed; user can reopen
-    if (frame && !open) {
-      /* optional: frame.removeAttribute("src"); */
-    }
+    if (audio) audio.pause();
   }
 }
 
@@ -202,17 +285,32 @@ function prev() {
   loadTrack(true);
 }
 
-/** Jump player to first Suno track (on-page embed). Profile opens via go-suno.html. */
-function playSunoFirst(e) {
-  // If user wants profile, leave default link; if we intercept, load Suno embed.
-  // Ctrl/Cmd-click or middle-click still opens profile page.
+/** Play the full published Suno queue (all songs from catalog), not a handful of hardcodes. */
+function playAllSuno(e) {
   if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) return;
-  const i = PLAYLIST.findIndex((t) => t.type === "suno");
-  if (i < 0) return; // fall through to go-suno.html
-  e.preventDefault();
-  index = i;
-  setOpen(true);
-  loadTrack(true);
+  e?.preventDefault();
+
+  mode = "suno";
+  const start = () => {
+    rebuildPlaylist();
+    index = 0;
+    setOpen(true);
+    loadTrack(true);
+    updateSunoChip();
+    updateHint();
+  };
+
+  if (!catalogLoaded || !allSunoTracks.length) {
+    loadSunoCatalog().then(start);
+    return;
+  }
+  start();
+}
+
+function onAudioEnded() {
+  // Continuous play through the queue
+  if (!PLAYLIST.length) return;
+  next();
 }
 
 function wire() {
@@ -220,9 +318,22 @@ function wire() {
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
-  $("music-suno-link")?.addEventListener("click", playSunoFirst);
+  $("music-suno-link")?.addEventListener("click", playAllSuno);
+
+  const audio = $("music-audio");
+  if (audio) {
+    audio.addEventListener("ended", onAudioEnded);
+    // When one Suno file errors, skip to next so the whole queue still works
+    audio.addEventListener("error", () => {
+      if (isSunoTrack(current()) && PLAYLIST.length > 1) {
+        setTimeout(next, 400);
+      }
+    });
+  }
+
   renderList();
   loadTrack(false);
+  loadSunoCatalog();
 }
 
 if (document.readyState === "loading") {
@@ -231,4 +342,17 @@ if (document.readyState === "loading") {
   wire();
 }
 
-window.TelephantimMusic = { PLAYLIST, setOpen, next, prev, loadTrack };
+window.TelephantimMusic = {
+  get PLAYLIST() {
+    return PLAYLIST;
+  },
+  setOpen,
+  next,
+  prev,
+  loadTrack,
+  playAllSuno,
+  loadSunoCatalog,
+  get sunoCount() {
+    return sunoCount;
+  },
+};

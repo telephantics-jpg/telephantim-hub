@@ -448,11 +448,24 @@ body.sheet-open .float-actions {
 }
 .music-track-list {
   margin-top: 0.55rem;
-  max-height: 9.5rem;
+  max-height: min(42vh, 16rem);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  -webkit-overflow-scrolling: touch;
+}
+.music-list-head {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #b9a6ff;
+  padding: 0.2rem 0.15rem 0.15rem;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, rgba(12, 14, 24, 0.98), rgba(12, 14, 24, 0.88));
+  z-index: 1;
 }
 .music-track {
   appearance: none;
@@ -463,6 +476,9 @@ body.sheet-open .float-actions {
   border-radius: 10px;
   padding: 0.45rem 0.55rem;
   cursor: pointer;
+}
+.music-track.is-suno {
+  border-color: rgba(124, 92, 255, 0.28);
 }
 .music-track strong {
   display: block;
@@ -478,6 +494,10 @@ body.sheet-open .float-actions {
 .music-track.active {
   border-color: rgba(140, 100, 255, 0.55);
   background: rgba(100, 70, 200, 0.18);
+}
+.music-audio {
+  width: 100%;
+  margin-top: 0.15rem;
 }
 .music-hint {
   margin: 0.45rem 0 0;
