@@ -120,9 +120,10 @@ body.scene-external .stage {
 body.scene-external .float-actions {
   display: none;
 }
-/* Luna pages inject their own Relics|2D|3D bar — hide hub copy to avoid double */
+/* Keep hub Relics|2D|3D bar over Luna iframe (always available) */
 body.scene-external .world-switch {
-  display: none;
+  display: flex;
+  z-index: 120;
 }
 body.scene-external .music-player {
   /* keep music available over camp if user opened it */
