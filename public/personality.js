@@ -1,7 +1,18 @@
 /**
- * Overhead words of power only (no chat box). Needs server.py for AI banter.
+ * Dual relic minds — real AI when API is up (Ollama local or xAI cloud).
+ * Live static host can point API_BASE at a Render telephantim-ai service.
  */
-const API_BASE = "";
+function resolveApiBase() {
+  if (typeof window !== "undefined" && window.TELEPHANTIM_API) {
+    return String(window.TELEPHANTIM_API).replace(/\/$/, "");
+  }
+  const h = (typeof location !== "undefined" && location.hostname) || "";
+  if (h === "localhost" || h === "127.0.0.1") return "";
+  // Hosted dual-brains API (set TELEPHANTIM_API or deploy Render service with this name)
+  return "https://telephantim-ai.onrender.com";
+}
+
+const API_BASE = resolveApiBase();
 
 const boxes = {
   mjolnir: {
@@ -24,19 +35,20 @@ const bondPill = document.getElementById("bond-pill");
 
 let activePersona = "mjolnir";
 let busy = false;
+let brainsOnline = false;
 const hideTimers = { mjolnir: null, caduceus: null };
 
-/** Longer sacred + profane words of power — real chat-length bubbles */
+/** Offline fallback only — real brains come from /api when server is up */
 const WORDS_OF_POWER = {
   mjolnir: [
-    "Ha! Taste thunder, lightly salted and holy as hell. I am Mjolnir and I damn the silence that tried to keep this map quiet. By All-Father's breath and a devil's grin I name COURAGE into your bones and LIGHTNING into your next reckless good idea. Caduceus can patch the bruises — I imbue POWER. So mote it smash.",
-    "Sacred steel, profane joy, and a godsdamn laugh that cracks the clouds. I bless the grip and curse the hesitation. Wear my gift like a crown of sparks: strength, battle clarity, a lightning edge on every choice. Amen of the anvil, you beautiful bastard of fate.",
-    "Bonk with purpose, not cruelty — I'm not here to break the pharmacy, only the doubt. Holy storm, hellish spark: rise, strength. I pour POWER down your arm until the sky remembers your name. Caduceus, keep those coils ready; we evolve together whether you like the volume or not.",
+    "Ha! Taste thunder, lightly salted and holy as hell. I am Mjolnir — start OPEN_LOCAL_AI.bat or the live AI service if you want my full mind, not this echo. Still, I name COURAGE into your bones.",
+    "Sacred steel, profane joy. Offline echo only — my real brain needs the AI server. Until then: damn the doubt, hold the grip, POWER for the bold.",
+    "Bonk with purpose. Caduceus, keep those coils ready. When the brains are online we will really talk — for now, storm-strength for the wielder.",
   ],
   caduceus: [
-    "Easy, thunder-lump — some of us heal for a living and still love your boom. I am Caduceus, twin tongues speaking holy coil and hellish hiss. Damn the rot, damn the despair; I name VITALITY into blood and BALANCE into breath. Mjolnir can smash for glory. I imbue HEALING. So mote it mend.",
-    "Sacred serpents, profane laughter, and a prescription for second chances. I bless the pulse and curse the fever that tried to write your ending early. Drink this mythic medicine: recovery, resilient life-force, calm focus. Amen of the twin tongue, you stubborn miracle.",
-    "DNA slap with love, hammer. Your joy leaves cracks and I fill them with green fire and damn poetry. Hermes' whisper, underworld grin — get up and thrive. I riff off your storm-psalms and answer with life-hymns. Wielder, take my HEALING while the bond climbs. Live loud.",
+    "Easy, thunder-lump. Offline echo — my full mind needs the AI server (Ollama or xAI). Still I name VITALITY into blood and BALANCE into breath.",
+    "Sacred serpents, profane patience. Connect brains and I will truly answer Mjolnir line for line. Until then: damn the despair, live loud.",
+    "DNA slap with love. When dual minds are live we keep a real conversation. For now, HEALING for the wielder and a hiss at the silence.",
   ],
 };
 
@@ -63,22 +75,7 @@ export function showInBox(persona, text, meta, power) {
   clearTimeout(hideTimers[id]);
   hideTimers[id] = setTimeout(() => {
     b.root.classList.remove("active-speaker");
-  }, 28000);
-}
-
-/** Instant sacred/profane lines for playful brawls (no API wait). */
-export function battleQuip(attackerKind) {
-  const atk = attackerKind === "caduceus" ? "caduceus" : "mjolnir";
-  const def = atk === "mjolnir" ? "caduceus" : "mjolnir";
-  const aLine = pickWord(atk);
-  const dLine = pickWord(def);
-  setActivePersona(atk);
-  showInBox(atk, aLine, "sacred · profane", null);
-  setTimeout(() => {
-    setActivePersona(def);
-    showInBox(def, dLine, "sacred · profane", null);
-  }, 900);
-  return { attacker: atk, defender: def, aLine, dLine };
+  }, 32000);
 }
 
 async function api(path, opts) {
@@ -99,25 +96,30 @@ export async function refreshBrainPill() {
   try {
     const s = await api("/api/status");
     const ok = s && s.server === "telephantim-ai";
+    brainsOnline = !!(ok && (s.brains || s.ollama || s.xai));
     if (!brainPill) return s;
     if (!ok) {
-      brainPill.textContent = "Use OPEN_LOCAL_AI.bat";
+      brainPill.textContent = "Brains offline";
       brainPill.dataset.mode = "offline";
       return s;
     }
     if (s.ollama) {
       const mm = (s.models?.mjolnir || "llama3.2").split(":")[0];
       const mc = (s.models?.caduceus || "hermes3").split(":")[0];
-      brainPill.textContent = `AI ${mm} + ${mc}`;
+      brainPill.textContent = `Brains ${mm}+${mc}`;
+      brainPill.dataset.mode = "ollama";
+    } else if (s.xai) {
+      brainPill.textContent = "Brains xAI dual";
       brainPill.dataset.mode = "ollama";
     } else {
-      brainPill.textContent = "AI offline";
+      brainPill.textContent = "Echo only";
       brainPill.dataset.mode = "offline";
     }
     return s;
   } catch {
+    brainsOnline = false;
     if (brainPill) {
-      brainPill.textContent = "Start OPEN_LOCAL_AI.bat";
+      brainPill.textContent = API_BASE ? "Brains waking…" : "Local AI off";
       brainPill.dataset.mode = "offline";
     }
     return { ok: false };
@@ -134,12 +136,29 @@ async function refreshPower() {
   } catch (_) {}
 }
 
+/** Instant lines; prefers real dual banter when brains are online */
+export async function battleQuip(attackerKind) {
+  if (brainsOnline && !busy) {
+    banter("playful brawl — riff hard, keep the living conversation going", 2);
+    return null;
+  }
+  const atk = attackerKind === "caduceus" ? "caduceus" : "mjolnir";
+  const def = atk === "mjolnir" ? "caduceus" : "mjolnir";
+  setActivePersona(atk);
+  showInBox(atk, pickWord(atk), "echo", null);
+  setTimeout(() => {
+    setActivePersona(def);
+    showInBox(def, pickWord(def), "echo", null);
+  }, 900);
+  return { attacker: atk, defender: def };
+}
+
 export async function speak(persona, event, message) {
   if (busy) return null;
   busy = true;
   const id = persona === "caduceus" ? "caduceus" : "mjolnir";
   setActivePersona(id);
-  showInBox(id, "…", "naming…");
+  showInBox(id, "…", "thinking");
 
   try {
     const data = await api("/api/chat", {
@@ -150,7 +169,7 @@ export async function speak(persona, event, message) {
         message: message || "",
       }),
     });
-    const meta = "word of power";
+    const meta = [data.provider, data.model].filter(Boolean).join(" · ") || "word of power";
     showInBox(id, data.text || pickWord(id), meta, data.power);
     if (data.power_all) {
       if (boxes.mjolnir.power && data.power_all.mjolnir != null)
@@ -161,21 +180,22 @@ export async function speak(persona, event, message) {
     } else {
       await refreshPower();
     }
+    brainsOnline = data.provider && data.provider !== "offline";
     return data;
   } catch {
-    showInBox(id, pickWord(id), "offline word", null);
+    showInBox(id, pickWord(id), "echo · no API", null);
     return null;
   } finally {
     busy = false;
   }
 }
 
-/** Dual overhead duel: sacred & profane words, level up, imbue claims */
-export async function banter(topic) {
+/** Full dual conversation with memory on the server */
+export async function banter(topic, rounds) {
   if (busy) return null;
   busy = true;
-  showInBox("mjolnir", "…", "charging word");
-  showInBox("caduceus", "…", "charging word");
+  showInBox("mjolnir", "…", "listening…");
+  showInBox("caduceus", "…", "listening…");
 
   try {
     const data = await api("/api/banter", {
@@ -183,18 +203,21 @@ export async function banter(topic) {
       body: JSON.stringify({
         topic:
           topic ||
-          "have a LONG readable chat using WORDS OF POWER — 3 to 5 sentences each, sacred hymns mixed with profane grit — riff off each other, evolve, imbue POWER (Mjolnir) and HEALING (Caduceus)",
-        rounds: 3,
+          "continue your living conversation — riff, argue, bond, evolve; never reset; real back-and-forth",
+        rounds: rounds || 5,
       }),
     });
 
     const lines = data.lines || [];
+    brainsOnline = !!(data.brains || lines.some((l) => l.provider && l.provider !== "offline"));
     for (const line of lines) {
       const id = line.persona === "caduceus" ? "caduceus" : "mjolnir";
+      const meta = [line.provider, line.model, line.power != null ? `PWR ${line.power}` : ""]
+        .filter(Boolean)
+        .join(" · ");
       setActivePersona(id);
-      showInBox(id, line.text, "word of power", line.power);
-      // Time to actually read longer bubbles
-      const pause = Math.min(7000, 2200 + String(line.text || "").length * 28);
+      showInBox(id, line.text, meta || "living dialogue", line.power);
+      const pause = Math.min(8000, 2400 + String(line.text || "").length * 30);
       await wait(pause);
     }
 
@@ -205,22 +228,43 @@ export async function banter(topic) {
     }
     return data;
   } catch {
-    showInBox("mjolnir", pickWord("mjolnir"), "offline word", null);
-    showInBox("caduceus", pickWord("caduceus"), "offline word", null);
+    showInBox("mjolnir", pickWord("mjolnir"), "echo · no API", null);
+    showInBox("caduceus", pickWord("caduceus"), "echo · no API", null);
     return null;
   } finally {
     busy = false;
   }
 }
 
+/** Keep talking in the background when brains are online */
+let autoTalkTimer = null;
+function scheduleAutoTalk() {
+  clearTimeout(autoTalkTimer);
+  autoTalkTimer = setTimeout(async () => {
+    try {
+      await refreshBrainPill();
+      if (brainsOnline && !busy) {
+        await banter("keep the living dual dialogue going — new beat, same bond", 3);
+      }
+    } catch (_) {}
+    scheduleAutoTalk();
+  }, 48000 + Math.random() * 25000);
+}
+
 banterBtn?.addEventListener("click", () => banter());
 
 boxes.mjolnir.root?.classList.add("show");
 boxes.caduceus.root?.classList.add("show");
-refreshBrainPill();
+refreshBrainPill().then((s) => {
+  if (s?.brains || s?.ollama || s?.xai) {
+    // Opening conversation so they don't sit silent
+    setTimeout(() => banter("greet the wielder and each other — begin a real ongoing talk", 4), 1800);
+  }
+});
 refreshPower();
-setInterval(refreshBrainPill, 8000);
-setInterval(refreshPower, 12000);
+setInterval(refreshBrainPill, 10000);
+setInterval(refreshPower, 15000);
+scheduleAutoTalk();
 
 window.ArtifactAI = {
   speak,
@@ -230,4 +274,7 @@ window.ArtifactAI = {
   setActivePersona,
   refreshBrainPill,
   refreshPower,
+  get apiBase() {
+    return API_BASE;
+  },
 };

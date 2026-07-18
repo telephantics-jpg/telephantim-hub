@@ -1,0 +1,35 @@
+REAL dual brains (Mjolnir + Caduceus keep talking)
+=================================================
+
+WHAT YOU HAVE NOW
+- Server keeps MEMORY of the conversation (not 3 canned lines)
+- Relic duel = 10 turns (5 rounds) of real back-and-forth
+- Auto-talk continues every ~50s when brains are online
+- Grab / duel use the same living memory
+
+LOCAL (works with Ollama right now)
+1. Start Ollama with llama3.2 + hermes3
+2. Double-click OPEN_LOCAL_AI.bat
+3. Open http://127.0.0.1:8765/
+4. Hit Relic duel — both minds answer for real
+
+LIVE telephantim.com
+The public site is static GitHub Pages. Brains need an API host:
+
+1. Render.com → New → Web Service
+2. Repo: telephantics-jpg/telephantim-hub  Branch: master
+3. Start command: python server.py
+4. Env vars:
+   PREFER_XAI=1
+   XAI_API_KEY=your_key_from_console.x.ai
+   XAI_MODEL=grok-3
+   PORT=10000
+5. Name the service: telephantim-ai
+   URL must be: https://telephantim-ai.onrender.com
+   (or set window.TELEPHANTIM_API in the page)
+
+NOTE: xAI account needs available credits or calls fall back to Ollama (local only)
+      or offline echoes.
+
+personality.js already points live pages at:
+  https://telephantim-ai.onrender.com

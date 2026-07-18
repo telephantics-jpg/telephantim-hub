@@ -1,0 +1,21 @@
+# Dual-brain API for telephantim.com (Ollama local OR XAI_API_KEY cloud)
+# Render: New Web Service → this repo → start command below
+services:
+  - type: web
+    name: telephantim-ai
+    runtime: python
+    plan: free
+    branch: master
+    buildCommand: "pip install -r requirements.txt || true"
+    startCommand: "python server.py"
+    envVars:
+      - key: PREFER_XAI
+        value: "1"
+      - key: TELEPHANTIM_PORT
+        value: "10000"
+      - key: PORT
+        value: "10000"
+      - key: XAI_API_KEY
+        sync: false
+      - key: XAI_MODEL
+        value: grok-3
