@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=47" />
+  <link rel="stylesheet" href="styles.css?v=48" />
 </head>
 <body class="scene-native" data-scene="telephantim">
   <div class="flash" id="flash"></div>
@@ -28,9 +28,41 @@
     <a class="btn-chip btn-luna" id="scene-fallback-open" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener">Open Luna Camp full page</a>
   </div>
 
-  <!-- Compact 3-tab world picker — same control on hub + Luna (mobile-safe) -->
+  <!-- Beacons-style Bio: your video/image bg (fixed) + scrollable quote & links -->
+  <section class="bio-page" id="bio-page" hidden aria-label="Bio">
+    <div class="bio-media" aria-hidden="true">
+      <video
+        id="bio-video"
+        class="bio-video"
+        muted
+        loop
+        playsinline
+        autoplay
+        preload="metadata"
+        hidden
+      ></video>
+      <div id="bio-image" class="bio-image" hidden></div>
+    </div>
+    <div class="bio-scrim" aria-hidden="true"></div>
+    <div class="bio-scroll">
+      <div class="bio-card">
+        <img id="bio-avatar" class="bio-avatar" alt="" width="88" height="88" />
+        <h1 id="bio-name" class="bio-name">Telephantix</h1>
+        <p id="bio-handle" class="bio-handle">@telephantix</p>
+        <blockquote class="bio-quote">
+          <p id="bio-quote-text"></p>
+          <cite id="bio-quote-by"></cite>
+        </blockquote>
+        <p class="bio-hint">Drop media/bg.mp4 or media/bg.jpg · edit bio-config.js</p>
+        <div class="bio-links" id="bio-links"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Compact world picker — Relics · Bio · 2D · 3D -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
     <button type="button" class="world-tab active" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
+    <button type="button" class="world-tab" data-scene="bio" title="Bio — video or photo background (Beacons-style)">Bio</button>
     <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
     <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
   </nav>
@@ -47,7 +79,7 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v47 DUAL</div>
+        <div class="badge">LIVE v48 DUAL</div>
       </div>
     </div>
 
@@ -295,7 +327,7 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API for public dual Ollama brains (any visitor) -->
-  <script src="api-config.js?v=47"></script>
+  <script src="api-config.js?v=48"></script>
   <script type="importmap">
   {
     "imports": {
@@ -304,10 +336,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=47"></script>
-  <script type="module" src="music.js?v=47"></script>
-  <script type="module" src="personality.js?v=47"></script>
-  <script type="module" src="mjolnir.js?v=47"></script>
+  <script type="module" src="scenes.js?v=48"></script>
+  <script type="module" src="bio.js?v=48"></script>
+  <script type="module" src="music.js?v=48"></script>
+  <script type="module" src="personality.js?v=48"></script>
+  <script type="module" src="mjolnir.js?v=48"></script>
   <script>
     // Sheet "Play music here" opens the floating player
     document.getElementById("btn-music-sheet")?.addEventListener("click", function () {

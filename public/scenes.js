@@ -1,6 +1,6 @@
 /**
- * Compact world switcher — full-screen Telephantim / Luna 2D / Luna 3D.
- * Same 3-tab control on every world (hub + postMessage from Luna iframes).
+ * Compact world switcher — Relics / Bio / Luna 2D / Luna 3D.
+ * Bio = Beacons-style page (your video/image bg + scroll quote & links).
  */
 
 const SCENES = {
@@ -10,6 +10,15 @@ const SCENES = {
     short: "Relics",
     hint: "Mjolnir + Caduceus · grab either",
     url: null,
+    mode: "relics",
+  },
+  bio: {
+    id: "bio",
+    label: "Bio",
+    short: "Bio",
+    hint: "Beacons-style · your video or photo background",
+    url: null,
+    mode: "bio",
   },
   "luna-2d": {
     id: "luna-2d",
@@ -17,6 +26,7 @@ const SCENES = {
     short: "2D",
     hint: "Luna Camp 2D",
     url: "https://telephanti.com/firmament/play",
+    mode: "external",
   },
   "luna-3d": {
     id: "luna-3d",
@@ -24,6 +34,7 @@ const SCENES = {
     short: "3D",
     hint: "Luna Camp 3D",
     url: "https://telephanti.com/firmament/3d",
+    mode: "external",
   },
 };
 
@@ -45,6 +56,7 @@ function readHash() {
   if (h === "luna" || h === "camp" || h === "luna2d" || h === "2d") return "luna-2d";
   if (h === "luna3d" || h === "3d") return "luna-3d";
   if (h === "relics" || h === "hub" || h === "home") return "telephantim";
+  if (h === "bio" || h === "beacons" || h === "links" || h === "quote") return "bio";
   return normalizeScene(h);
 }
 
@@ -72,16 +84,24 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   const scene = SCENES[sceneId];
   current = sceneId;
 
+  const isExternal = !!scene.url;
+  const isBio = scene.mode === "bio";
+  const isRelics = sceneId === "telephantim";
+
   document.body.dataset.scene = sceneId;
-  document.body.classList.toggle("scene-external", !!scene.url);
-  document.body.classList.toggle("scene-native", !scene.url);
-  // Never leave the hub pay-sheet open over Luna — it covers the talk menu
-  if (scene.url) {
+  document.body.classList.toggle("scene-external", isExternal);
+  document.body.classList.toggle("scene-bio", isBio);
+  document.body.classList.toggle("scene-native", isRelics);
+  // Never leave the hub pay-sheet open over Luna/Bio — covers content
+  if (isExternal || isBio) {
     document.body.classList.remove("sheet-open");
   }
 
   const frame = $("scene-frame");
   const fallback = $("scene-fallback");
+  const bioPage = $("bio-page");
+
+  if (bioPage) bioPage.hidden = !isBio;
 
   if (scene.url && frame) {
     if (frame.getAttribute("data-src") !== scene.url) {
@@ -116,13 +136,14 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   }
   if (!fromHash) writeHash(sceneId);
 
+  // Only run WebGL on Relics
   window.dispatchEvent(
     new CustomEvent("telephantim-scene", {
-      detail: { scene: sceneId, active: !scene.url },
+      detail: { scene: sceneId, active: isRelics },
     })
   );
 
-  if (!scene.url) {
+  if (isRelics) {
     window.dispatchEvent(new Event("resize"));
   }
 }
