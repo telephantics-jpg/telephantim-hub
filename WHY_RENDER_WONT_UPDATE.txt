@@ -1,0 +1,75 @@
+WHY Manual Deploy is NOT changing telephantim.com
+=================================================
+
+DIAGNOSIS (confirmed)
+---------------------
+1. Dual Mjolnir + Caduceus LIVE build IS on GitHub:
+   https://telephantics-jpg.github.io/telephantim-hub/
+   Badge: "LIVE v24 DUAL"
+   Both relics, Hide button, bubbles.
+
+2. telephantim.com is STILL a DIFFERENT old site:
+   Title: "Telephantim - Home"
+   NO Caduceus, NO "LIVE v24", NO BUILD_ID.txt
+   Hosted on Render IP 216.24.57.1
+   mjolnir.js is the OLD ~15KB single-hammer file
+
+3. So Manual Deploy either:
+   A) Deploys a DIFFERENT service (not the one with the domain), or
+   B) Service is NOT connected to repo telephantics-jpg/telephantim-hub master, or
+   C) Service is a manual/static upload, not Git-connected, or
+   D) Publish Directory points at empty/wrong folder so old files stay
+
+Pressing Manual Deploy on the wrong settings republishes the SAME old site.
+
+
+FIX OPTION 1 — Make Render actually serve THIS repo (recommended if keeping Render)
+---------------------------------------------------------------------------------
+1. Open https://dashboard.render.com
+2. Find the service whose Custom Domain = telephantim.com
+   (Settings -> Custom Domains — not just any service named similar)
+3. On THAT service only:
+   Settings -> Build & Deploy
+   - Repository: telephantics-jpg / telephantim-hub
+   - Branch: master
+   - Root Directory: LEAVE EMPTY
+   - Publish Directory: LEAVE EMPTY  (or ".")
+   - Auto-Deploy: Yes
+4. If Repository is blank or different → Connect GitHub → pick telephantim-hub
+5. Manual Deploy -> Clear build cache & deploy  (important!)
+6. When done, open:
+   https://telephantim.com/BUILD_ID.txt
+   Must say: DUAL-MJOLNIR-CADUCEUS-LIVE-v24-...
+   If 404, Render is STILL not publishing this repo.
+
+
+FIX OPTION 2 — Point telephantim.com at the working GitHub dual site
+-------------------------------------------------------------------
+DNS (where you bought the domain / Cloudflare / Squarespace):
+
+  DELETE old A record for @ that says 216.24.57.1 (Render)
+
+  ADD:
+  Type A      Name @     185.199.108.153
+  Type A      Name @     185.199.109.153
+  Type A      Name @     185.199.110.153
+  Type A      Name @     185.199.111.153
+  Type CNAME  Name www   telephantics-jpg.github.io
+
+Then GitHub repo Settings -> Pages -> Custom domain: telephantim.com
+Wait 5–30 min. Hard refresh.
+
+
+PROVE dual works RIGHT NOW (no wait)
+------------------------------------
+https://telephantics-jpg.github.io/telephantim-hub/
+
+You must see badge: LIVE v24 DUAL
+Hammer LEFT + Caduceus RIGHT
+
+
+Offline dual files (same build)
+-------------------------------
+C:\Users\Stood\telephantix-demo\
+C:\Users\Stood\TELEPHANTIM_UPLOAD\
+'@
