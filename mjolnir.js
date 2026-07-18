@@ -19,8 +19,29 @@ function isMobile() {
 }
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05070c);
-scene.fog = new THREE.FogExp2(0x05070c, 0.028);
+// Video background (your clip) — 3D relics stay fully interactive on top
+const stageBgVideo = document.getElementById("stage-bg-video");
+if (stageBgVideo) {
+  stageBgVideo.muted = true;
+  stageBgVideo.defaultMuted = true;
+  stageBgVideo.loop = true;
+  stageBgVideo.playsInline = true;
+  stageBgVideo.setAttribute("playsinline", "");
+  const kick = () => stageBgVideo.play().catch(() => {});
+  stageBgVideo.addEventListener("loadeddata", kick);
+  stageBgVideo.addEventListener("canplay", kick);
+  kick();
+  const bgTex = new THREE.VideoTexture(stageBgVideo);
+  if ("colorSpace" in bgTex) bgTex.colorSpace = THREE.SRGBColorSpace;
+  else if ("encoding" in bgTex) bgTex.encoding = THREE.sRGBEncoding;
+  bgTex.minFilter = THREE.LinearFilter;
+  bgTex.magFilter = THREE.LinearFilter;
+  scene.background = bgTex;
+} else {
+  scene.background = new THREE.Color(0x05070c);
+}
+// Lighter fog so the video reads behind the relics
+scene.fog = new THREE.FogExp2(0x0a1020, 0.012);
 
 const { w: sw0, h: sh0 } = stageSize();
 const camera = new THREE.PerspectiveCamera(isMobile() ? 28 : 34, sw0 / sh0, 0.1, 100);
@@ -1091,6 +1112,10 @@ let sceneActive = true;
 window.addEventListener("telephantim-scene", (e) => {
   const d = e.detail || {};
   sceneActive = d.active !== false && d.scene === "telephantim";
+  if (stageBgVideo) {
+    if (sceneActive) stageBgVideo.play().catch(() => {});
+    else stageBgVideo.pause();
+  }
   if (sceneActive) {
     try {
       clock.getDelta(); // reset dt spike after pause
