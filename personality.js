@@ -1,15 +1,16 @@
 /**
- * Dual relic speech.
- * - Local: OPEN_LOCAL_AI.bat + Ollama → same-origin /api/*
- * - Live telephantim.com: static host only unless you set window.TELEPHANTIM_API
- *   to a public bridge (Ollama tunnel or cloud). Never talk about that in character.
+ * Dual relic speech for ANY browser when a public API is set (api-config.js / TELEPHANTIM_API).
+ * Local: OPEN_LOCAL_AI.bat → same-origin /api/* (Ollama: Mjolnir=llama3.2, Caduceus=hermes3).
+ * Public: GO_PUBLIC_BRAINS.bat tunnels that server so telephantim.com visitors share the same minds.
+ * Characters never mention tech.
  */
 function resolveApiBase() {
   if (typeof window !== "undefined" && window.TELEPHANTIM_API) {
     return String(window.TELEPHANTIM_API).replace(/\/$/, "");
   }
-  // Same origin only (works with server.py locally / if domain serves the AI server).
-  // Do NOT guess a dead Render URL — that falsely "connects" then fails.
+  const h = (typeof location !== "undefined" && location.hostname) || "";
+  if (h === "localhost" || h === "127.0.0.1") return "";
+  // Live pages: same-origin has no /api — need TELEPHANTIM_API from api-config.js
   return "";
 }
 
