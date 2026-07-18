@@ -1,6 +1,6 @@
 /**
- * World / scene switcher — full-screen Telephantim relics, Luna Camp 2D, Luna Camp 3D.
- * Luna camps load in-page (iframe) so telephantim.com stays the shell.
+ * Compact world switcher — full-screen Telephantim / Luna 2D / Luna 3D.
+ * Same 3-tab control on every world (hub + postMessage from Luna iframes).
  */
 
 const SCENES = {
@@ -9,20 +9,20 @@ const SCENES = {
     label: "Telephantim",
     short: "Relics",
     hint: "Mjolnir + Caduceus · grab either",
-    url: null, // native stage
+    url: null,
   },
   "luna-2d": {
     id: "luna-2d",
     label: "Luna Camp 2D",
-    short: "Luna 2D",
-    hint: "2D Luna Camp · telephanti.com/firmament/play",
+    short: "2D",
+    hint: "Luna Camp 2D",
     url: "https://telephanti.com/firmament/play",
   },
   "luna-3d": {
     id: "luna-3d",
     label: "Luna Camp 3D",
-    short: "Luna 3D",
-    hint: "3D Luna Camp · telephanti.com/firmament/3d",
+    short: "3D",
+    hint: "Luna Camp 3D",
     url: "https://telephanti.com/firmament/3d",
   },
 };
@@ -30,7 +30,6 @@ const SCENES = {
 const STORAGE_KEY = "telephantim-scene";
 
 let current = "telephantim";
-let menuOpen = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -55,28 +54,16 @@ function writeHash(id) {
   history.replaceState(null, "", next || location.pathname + location.search);
 }
 
-function setMenuOpen(open) {
-  menuOpen = !!open;
-  const menu = $("world-menu");
-  const btn = $("world-toggle");
-  if (menu) menu.hidden = !menuOpen;
-  if (btn) {
-    btn.setAttribute("aria-expanded", menuOpen ? "true" : "false");
-    btn.classList.toggle("open", menuOpen);
-  }
-}
-
 function updateChrome(scene) {
-  const label = $("world-toggle-label");
-  if (label) label.textContent = scene.short || scene.label;
-
   const hint = $("grab-hint");
   if (hint) hint.textContent = scene.hint;
 
   document.querySelectorAll("[data-scene]").forEach((el) => {
     const on = el.getAttribute("data-scene") === scene.id;
     el.classList.toggle("active", on);
-    el.setAttribute("aria-current", on ? "true" : "false");
+    if (el.hasAttribute("aria-current") || el.classList.contains("world-tab")) {
+      el.setAttribute("aria-current", on ? "true" : "false");
+    }
   });
 }
 
@@ -93,7 +80,6 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   const fallback = $("scene-fallback");
 
   if (scene.url && frame) {
-    // Only reload if URL changed (keeps camp state when reopening menu)
     if (frame.getAttribute("data-src") !== scene.url) {
       frame.setAttribute("data-src", scene.url);
       frame.src = scene.url;
@@ -110,7 +96,6 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
     }
   } else if (frame) {
     frame.hidden = true;
-    // Unload heavy camp when back on relics (saves GPU/RAM)
     if (frame.getAttribute("data-src")) {
       frame.removeAttribute("data-src");
       frame.removeAttribute("src");
@@ -119,7 +104,6 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   }
 
   updateChrome(scene);
-  setMenuOpen(false);
 
   if (persist) {
     try {
@@ -128,48 +112,54 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   }
   if (!fromHash) writeHash(sceneId);
 
-  // Tell 3D loop to pause/resume
   window.dispatchEvent(
-    new CustomEvent("telephantim-scene", { detail: { scene: sceneId, active: !scene.url } })
+    new CustomEvent("telephantim-scene", {
+      detail: { scene: sceneId, active: !scene.url },
+    })
   );
 
-  // Nudge resize when returning to WebGL
   if (!scene.url) {
     window.dispatchEvent(new Event("resize"));
   }
 }
 
+function onWorldClick(e) {
+  const btn = e.target.closest?.("[data-scene]");
+  if (!btn) return;
+  // Only handle our world controls (tabs / sheet / menu), not random links
+  if (
+    !btn.classList.contains("world-tab") &&
+    !btn.classList.contains("world-opt") &&
+    !btn.classList.contains("link-btn") &&
+    btn.tagName !== "BUTTON"
+  ) {
+    return;
+  }
+  e.preventDefault();
+  setScene(btn.getAttribute("data-scene"));
+  document.body.classList.remove("sheet-open");
+}
+
 function wire() {
-  const toggle = $("world-toggle");
-  const menu = $("world-menu");
+  const bar = $("world-switch");
+  bar?.addEventListener("click", onWorldClick);
 
-  toggle?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    setMenuOpen(!menuOpen);
-  });
+  // Sheet world buttons
+  $("sheet-body")?.addEventListener("click", onWorldClick);
 
-  menu?.addEventListener("click", (e) => {
-    const btn = e.target.closest?.("[data-scene]");
-    if (!btn) return;
-    e.preventDefault();
-    setScene(btn.getAttribute("data-scene"));
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!menuOpen) return;
-    if (e.target.closest?.("#world-switch")) return;
-    setMenuOpen(false);
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setMenuOpen(false);
+  // Luna camp (iframe) → same tabs via postMessage
+  window.addEventListener("message", (e) => {
+    const d = e.data;
+    if (!d || d.source !== "telephantim-world-nav") return;
+    if (d.type === "set-scene" && d.scene) {
+      setScene(d.scene);
+    }
   });
 
   window.addEventListener("hashchange", () => {
     setScene(readHash(), { fromHash: true });
   });
 
-  // Initial: hash > saved > telephantim
   let start = readHash();
   if (!location.hash) {
     try {
@@ -186,4 +176,10 @@ if (document.readyState === "loading") {
   wire();
 }
 
-window.TelephantimScenes = { setScene, SCENES, get current() { return current; } };
+window.TelephantimScenes = {
+  setScene,
+  SCENES,
+  get current() {
+    return current;
+  },
+};

@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=43" />
+  <link rel="stylesheet" href="styles.css?v=44" />
 </head>
 <body class="scene-native" data-scene="telephantim">
   <div class="flash" id="flash"></div>
@@ -28,29 +28,12 @@
     <a class="btn-chip btn-luna" id="scene-fallback-open" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener">Open Luna Camp full page</a>
   </div>
 
-  <!-- Always-on world picker (dropdown) -->
-  <div class="world-switch" id="world-switch">
-    <button type="button" class="world-toggle" id="world-toggle" aria-expanded="false" aria-haspopup="true" aria-controls="world-menu" title="Switch world">
-      <span class="world-toggle-mark" aria-hidden="true">◎</span>
-      <span id="world-toggle-label">Relics</span>
-      <span class="world-caret" aria-hidden="true">▾</span>
-    </button>
-    <div class="world-menu" id="world-menu" role="menu" hidden>
-      <p class="world-menu-title">Show on screen</p>
-      <button type="button" class="world-opt active" role="menuitem" data-scene="telephantim">
-        <strong>Telephantim</strong>
-        <span>Mjolnir + Caduceus hub</span>
-      </button>
-      <button type="button" class="world-opt" role="menuitem" data-scene="luna-2d">
-        <strong>Luna Camp 2D</strong>
-        <span>firmament / play</span>
-      </button>
-      <button type="button" class="world-opt" role="menuitem" data-scene="luna-3d">
-        <strong>Luna Camp 3D</strong>
-        <span>firmament / 3d</span>
-      </button>
-    </div>
-  </div>
+  <!-- Compact 3-tab world picker — same control on hub + Luna (mobile-safe) -->
+  <nav class="world-switch" id="world-switch" aria-label="Switch world">
+    <button type="button" class="world-tab active" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
+    <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
+    <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
+  </nav>
 
   <!-- Full-screen 3D relics: Mjolnir + Caduceus (both always on stage) -->
   <section class="stage" id="stage-telephantim" aria-label="3D relics">
@@ -64,7 +47,7 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v43 DUAL</div>
+        <div class="badge">LIVE v44 DUAL</div>
       </div>
     </div>
 
@@ -98,9 +81,6 @@
         Hide v
       </button>
       <div class="float-actions-main" id="float-actions-main">
-        <button type="button" class="btn-luna" id="btn-worlds-open" title="Switch world on this screen">
-          Worlds
-        </button>
         <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
           <span id="btn-music-label">Play music</span>
         </button>
@@ -344,7 +324,7 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API for public dual Ollama brains (any visitor) -->
-  <script src="api-config.js?v=43"></script>
+  <script src="api-config.js?v=44"></script>
   <script type="importmap">
   {
     "imports": {
@@ -353,26 +333,14 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=43"></script>
-  <script type="module" src="music.js?v=43"></script>
-  <script type="module" src="personality.js?v=43"></script>
-  <script type="module" src="mjolnir.js?v=43"></script>
+  <script type="module" src="scenes.js?v=44"></script>
+  <script type="module" src="music.js?v=44"></script>
+  <script type="module" src="personality.js?v=44"></script>
+  <script type="module" src="mjolnir.js?v=44"></script>
   <script>
     // Sheet "Play music here" opens the floating player
     document.getElementById("btn-music-sheet")?.addEventListener("click", function () {
       window.TelephantimMusic?.setOpen(true);
-      document.body.classList.remove("sheet-open");
-    });
-    // Worlds chip opens the same dropdown as the top-right switcher
-    document.getElementById("btn-worlds-open")?.addEventListener("click", function () {
-      document.getElementById("world-toggle")?.click();
-    });
-    // Sheet world buttons (data-scene) handled by scenes.js via document click on [data-scene]
-    document.getElementById("sheet-body")?.addEventListener("click", function (e) {
-      var btn = e.target.closest && e.target.closest("[data-scene]");
-      if (!btn || !window.TelephantimScenes) return;
-      e.preventDefault();
-      window.TelephantimScenes.setScene(btn.getAttribute("data-scene"));
       document.body.classList.remove("sheet-open");
     });
   </script>
