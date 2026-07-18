@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=37" />
+  <link rel="stylesheet" href="styles.css?v=38" />
 </head>
 <body>
   <div class="flash" id="flash"></div>
@@ -26,7 +26,7 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v37 DUAL</div>
+        <div class="badge">LIVE v38 DUAL</div>
       </div>
     </div>
 
@@ -63,9 +63,43 @@
         <a class="btn-luna" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
           Luna Camp
         </a>
+        <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
+          <span id="btn-music-label">Play music</span>
+        </button>
         <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
         <button type="button" class="btn-chip" id="btn-strike">Strike</button>
         <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
+      </div>
+    </div>
+
+    <!-- Floating music player (Suno profile + Spotify / YouTube playable embeds) -->
+    <div class="music-player" id="music-player" aria-label="Music player" hidden>
+      <div class="music-player-inner">
+        <div class="music-head">
+          <div>
+            <strong class="music-brand">Telephantix Radio</strong>
+            <p class="music-now"><span id="music-now-title">Ready</span><br /><span id="music-now-sub" class="music-sub"></span></p>
+          </div>
+          <button type="button" class="music-x" id="music-close" aria-label="Close player">×</button>
+        </div>
+        <div class="music-controls">
+          <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
+          <button type="button" class="btn-chip ghost" id="music-next">Next</button>
+          <a class="btn-chip btn-suno" id="music-suno-link" href="https://suno.com/@telephantix" target="_blank" rel="noopener">Suno @telephantix</a>
+        </div>
+        <div class="music-stage">
+          <iframe
+            id="music-embed"
+            class="music-embed"
+            title="Music player"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+          <audio id="music-audio" class="music-audio" controls hidden></audio>
+        </div>
+        <div class="music-track-list" id="music-track-list"></div>
+        <p class="music-hint">Tip: add individual Suno song links in music.js for one-tap Suno embeds.</p>
       </div>
     </div>
   </section>
@@ -155,6 +189,16 @@
             <span><strong>Spotify</strong><small>Album</small></span>
             <span class="arr" aria-hidden="true">&rarr;</span>
           </a>
+          <a class="link" href="https://suno.com/@telephantix" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-suno" aria-hidden="true">SU</span>
+            <span><strong>Suno</strong><small>@telephantix — AI songs</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <button type="button" class="link link-btn" id="btn-music-sheet">
+            <span class="ico ico-suno" aria-hidden="true">▶</span>
+            <span><strong>Play music here</strong><small>Spotify / YouTube / Suno player</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </button>
           <a class="link" href="https://telephanti.com/" target="_blank" rel="noopener noreferrer">
             <span class="ico ico-luna" aria-hidden="true">LU</span>
             <span><strong>Luna home</strong><small>telephanti.com</small></span>
@@ -252,7 +296,7 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API for public dual Ollama brains (any visitor) -->
-  <script src="api-config.js?v=37"></script>
+  <script src="api-config.js?v=38"></script>
   <script type="importmap">
   {
     "imports": {
@@ -261,7 +305,15 @@
     }
   }
   </script>
-  <script type="module" src="personality.js?v=37"></script>
-  <script type="module" src="mjolnir.js?v=37"></script>
+  <script type="module" src="music.js?v=38"></script>
+  <script type="module" src="personality.js?v=38"></script>
+  <script type="module" src="mjolnir.js?v=38"></script>
+  <script>
+    // Sheet "Play music here" opens the floating player
+    document.getElementById("btn-music-sheet")?.addEventListener("click", function () {
+      window.TelephantimMusic?.setOpen(true);
+      document.body.classList.remove("sheet-open");
+    });
+  </script>
 </body>
 </html>
