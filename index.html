@@ -8,7 +8,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=22" />
+  <link rel="stylesheet" href="styles.css?v=23" />
 </head>
 <body>
   <div class="flash" id="flash"></div>
@@ -20,12 +20,12 @@
     <div class="topbar">
       <div class="brand">
         <h1>Telephantim</h1>
-        <p id="grab-hint">Longer chats above each speaker · grab · Relic duel</p>
+        <p id="grab-hint">Zoomed out · centered · grab either relic</p>
       </div>
       <div class="badge-stack">
         <div class="badge" id="brain-pill">AI …</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v22</div>
+        <div class="badge">LIVE v23</div>
       </div>
     </div>
 
@@ -49,13 +49,18 @@
       </div>
     </div>
 
-    <div class="float-actions">
-      <a class="btn-luna" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
-        Luna Camp
-      </a>
-      <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
-      <button type="button" class="btn-chip" id="btn-strike">Strike</button>
-      <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
+    <div class="float-actions" id="float-actions">
+      <button type="button" class="btn-chip btn-min" id="btn-actions-toggle" aria-expanded="true" title="Hide action buttons">
+        Hide ▾
+      </button>
+      <div class="float-actions-main" id="float-actions-main">
+        <a class="btn-luna" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
+          Luna Camp
+        </a>
+        <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
+        <button type="button" class="btn-chip" id="btn-strike">Strike</button>
+        <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
+      </div>
     </div>
   </section>
 
@@ -66,7 +71,7 @@
       <div class="sheet-handle-row">
         <div>
           <strong>Pay · Music · Socials</strong>
-          <span class="sub" id="sheet-hint">Tap here to open — then scroll the list</span>
+          <span class="sub" id="sheet-hint">Tap to open or minimize</span>
         </div>
         <span class="sheet-toggle" id="sheet-toggle-label">Open ▲</span>
       </div>
@@ -179,44 +184,48 @@
   </div>
 
   <script>
-    // Sheet open / close + ensure list scrolls on phone
+    // Sheet open/minimize + action-button tray
     (function () {
       var body = document.body;
       var btn = document.getElementById("sheet-toggle");
       var label = document.getElementById("sheet-toggle-label");
       var hint = document.getElementById("sheet-hint");
       var sheetBody = document.getElementById("sheet-body");
-      if (!btn) return;
-
-      function isDesktop() {
-        return window.matchMedia("(min-width: 900px)").matches;
-      }
+      var actionsToggle = document.getElementById("btn-actions-toggle");
+      var actionsWrap = document.getElementById("float-actions");
 
       function setOpen(open) {
         body.classList.toggle("sheet-open", !!open);
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        if (label) label.textContent = open ? "Close ▼" : "Open ▲";
+        if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (label) label.textContent = open ? "Minimize ▾" : "Open ▲";
         if (hint) {
           hint.textContent = open
-            ? "Scroll this list for PayPal, Cash App…"
-            : "Tap here to open — then scroll the list";
+            ? "Scroll list · tap bar to minimize"
+            : "Tap bar to open Pay · Music · Socials";
         }
-        if (open && sheetBody) {
-          // reset scroll to top when opening
-          sheetBody.scrollTop = 0;
-        }
+        if (open && sheetBody) sheetBody.scrollTop = 0;
       }
 
-      // Desktop: menu always "open". Mobile: start closed so full hammer shows.
-      setOpen(isDesktop());
+      // Start minimized so 3D is centered and clear on phone + desktop
+      setOpen(false);
 
-      btn.addEventListener("click", function (e) {
-        e.preventDefault();
-        if (isDesktop()) return;
-        setOpen(!body.classList.contains("sheet-open"));
-      });
+      if (btn) {
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          setOpen(!body.classList.contains("sheet-open"));
+        });
+      }
 
-      // Stop 3D canvas from eating touches inside the sheet
+      if (actionsToggle && actionsWrap) {
+        actionsToggle.addEventListener("click", function (e) {
+          e.preventDefault();
+          var collapsed = actionsWrap.classList.toggle("collapsed");
+          actionsToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          actionsToggle.textContent = collapsed ? "Buttons ▴" : "Hide ▾";
+          actionsToggle.title = collapsed ? "Show action buttons" : "Hide action buttons";
+        });
+      }
+
       var sheet = document.getElementById("link-sheet");
       if (sheet) {
         ["touchstart", "touchmove", "wheel"].forEach(function (ev) {
@@ -234,7 +243,7 @@
     }
   }
   </script>
-  <script type="module" src="personality.js?v=22"></script>
-  <script type="module" src="mjolnir.js?v=22"></script>
+  <script type="module" src="personality.js?v=23"></script>
+  <script type="module" src="mjolnir.js?v=23"></script>
 </body>
 </html>

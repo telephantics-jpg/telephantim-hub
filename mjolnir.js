@@ -23,9 +23,9 @@ scene.background = new THREE.Color(0x05070c);
 scene.fog = new THREE.FogExp2(0x05070c, 0.028);
 
 const { w: sw0, h: sh0 } = stageSize();
-const camera = new THREE.PerspectiveCamera(isMobile() ? 32 : 40, sw0 / sh0, 0.1, 100);
-// Start zoomed further out — phones need extra room for both relics + bubbles
-camera.position.set(isMobile() ? 0 : 1.6, isMobile() ? 2.15 : 2.05, isMobile() ? 11.8 : 8.2);
+const camera = new THREE.PerspectiveCamera(isMobile() ? 30 : 36, sw0 / sh0, 0.1, 100);
+// Start zoomed out + centered on both relics
+camera.position.set(0, isMobile() ? 2.4 : 2.2, isMobile() ? 13.5 : 10.5);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -39,9 +39,9 @@ wrap.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.minDistance = 3.2;
-controls.maxDistance = 20;
-controls.target.set(0, 1.15, 0);
+controls.minDistance = 3.5;
+controls.maxDistance = 22;
+controls.target.set(0, 1.1, 0);
 controls.autoRotate = true;
 controls.autoRotateSpeed = 1.0;
 controls.maxPolarAngle = Math.PI * 0.92;
@@ -613,11 +613,11 @@ composer.addPass(new OutputPass());
 
 function fitCameraDefault() {
   const mobile = isMobile();
-  // Wider framing so both agents + overhead dialogue stay on screen
-  camera.position.set(mobile ? 0 : 1.6, mobile ? 2.15 : 2.05, mobile ? 11.8 : 8.2);
-  camera.fov = mobile ? 32 : 40;
+  // Centered + zoomed out so hammer + staff both frame cleanly
+  camera.position.set(0, mobile ? 2.4 : 2.2, mobile ? 13.5 : 10.5);
+  camera.fov = mobile ? 30 : 36;
   camera.updateProjectionMatrix();
-  controls.target.set(0, 1.15, 0);
+  controls.target.set(0, 1.1, 0);
   controls.update();
 }
 
@@ -699,7 +699,7 @@ function projectOntoDragPlane(event, target, worldPos) {
 
 function isUiTarget(event) {
   return !!event.target.closest?.(
-    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .topbar, a, button, input, .float-actions, .dbox, .dialogue-layer"
+    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .dbox, .dialogue-layer"
   );
 }
 
@@ -1062,13 +1062,14 @@ window.addEventListener("keydown", (e) => {
 function resize() {
   const { w, h } = stageSize();
   camera.aspect = w / h;
-  camera.fov = isMobile() ? 32 : 40;
+  camera.fov = isMobile() ? 30 : 36;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   bloom.setSize(w, h);
   controls.enablePan = !isMobile();
-  if (isMobile()) controls.target.set(0, 1.2, 0);
+  // Keep look target centered on the pair
+  controls.target.set(0, 1.1, 0);
 }
 
 window.addEventListener("resize", resize);

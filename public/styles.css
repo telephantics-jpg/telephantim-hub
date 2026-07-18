@@ -241,7 +241,7 @@ a { color: inherit; text-decoration: none; }
 
 .float-actions {
   position: absolute;
-  z-index: 5;
+  z-index: 12;
   left: 0.65rem;
   right: 0.65rem;
   bottom: calc(var(--sheet-peek) + 12px + var(--safe-bottom));
@@ -250,10 +250,40 @@ a { color: inherit; text-decoration: none; }
   gap: 0.4rem;
   align-items: center;
   transition: bottom 0.25s ease;
+  pointer-events: none;
 }
+.float-actions > * { pointer-events: auto; }
 
 body.sheet-open .float-actions {
   bottom: calc(55vh + 12px + var(--safe-bottom));
+}
+
+.float-actions-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  max-height: 200px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.2s ease;
+}
+
+/* Minimized: only the Hide/Buttons chip stays */
+.float-actions.collapsed .float-actions-main {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+.btn-min {
+  border-color: rgba(138, 155, 176, 0.55) !important;
+  color: #dce6f5 !important;
+  background: rgba(12, 18, 32, 0.92) !important;
+  font-weight: 700;
+  min-width: 5.5rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
 }
 
 .btn-luna {
@@ -480,7 +510,7 @@ body:not(.sheet-open) .sheet-body {
 
 .flash.active { opacity: 1; }
 
-/* ===== DESKTOP: side panel that ALWAYS scrolls ===== */
+/* ===== DESKTOP: collapsible side panel + minimize control ===== */
 @media (min-width: 900px) {
   .brand p { display: block; }
   .brand h1 { font-size: 1.2rem; }
@@ -488,25 +518,32 @@ body:not(.sheet-open) .sheet-body {
   .sheet {
     left: auto;
     right: 12px;
-    top: 12px;
+    top: auto;
     bottom: 12px;
     width: min(380px, 34vw);
-    height: auto !important;
-    max-height: none;
+    height: auto;
+    max-height: calc(var(--sheet-peek) + 8px);
     border-radius: 18px;
     border: 1px solid rgba(201,162,39,0.25);
+    transition: max-height 0.28s ease, height 0.28s ease;
   }
 
-  body.sheet-open .sheet,
+  body.sheet-open .sheet {
+    top: 12px;
+    height: auto !important;
+    max-height: calc(100vh - 24px);
+  }
+
   body:not(.sheet-open) .sheet {
     height: auto !important;
+    max-height: 88px;
   }
 
   body:not(.sheet-open) .sheet-body {
-    display: block;
+    display: none;
   }
 
-  .sheet-body {
+  body.sheet-open .sheet-body {
     display: block !important;
     overflow-y: auto !important;
     flex: 1 1 auto;
@@ -515,12 +552,17 @@ body:not(.sheet-open) .sheet-body {
   }
 
   .sheet-handle {
-    cursor: default;
+    cursor: pointer;
     border-bottom: 1px solid rgba(138,155,176,0.15);
   }
 
-  .sheet-toggle { display: none; }
-  .sheet-handle .sub { display: none; }
+  /* Always show minimize / open chip on desktop */
+  .sheet-toggle {
+    display: inline-block !important;
+  }
+  .sheet-handle .sub {
+    display: block;
+  }
 
   .float-actions {
     left: 0.85rem;
