@@ -117,10 +117,10 @@ export const FEATURED = [
 
 /** Socials */
 export const SOCIALS = [
-  { title: "Instagram", url: "https://www.instagram.com/telephantics", icon: "ig" },
+  { title: "Instagram", url: "https://www.instagram.com/telephantix/", icon: "ig" },
   { title: "X / Twitter", url: "https://x.com/Telephantix", icon: "x" },
   { title: "Facebook", url: "https://www.facebook.com/telephantics", icon: "fb" },
-  { title: "Threads", url: "https://www.threads.net/@telephantics", icon: "threads" },
+  { title: "Threads", url: "https://www.threads.net/@telephantix", icon: "threads" },
   { title: "LinkedIn", url: "https://www.linkedin.com/in/telephantics", icon: "in" },
   { title: "Truth Social", url: "https://truthsocial.com/@Telephantics", icon: "truth" },
   { title: "Suno", url: "https://suno.com/@telephantix", icon: "suno" },

@@ -546,7 +546,9 @@ body:not(.sheet-open) .sheet-body {
   letter-spacing: 0.02em;
   color: #fff;
 }
-.social.ico-ig { background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af); border-color: transparent; }
+.social.ico-ig,
+.ico.ico-ig { background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af); border-color: transparent; color: #fff; }
+.socials { margin-top: 0.55rem; }
 .social.ico-x { background: #111; border-color: #333; font-size: 0.95rem; }
 .social.ico-fb { background: #1877f2; border-color: transparent; font-size: 1.1rem; font-family: Georgia, serif; }
 .social.ico-threads { background: #101010; border-color: #333; }
