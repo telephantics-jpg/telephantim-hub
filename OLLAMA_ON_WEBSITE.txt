@@ -1,0 +1,34 @@
+Why Ollama does not run “inside” telephantim.com by itself
+=========================================================
+
+Ollama runs on YOUR computer (http://127.0.0.1:11434).
+
+A visitor opening https://telephantim.com on their phone cannot reach YOUR PC.
+Their browser only loads static files from GitHub Pages. It cannot call your
+home Ollama unless you deliberately bridge it.
+
+Ways to use Ollama with this project
+------------------------------------
+
+A) LOCAL (works now — best for dual minds)
+   1. Start Ollama (llama3.2 + hermes3)
+   2. OPEN_LOCAL_AI.bat
+   3. http://127.0.0.1:8765/
+   → server.py talks to Ollama; both relics use real models + memory
+
+B) LIVE website + Ollama on your PC (advanced)
+   Keep your PC on + Ollama running, then expose the AI server publicly:
+   - Cloudflare Tunnel, or ngrok, or similar
+   - Point the tunnel at http://127.0.0.1:8765
+   - On the live page set (once):
+       window.TELEPHANTIM_API = "https://YOUR-TUNNEL-URL";
+   Or host server.py where the tunnel ends.
+   Security: anyone can hit your API — add a shared secret later if needed.
+
+C) LIVE website + cloud AI (no PC needed)
+   Host server.py on Render/Fly with XAI_API_KEY (or another API).
+   That is NOT Ollama — it’s a cloud model. Same character prompts.
+
+There are no “intent files” required for Ollama. Corrupted *stage directions*
+or “mind connected” lines were model/meta text — those are stripped and the UI
+no longer says Brains offline / Ollama / echo · no API.

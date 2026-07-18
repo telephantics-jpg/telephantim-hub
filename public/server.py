@@ -199,6 +199,15 @@ def sanitize_reply(text: str) -> str:
         "llama",
         "hermes",
         "grok",
+        "connected to",
+        "my mind is",
+        "when my mind",
+        "brain is online",
+        "brains are",
+        "neural",
+        "server",
+        "chatbot",
+        "artificial",
     )
     keep = []
     for line in t.splitlines():

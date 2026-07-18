@@ -1,15 +1,16 @@
 /**
- * Dual relic minds — real AI when API is up (Ollama local or xAI cloud).
- * Live static host can point API_BASE at a Render telephantim-ai service.
+ * Dual relic speech.
+ * - Local: OPEN_LOCAL_AI.bat + Ollama → same-origin /api/*
+ * - Live telephantim.com: static host only unless you set window.TELEPHANTIM_API
+ *   to a public bridge (Ollama tunnel or cloud). Never talk about that in character.
  */
 function resolveApiBase() {
   if (typeof window !== "undefined" && window.TELEPHANTIM_API) {
     return String(window.TELEPHANTIM_API).replace(/\/$/, "");
   }
-  const h = (typeof location !== "undefined" && location.hostname) || "";
-  if (h === "localhost" || h === "127.0.0.1") return "";
-  // Hosted dual-brains API (set TELEPHANTIM_API or deploy Render service with this name)
-  return "https://telephantim-ai.onrender.com";
+  // Same origin only (works with server.py locally / if domain serves the AI server).
+  // Do NOT guess a dead Render URL — that falsely "connects" then fails.
+  return "";
 }
 
 const API_BASE = resolveApiBase();
@@ -104,28 +105,19 @@ export async function refreshBrainPill() {
     const ok = s && s.server === "telephantim-ai";
     brainsOnline = !!(ok && (s.brains || s.ollama || s.xai));
     if (!brainPill) return s;
-    if (!ok) {
-      brainPill.textContent = "Brains offline";
-      brainPill.dataset.mode = "offline";
-      return s;
-    }
-    if (s.ollama) {
-      const mm = (s.models?.mjolnir || "llama3.2").split(":")[0];
-      const mc = (s.models?.caduceus || "hermes3").split(":")[0];
-      brainPill.textContent = `Brains ${mm}+${mc}`;
-      brainPill.dataset.mode = "ollama";
-    } else if (s.xai) {
-      brainPill.textContent = "Brains xAI dual";
+    // Player-facing only — never show model names / Ollama / offline tech
+    if (brainsOnline) {
+      brainPill.textContent = "Relics awake";
       brainPill.dataset.mode = "ollama";
     } else {
-      brainPill.textContent = "Echo only";
+      brainPill.textContent = "Relics ready";
       brainPill.dataset.mode = "offline";
     }
     return s;
   } catch {
     brainsOnline = false;
     if (brainPill) {
-      brainPill.textContent = API_BASE ? "Brains waking…" : "Local AI off";
+      brainPill.textContent = "Relics ready";
       brainPill.dataset.mode = "offline";
     }
     return { ok: false };
@@ -186,19 +178,19 @@ export async function speak(persona, event, message) {
     brainsOnline = data.provider && data.provider !== "offline";
     return data;
   } catch {
-    showInBox(id, pickWord(id), "echo · no API", null);
+    showInBox(id, pickWord(id), id === "mjolnir" ? "power · courage" : "healing · balance", null);
     return null;
   } finally {
     busy = false;
   }
 }
 
-/** Full dual conversation with memory on the server */
+/** Full dual conversation with memory on the server (when API up) */
 export async function banter(topic, rounds) {
   if (busy) return null;
   busy = true;
-  showInBox("mjolnir", "…", "listening…");
-  showInBox("caduceus", "…", "listening…");
+  showInBox("mjolnir", "…", "power · courage");
+  showInBox("caduceus", "…", "healing · balance");
 
   try {
     const data = await api("/api/banter", {
@@ -206,8 +198,8 @@ export async function banter(topic, rounds) {
       body: JSON.stringify({
         topic:
           topic ||
-          "continue your living conversation — riff, argue, bond, evolve; never reset; real back-and-forth",
-        rounds: rounds || 5,
+          "friendly talk between hammer and staff — short natural speech only",
+        rounds: rounds || 4,
       }),
     });
 
@@ -229,8 +221,10 @@ export async function banter(topic, rounds) {
     }
     return data;
   } catch {
-    showInBox("mjolnir", pickWord("mjolnir"), "echo · no API", null);
-    showInBox("caduceus", pickWord("caduceus"), "echo · no API", null);
+    // Quiet character lines — never mention APIs or connection status
+    showInBox("mjolnir", pickWord("mjolnir"), "power · courage", null);
+    await wait(700);
+    showInBox("caduceus", pickWord("caduceus"), "healing · balance", null);
     return null;
   } finally {
     busy = false;
