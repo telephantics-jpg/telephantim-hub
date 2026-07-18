@@ -46,9 +46,17 @@ function setVideoBg(url, poster) {
   video.playsInline = true;
   video.setAttribute("playsinline", "");
   video.setAttribute("webkit-playsinline", "");
+  video.setAttribute("loop", "");
   if (poster) video.poster = poster;
   video.src = url;
   const play = () => video.play().catch(() => {});
+  const replay = () => {
+    try {
+      video.currentTime = 0;
+    } catch (_) {}
+    play();
+  };
+  video.onended = replay;
   video.addEventListener("loadeddata", play, { once: true });
   video.addEventListener(
     "error",
