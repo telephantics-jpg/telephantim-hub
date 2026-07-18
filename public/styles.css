@@ -128,13 +128,29 @@ body.scene-external .world-switch {
 body.scene-external .music-player {
   /* keep music available over camp if user opened it */
   z-index: 30;
+  /* sit above talk bar area so it doesn't cover who/talk controls */
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  left: 0.5rem;
+  right: auto;
+  max-width: min(360px, calc(100vw - 1rem));
 }
+/* Minimized Pay sheet was covering Luna's talk menu — hide while camp is on screen */
 body.scene-external .sheet {
-  z-index: 35;
+  display: none !important;
+  pointer-events: none !important;
+}
+body.scene-external .scene-fallback {
+  /* keep full-page link out of the talk bar zone */
+  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  left: auto;
+  right: 0.5rem;
+  transform: none;
+  z-index: 25;
 }
 /* Leave a thin top safe zone so Luna's world-nav isn't under notches */
 body.scene-external .scene-frame {
-  /* full bleed; world-nav lives inside the camp page */
+  /* full bleed; talk bar lives inside the camp page bottom */
+  z-index: 2;
 }
 
 /* ===== FULLSCREEN 3D ===== */

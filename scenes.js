@@ -75,6 +75,10 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   document.body.dataset.scene = sceneId;
   document.body.classList.toggle("scene-external", !!scene.url);
   document.body.classList.toggle("scene-native", !scene.url);
+  // Never leave the hub pay-sheet open over Luna — it covers the talk menu
+  if (scene.url) {
+    document.body.classList.remove("sheet-open");
+  }
 
   const frame = $("scene-frame");
   const fallback = $("scene-fallback");
