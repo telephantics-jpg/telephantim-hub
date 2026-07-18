@@ -8,7 +8,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <div class="flash" id="flash"></div>
@@ -20,7 +20,7 @@
     <div class="topbar">
       <div class="brand">
         <h1>Telephantim</h1>
-        <p>Drag hammer · open menu below</p>
+        <p>Drag hammer · tap menu bar below</p>
       </div>
       <div class="badge">telephantim.com</div>
     </div>
@@ -34,14 +34,14 @@
     </div>
   </section>
 
-  <!-- Minimizable / maximizable links sheet -->
+  <!-- Bottom menu: tap bar to open/close; scroll INSIDE for PayPal etc. -->
   <aside class="sheet" id="link-sheet" aria-label="Links menu">
     <button type="button" class="sheet-handle" id="sheet-toggle" aria-expanded="false">
       <div class="sheet-handle-bar" aria-hidden="true"></div>
       <div class="sheet-handle-row">
         <div>
           <strong>Pay · Music · Socials</strong>
-          <span id="sheet-hint"> Tap to open menu </span>
+          <span class="sub" id="sheet-hint">Tap here to open — then scroll the list</span>
         </div>
         <span class="sheet-toggle" id="sheet-toggle-label">Open ▲</span>
       </div>
@@ -169,29 +169,50 @@
   </div>
 
   <script>
-    // Sheet open / close (works without modules)
+    // Sheet open / close + ensure list scrolls on phone
     (function () {
       var body = document.body;
       var btn = document.getElementById("sheet-toggle");
       var label = document.getElementById("sheet-toggle-label");
       var hint = document.getElementById("sheet-hint");
+      var sheetBody = document.getElementById("sheet-body");
       if (!btn) return;
 
-      function setOpen(open) {
-        body.classList.toggle("sheet-open", open);
-        btn.setAttribute("aria-expanded", open ? "true" : "false");
-        if (label) label.textContent = open ? "Close ▼" : "Open ▲";
-        if (hint) hint.textContent = open ? " Scroll links inside " : " Tap to open menu ";
+      function isDesktop() {
+        return window.matchMedia("(min-width: 900px)").matches;
       }
 
-      // Desktop: start open; mobile: start closed so hammer fits
-      var desktop = window.matchMedia("(min-width: 900px)").matches;
-      setOpen(desktop);
+      function setOpen(open) {
+        body.classList.toggle("sheet-open", !!open);
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (label) label.textContent = open ? "Close ▼" : "Open ▲";
+        if (hint) {
+          hint.textContent = open
+            ? "Scroll this list for PayPal, Cash App…"
+            : "Tap here to open — then scroll the list";
+        }
+        if (open && sheetBody) {
+          // reset scroll to top when opening
+          sheetBody.scrollTop = 0;
+        }
+      }
 
-      btn.addEventListener("click", function () {
-        if (window.matchMedia("(min-width: 900px)").matches) return;
+      // Desktop: menu always "open". Mobile: start closed so full hammer shows.
+      setOpen(isDesktop());
+
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (isDesktop()) return;
         setOpen(!body.classList.contains("sheet-open"));
       });
+
+      // Stop 3D canvas from eating touches inside the sheet
+      var sheet = document.getElementById("link-sheet");
+      if (sheet) {
+        ["touchstart", "touchmove", "wheel"].forEach(function (ev) {
+          sheet.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+        });
+      }
     })();
   </script>
 
@@ -203,6 +224,6 @@
     }
   }
   </script>
-  <script type="module" src="mjolnir.js?v=4"></script>
+  <script type="module" src="mjolnir.js?v=6"></script>
 </body>
 </html>
