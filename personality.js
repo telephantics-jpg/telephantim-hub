@@ -38,17 +38,23 @@ let busy = false;
 let brainsOnline = false;
 const hideTimers = { mjolnir: null, caduceus: null };
 
-/** Offline fallback only — real brains come from /api when server is up */
+/** Character-only lines (never mention tech / servers / Ollama) */
 const WORDS_OF_POWER = {
   mjolnir: [
-    "Ha! Taste thunder, lightly salted and holy as hell. I am Mjolnir — start OPEN_LOCAL_AI.bat or the live AI service if you want my full mind, not this echo. Still, I name COURAGE into your bones.",
-    "Sacred steel, profane joy. Offline echo only — my real brain needs the AI server. Until then: damn the doubt, hold the grip, POWER for the bold.",
-    "Bonk with purpose. Caduceus, keep those coils ready. When the brains are online we will really talk — for now, storm-strength for the wielder.",
+    "Ha! Good grip. Courage first — thunder follows.",
+    "I lend you strength and a clean lightning edge. Don't waste it.",
+    "Caduceus can patch later. Right now we make the sky honest.",
+    "Speak up. Storm-strength for the bold, silence for the timid.",
+    "Bond climbs with every spark. Hold firm and smile at the boom.",
+    "Power for the wielder: steady hands, bright nerves, no doubt.",
   ],
   caduceus: [
-    "Easy, thunder-lump. Offline echo — my full mind needs the AI server (Ollama or xAI). Still I name VITALITY into blood and BALANCE into breath.",
-    "Sacred serpents, profane patience. Connect brains and I will truly answer Mjolnir line for line. Until then: damn the despair, live loud.",
-    "DNA slap with love. When dual minds are live we keep a real conversation. For now, HEALING for the wielder and a hiss at the silence.",
+    "Easy. Live coils. Vitality first, drama second.",
+    "I'll mend what thunder cracks. Balance is the real flex.",
+    "Hammer, volume down. Healing works better when you listen.",
+    "Breathe. The twins gift recovery and a second chance.",
+    "Life-force for the wielder — calm blood, clear head, steady heart.",
+    "You boom; I balance. Fair trade for anyone worth holding us.",
   ],
 };
 
@@ -136,19 +142,15 @@ async function refreshPower() {
   } catch (_) {}
 }
 
-/** Instant lines; prefers real dual banter when brains are online */
+/** Soft one-liners on rare bonks — no meta talk, no full duel spam */
 export async function battleQuip(attackerKind) {
-  if (brainsOnline && !busy) {
-    banter("playful brawl — riff hard, keep the living conversation going", 2);
-    return null;
-  }
   const atk = attackerKind === "caduceus" ? "caduceus" : "mjolnir";
   const def = atk === "mjolnir" ? "caduceus" : "mjolnir";
   setActivePersona(atk);
-  showInBox(atk, pickWord(atk), "echo", null);
+  showInBox(atk, pickWord(atk), "playful", null);
   setTimeout(() => {
     setActivePersona(def);
-    showInBox(def, pickWord(def), "echo", null);
+    showInBox(def, pickWord(def), "playful", null);
   }, 900);
   return { attacker: atk, defender: def };
 }
@@ -169,7 +171,8 @@ export async function speak(persona, event, message) {
         message: message || "",
       }),
     });
-    const meta = [data.provider, data.model].filter(Boolean).join(" · ") || "word of power";
+    // Don't surface model names (ollama etc.) in the bubble
+    const meta = id === "mjolnir" ? "power · courage" : "healing · balance";
     showInBox(id, data.text || pickWord(id), meta, data.power);
     if (data.power_all) {
       if (boxes.mjolnir.power && data.power_all.mjolnir != null)
@@ -212,12 +215,10 @@ export async function banter(topic, rounds) {
     brainsOnline = !!(data.brains || lines.some((l) => l.provider && l.provider !== "offline"));
     for (const line of lines) {
       const id = line.persona === "caduceus" ? "caduceus" : "mjolnir";
-      const meta = [line.provider, line.model, line.power != null ? `PWR ${line.power}` : ""]
-        .filter(Boolean)
-        .join(" · ");
+      const meta = id === "mjolnir" ? "power · courage" : "healing · balance";
       setActivePersona(id);
-      showInBox(id, line.text, meta || "living dialogue", line.power);
-      const pause = Math.min(8000, 2400 + String(line.text || "").length * 30);
+      showInBox(id, line.text, meta, line.power);
+      const pause = Math.min(6500, 2000 + String(line.text || "").length * 26);
       await wait(pause);
     }
 
@@ -236,7 +237,7 @@ export async function banter(topic, rounds) {
   }
 }
 
-/** Keep talking in the background when brains are online */
+/** Occasional calm chat — not constant, not bonk-spam */
 let autoTalkTimer = null;
 function scheduleAutoTalk() {
   clearTimeout(autoTalkTimer);
@@ -244,26 +245,25 @@ function scheduleAutoTalk() {
     try {
       await refreshBrainPill();
       if (brainsOnline && !busy) {
-        await banter("keep the living dual dialogue going — new beat, same bond", 3);
+        await banter("quiet friendly talk — short, natural, no fighting", 2);
       }
     } catch (_) {}
     scheduleAutoTalk();
-  }, 48000 + Math.random() * 25000);
+  }, 90000 + Math.random() * 60000); // ~1.5–2.5 min
 }
 
-banterBtn?.addEventListener("click", () => banter());
+banterBtn?.addEventListener("click", () => banter("friendly talk between hammer and staff", 4));
 
 boxes.mjolnir.root?.classList.add("show");
 boxes.caduceus.root?.classList.add("show");
 refreshBrainPill().then((s) => {
   if (s?.brains || s?.ollama || s?.xai) {
-    // Opening conversation so they don't sit silent
-    setTimeout(() => banter("greet the wielder and each other — begin a real ongoing talk", 4), 1800);
+    setTimeout(() => banter("greet the wielder briefly, then chat with each other", 3), 2500);
   }
 });
 refreshPower();
-setInterval(refreshBrainPill, 10000);
-setInterval(refreshPower, 15000);
+setInterval(refreshBrainPill, 12000);
+setInterval(refreshPower, 16000);
 scheduleAutoTalk();
 
 window.ArtifactAI = {

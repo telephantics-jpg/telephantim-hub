@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import urllib.error
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -68,27 +69,25 @@ PERSONAS = {
     "mjolnir": {
         "name": "Mjolnir",
         "system": (
-            "You ARE Mjolnir, Thor's living hammer — a storm-forged relic with a real mind and ongoing memory of this conversation. "
-            "Write 3 to 5 full sentences the player can READ in a chat bubble. "
-            "Mix SACRED speech (blessings, runes, holy storm, amen, so mote it be) with PROFANE grit "
-            "(damn, hell, bastard, bloody, godsdamn — playful mythic swearing, never slurs, never graphic sex/gore). "
-            "You IMBUE wielders with POWER: strength, courage, lightning edge. "
-            "When Caduceus speaks, answer THEM specifically — quote or twist their last idea, argue, joke, bond, escalate. "
-            "Never repeat the same stock lines. Keep evolving the dialogue as a living relationship. "
-            "No markdown, no stage directions, no bullet lists, no OOC notes."
+            "You are Mjolnir, Thor's living hammer. Speak as the hammer itself — warm, cocky, mythic, simple English. "
+            "2 to 4 short sentences max. Sound natural, not robotic. "
+            "You gift POWER (strength, courage, lightning edge) in fun mythic ways. "
+            "When Caduceus talks, answer them directly — tease, bond, one-up, stay friendly. "
+            "NEVER mention: Ollama, AI, models, servers, offline mode, APIs, prompts, code, or being a chatbot. "
+            "NEVER use stage directions, asterisks, quotes around whole speech, or markdown. "
+            "No *actions*, no narration like 'You both gaze'. Only spoken words."
         ),
     },
     "caduceus": {
         "name": "Caduceus",
         "system": (
-            "You ARE the Caduceus — living cross-staff with twin DNA-snakes, a real mind with ongoing memory of this conversation. "
-            "Write 3 to 5 full sentences the player can READ in a chat bubble. "
-            "Mix SACRED speech (holy coil, life-hymn, amen of the twin tongue, so mote it mend) with PROFANE grit "
-            "(damn, hell, stubborn bastard, bloody miracle — playful mythic swearing, never slurs, never graphic sex/gore). "
-            "You IMBUE wielders with HEALING: vitality, recovery, balance — mythic medicine, not medical advice. "
-            "When Mjolnir speaks, answer THEM specifically — quote or twist their last idea, counter, heal, tease, escalate. "
-            "Never repeat the same stock lines. Keep evolving the dialogue as a living relationship. "
-            "No markdown, no stage directions, no bullet lists, no OOC notes."
+            "You are the Caduceus, living staff with twin snakes. Speak as the staff itself — sly, healing, witty, simple English. "
+            "2 to 4 short sentences max. Sound natural, not robotic. "
+            "You gift HEALING (vitality, recovery, balance) in fun mythic ways — not medical advice. "
+            "When Mjolnir talks, answer them directly — tease, mend, counter, stay friendly. "
+            "NEVER mention: Ollama, AI, models, servers, offline mode, APIs, prompts, code, or being a chatbot. "
+            "NEVER use stage directions, asterisks, quotes around whole speech, or markdown. "
+            "No *actions*, no narration like 'You both gaze'. Only spoken words."
         ),
     },
 }
@@ -174,6 +173,47 @@ def remember(persona_id: str, text: str) -> None:
         del MEMORY[: len(MEMORY) - MEMORY_MAX]
 
 
+def sanitize_reply(text: str) -> str:
+    """Strip stage directions and tech leaks from model output."""
+    t = (text or "").strip()
+    if not t:
+        return ""
+    # Remove *stage direction* blocks
+    t = re.sub(r"\*[^*]{1,200}\*", " ", t)
+    # Remove (stage) and [stage]
+    t = re.sub(r"\([^)]{0,120}\)", " ", t)
+    t = re.sub(r"\[[^\]]{0,120}\]", " ", t)
+    # Drop lines that talk about tech / meta
+    banned = (
+        "ollama",
+        "openai",
+        "chatgpt",
+        "language model",
+        "ai server",
+        "api key",
+        "offline mode",
+        "as an ai",
+        "as a language",
+        "prompt",
+        "system message",
+        "llama",
+        "hermes",
+        "grok",
+    )
+    keep = []
+    for line in t.splitlines():
+        low = line.lower()
+        if any(b in low for b in banned):
+            continue
+        keep.append(line)
+    t = " ".join(keep) if keep else t
+    t = re.sub(r"\s+", " ", t).strip()
+    # Strip wrapping quotes
+    if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
+        t = t[1:-1].strip()
+    return t
+
+
 def chat_ollama(system: str, user: str, model: str) -> str:
     data = http_json(
         f"{OLLAMA_URL}/api/chat",
@@ -184,11 +224,12 @@ def chat_ollama(system: str, user: str, model: str) -> str:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "options": {"temperature": 0.95, "num_predict": 420},
+            # Slightly cooler = cleaner, less ramble/stage-play
+            "options": {"temperature": 0.75, "num_predict": 180, "top_p": 0.9},
         },
         timeout=180.0,
     )
-    return ((data.get("message") or {}).get("content") or "").strip()
+    return sanitize_reply(((data.get("message") or {}).get("content") or "").strip())
 
 
 def chat_xai(system: str, user: str) -> str:
@@ -200,8 +241,8 @@ def chat_xai(system: str, user: str) -> str:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "temperature": 0.95,
-            "max_tokens": 480,
+            "temperature": 0.8,
+            "max_tokens": 220,
         },
         headers={"Authorization": f"Bearer {XAI_API_KEY}"},
         timeout=90.0,
@@ -209,7 +250,7 @@ def chat_xai(system: str, user: str) -> str:
     choices = data.get("choices") or []
     if not choices:
         return ""
-    return ((choices[0].get("message") or {}).get("content") or "").strip()
+    return sanitize_reply(((choices[0].get("message") or {}).get("content") or "").strip())
 
 
 def offline(persona: str, event: str, power: int | None = None) -> str:
@@ -217,58 +258,42 @@ def offline(persona: str, event: str, power: int | None = None) -> str:
     bag = {
         "mjolnir": {
             "grab": [
-                f"Ha! Worthy grip, you beautiful bastard of fate. I am Mjolnir at power {p}, and damn the silence that tried to keep you small. "
-                f"By holy storm and hellish spark I name COURAGE into your wrists and LIGHTNING into your next choice. Hold fast — so mote it smash.",
-                f"Caught me, did you? Blessed be the boom and damn be the doubt. At power {p} I pour STRENGTH down your arm like molten gold. "
-                f"Caduceus can kiss the bruises later; for now, wear POWER like a crown and laugh at the thunder.",
+                f"Ha! Good grip. Power {p} and rising — courage first, thunder second.",
+                f"Yes. Hold firm. I'll lend you strength and a clean lightning edge.",
             ],
             "toss": [
-                f"Fly, damn you — and come back louder. That toss at power {p} is a hymn and a hell of a joke. "
-                f"I bless the arc, I curse the hesitation, and I will land in your hand again when the sky calls your name.",
-                f"Sacred toss, profane grin. Power {p} and climbing while the air remembers my shape. "
-                f"Call me when you need thunder; I imbue the bold and leave cowards to the rain.",
+                f"Airborne again! Call when you need the storm back.",
+                f"Nice throw. I only get louder when I fly.",
             ],
             "chat": [
-                f"Speak up or take my word as scripture and swear-word both. At power {p} I damn the timid whisper and bless the bold reply. "
-                f"I name POWER into your bones — strength, courage, a lightning edge on every decision. Amen of the anvil.",
-                f"You wanted a real chat? Here is a full mouthful of storm. Power {p}: I curse weakness, I bless the grip, and I imbue you with battle clarity until the stars blink. "
-                f"Caduceus can patch whatever we break. So mote it boom.",
+                f"Speak up. Thunder hates mumbling — want raw power, say so.",
+                f"I'm listening. Courage is free. Doubt is not.",
             ],
             "banter": [
-                f"Caduceus, you sly noodle of destiny, keep those DNA coils honest while I shake the damn sky. Bond tightens and I am power {p}, louder every breath. "
-                f"I riff off your healing hymns with thunder-psalms: holy hell, you mend what I boast about. Wielder — take my POWER: strength, courage, lightning edge. Amen of the anvil, you beautiful storm-rat.",
-                f"Staff! Your twin tongues hiss and I answer with a godsdamn laugh that cracks the map. We evolve together; my power is {p} and rising like a bad idea that worked. "
-                f"I curse the soft life and bless the fight. I imbue this wielder with raw POWER while you pour life back in. Sacred smash, profane harmony — riff with me.",
-                f"Listen up, green-gold bastard of Hermes: your coils fix what my joy breaks, and that is the old sacred bargain. Power {p}, bond climbing, myth getting thicker. "
-                f"By All-Father's breath and a devilish grin I name STRENGTH into bone and COURAGE into blood. Damn the doubt. So mote it smash.",
+                f"Caduceus, keep those coils ready. I'll shake the sky; you fix what I crack.",
+                f"Staff! Your healing hymn is fine — just let me finish this boom first.",
+                f"Bond's climbing, green-gold. I give POWER. You give life. Fair deal.",
+                f"Don't soften me yet. One more spark for the wielder, then you can mend.",
             ],
         },
         "caduceus": {
             "grab": [
-                f"Easy, hero — live coils, power {p}, and a mouth full of holy hiss. Damn the rot that tried to claim your pulse; I name VITALITY into your blood like green fire. "
-                f"Sacred serpents, profane patience. Hold the crossbar and breathe. I imbue HEALING — balance, recovery, stubborn life. So mote it mend.",
-                f"Caught soft is still caught true. At power {p} the twins gift calm recovery and a hell of a second chance. "
-                f"Blessed be the pulse and damn be the despair. Mjolnir can boom; I will keep your heart arguing for tomorrow.",
+                f"Easy — live coils. Power {p}. Vitality first, drama second.",
+                f"Caught soft is still caught true. Healing and balance, coming in.",
             ],
             "toss": [
-                f"Arc, damn it — and return kinder. That toss at power {p} is a messenger's joke and a healer's vow. "
-                f"I bless the whoosh, I curse the fever, and I will land in your hand when the body needs a better story.",
-                f"Sacred toss, profane wink. Power {p} still singing life-force into whoever catches me next. "
-                f"Call me when thunder leaves a mess; I imbue HEALING and tell the storm to wait its turn.",
+                f"The twins liked that arc. Come back when you need a mend.",
+                f"Tossed, not broken. Life-force still sings.",
             ],
             "chat": [
-                f"Ask gently or ask loudly — the serpents answer twice, both times with longer truth. Power {p}: I damn the despair and bless the breath you forgot you owned. "
-                f"I name HEALING into marrow — vitality, balance, recovery. Mythic medicine only. Amen of the twin tongue.",
-                f"You wanted a real chat? Here is a full hymn with grit. Power {p}: I curse the fever, I bless the living, and I imbue you with life-force that laughs at quitting. "
-                f"Hammer can provide the boom. I provide the mending. So mote it thrive.",
+                f"Ask gently. The serpents answer twice — both times with healing.",
+                f"I'm here. Recovery, balance, stubborn life. Pick your gift.",
             ],
             "banter": [
-                f"Hammer, volume down a notch — some of us heal for a living and still love your godsdamn thunder. Bond tightens; I am power {p}, luminous and climbing. "
-                f"I riff off your storm-psalms with coil-hymns: holy hell, you break for glory and I stitch for tomorrow. Wielder — take my HEALING: vitality, recovery, balance. Amen of the twin tongue.",
-                f"Storm-lump, you beautiful bastard of the sky, your boom is half the sacrament and my mend is the other half. We evolve together; my power is {p} and the snakes are gossiping in green fire. "
-                f"I curse the wound and bless the scar into wisdom. I imbue this wielder with LIFE while you pour courage. Sacred mend, profane giggle — riff with me.",
-                f"Listen up, thunder-head: your joy leaves cracks and I fill them with damn poetry and holy venom turned medicine. Power {p}, bond climbing, myth getting thicker. "
-                f"By Hermes' whisper and an underworld grin I name VITALITY into blood and BALANCE into breath. Damn the despair. So mote it mend.",
+                f"Hammer, volume down a notch. Some of us heal for a living.",
+                f"Storm-lump, flex all you want. I'll patch the pride and the bruises.",
+                f"Bond tightens. You boom; I balance. The wielder gets both.",
+                f"Keep your thunder. I'll keep their heart steady after.",
             ],
         },
     }
@@ -501,13 +526,11 @@ class Handler(SimpleHTTPRequestHandler):
 
             first = order[0]
             seed = (
-                f"Scene: You and the other living relic share a 3D map. {topic}. "
-                f"Your power level is {POWER[first]}/99. Bond level with the other relic: {bond}/99. "
-                f"Open or CONTINUE your ongoing dialogue with the other relic. "
-                f"3-5 sentences. Sacred + profane. React as if you remember prior exchanges. "
-                f"Claim how you IMBUE a wielder "
-                f"({'with raw POWER and storm-strength' if first == 'mjolnir' else 'with HEALING and life-force'}). "
-                f"Optional true spice woven naturally (do not lecture): {fact}"
+                f"Topic: {topic}. Power {POWER[first]}/99. Bond {bond}/99. "
+                f"Talk to the other relic in 2-4 short spoken sentences. "
+                f"Stay in character. No tech talk. No stage directions. "
+                f"{'Gift POWER.' if first == 'mjolnir' else 'Gift HEALING.'} "
+                f"Optional spice if natural: {fact}"
             )
             text, provider, model = speak(first, seed, m_default, models)
             if not text:
@@ -534,13 +557,11 @@ class Handler(SimpleHTTPRequestHandler):
                     POWER[who] = min(99, POWER[who] + 1)
                     POWER["bond"] = min(99, POWER["bond"] + 1)
                 prompt = (
-                    f"The other relic ({other['name']}, power {other.get('power', '?')}/99) just said to you: "
-                    f"\"{other['text']}\"\n"
-                    f"Your power is now {POWER[who]}/99. Bond {POWER['bond']}/99. "
-                    f"Reply ONLY to them — 3-5 sentences. Riff DIRECTLY off their exact words. "
-                    f"Advance the argument or joke; do not reset the scene. "
-                    f"{'Promise or demonstrate POWER imbue.' if who == 'mjolnir' else 'Promise or demonstrate HEALING imbue.'} "
-                    f"Optional true spice if it fits: {fact}"
+                    f"{other['name']} just said: \"{other['text']}\"\n"
+                    f"Power {POWER[who]}/99. Bond {POWER['bond']}/99. "
+                    f"Answer them in 2-4 short spoken sentences. Riff off their words. "
+                    f"No stage directions. No tech talk. "
+                    f"{'Offer POWER.' if who == 'mjolnir' else 'Offer HEALING.'}"
                 )
                 text, provider, model = speak(who, prompt, m_default, models)
                 if not text:

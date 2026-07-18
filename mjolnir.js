@@ -759,10 +759,11 @@ function strike(atObject) {
 const duel = {
   active: false,
   t: 0,
-  duration: 1.15,
+  duration: 1.0,
   attacker: "hammer", // "hammer" | "caduceus"
   hit: false,
-  cooldown: 9 + Math.random() * 6, // seconds until next auto-brawl
+  // Much rarer playful bonks
+  cooldown: 55 + Math.random() * 40,
 };
 const duelBump = {
   hammer: new THREE.Vector3(),
@@ -801,7 +802,7 @@ function updatePlayfulDuel(dt) {
     duel.cooldown -= dt;
     if (duel.cooldown <= 0) {
       startPlayfulDuel();
-      duel.cooldown = 11 + Math.random() * 10; // every ~11–21s
+      duel.cooldown = 50 + Math.random() * 45; // every ~50–95s
     }
     return;
   }
@@ -1194,7 +1195,6 @@ function animate() {
   composer.render();
 }
 
-// Opening sparkle, then a playful brawl after a beat
-setTimeout(() => strike(hammer), 500);
-setTimeout(() => startPlayfulDuel(Math.random() < 0.5 ? "hammer" : "caduceus"), 2800);
+// Soft opening spark only — rare bonks later
+setTimeout(() => strike(hammer), 700);
 animate();
