@@ -123,9 +123,7 @@ export const SOCIALS = [
   { title: "X / Twitter", url: "https://x.com/Telephantix", icon: "x" },
   { title: "Facebook", url: "https://www.facebook.com/telephantics", icon: "fb" },
   { title: "Threads", url: "https://www.threads.net/@telephantix", icon: "threads" },
-  { title: "LinkedIn", url: "https://www.linkedin.com/in/telephantics", icon: "in" },
   { title: "Truth Social", url: "https://truthsocial.com/@Telephantics", icon: "truth" },
-  { title: "Suno", url: "go-suno.html", icon: "suno" },
 ];
 
 /** Plain text emblems (encoding-safe brand marks) */
