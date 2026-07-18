@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Telephantim</title>
+  <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-18" />
+  <meta name="description" content="Telephantim hub  -  Luna Camp, PayPal, Cash App, Venmo." />
+  <meta property="og:title" content="Telephantim" />
+  <meta property="og:url" content="https://telephantim.com/" />
+  <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
+  <link rel="stylesheet" href="styles.css?v=40" />
+</head>
+<body>
+  <div class="flash" id="flash"></div>
+
+  <!-- Full-screen 3D relics: Mjolnir + Caduceus (both always on stage) -->
+  <section class="stage" aria-label="3D relics">
+    <div id="canvas-wrap"></div>
+
+    <div class="topbar">
+      <div class="brand">
+        <h1>Telephantim</h1>
+        <p id="grab-hint">Mjolnir + Caduceus · zoomed out · grab either</p>
+      </div>
+      <div class="badge-stack">
+        <div class="badge" id="brain-pill">Relics ready</div>
+        <div class="badge" id="bond-pill">Bond 1</div>
+        <div class="badge">LIVE v40 DUAL</div>
+      </div>
+    </div>
+
+    <div class="dedication" role="note" aria-label="Birthday dedication">
+      <p class="dedication-line">Happy Birthday Mother</p>
+      <p class="dedication-from">love Josh</p>
+    </div>
+
+    <!-- Bubbles track each 3D speaker (positions set in mjolnir.js) -->
+    <div class="dialogue-layer" aria-live="polite">
+      <div class="dbox dbox-mjolnir show" id="box-mjolnir">
+        <div class="dbox-head">
+          <span class="dbox-title">Mjolnir</span>
+          <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
+        </div>
+        <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
+        <div class="dbox-meta" id="box-mjolnir-meta">power  ·  courage  ·  lightning</div>
+      </div>
+      <div class="dbox dbox-caduceus show" id="box-caduceus">
+        <div class="dbox-head">
+          <span class="dbox-title">Caduceus</span>
+          <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
+        </div>
+        <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING  -  scroll the bubble if it runs tall.</div>
+        <div class="dbox-meta" id="box-caduceus-meta">healing  ·  vitality  ·  balance</div>
+      </div>
+    </div>
+
+    <div class="float-actions" id="float-actions">
+      <button type="button" class="btn-chip btn-min" id="btn-actions-toggle" aria-expanded="true" title="Hide action buttons">
+        Hide v
+      </button>
+      <div class="float-actions-main" id="float-actions-main">
+        <a class="btn-luna" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
+          Luna Camp
+        </a>
+        <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
+          <span id="btn-music-label">Play music</span>
+        </button>
+        <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
+        <button type="button" class="btn-chip" id="btn-strike">Strike</button>
+        <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
+      </div>
+    </div>
+
+    <!-- Floating music player (Suno profile + Spotify / YouTube playable embeds) -->
+    <div class="music-player" id="music-player" aria-label="Music player" hidden>
+      <div class="music-player-inner">
+        <div class="music-head">
+          <div>
+            <strong class="music-brand">Telephantix Radio</strong>
+            <p class="music-now"><span id="music-now-title">Ready</span><br /><span id="music-now-sub" class="music-sub"></span></p>
+          </div>
+          <button type="button" class="music-x" id="music-close" aria-label="Close player">×</button>
+        </div>
+        <div class="music-controls">
+          <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
+          <button type="button" class="btn-chip ghost" id="music-next">Next</button>
+          <a class="btn-chip btn-suno" id="music-suno-link" href="https://suno.com/@telephantix" target="_blank" rel="noopener">Suno @telephantix</a>
+        </div>
+        <div class="music-stage">
+          <iframe
+            id="music-embed"
+            class="music-embed"
+            title="Music player"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+          <audio id="music-audio" class="music-audio" controls hidden></audio>
+        </div>
+        <div class="music-track-list" id="music-track-list"></div>
+        <p class="music-hint">Tip: add individual Suno song links in music.js for one-tap Suno embeds.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom menu: tap bar to open/close; scroll INSIDE for PayPal etc. -->
+  <aside class="sheet" id="link-sheet" aria-label="Links menu">
+    <button type="button" class="sheet-handle" id="sheet-toggle" aria-expanded="false">
+      <div class="sheet-handle-bar" aria-hidden="true"></div>
+      <div class="sheet-handle-row">
+        <div>
+          <strong>Pay  ·  Music  ·  Socials</strong>
+          <span class="sub" id="sheet-hint">Tap to open or minimize</span>
+        </div>
+        <span class="sheet-toggle" id="sheet-toggle-label">Open â–²</span>
+      </div>
+    </button>
+
+    <div class="sheet-body" id="sheet-body">
+      <div class="profile">
+        <img alt="Telephantix"
+          src="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591"
+          referrerpolicy="no-referrer" />
+        <div>
+          <h2>Telephantix</h2>
+          <p class="handle">@telephantix</p>
+          <p class="tag">Music  ·  AI  ·  Support</p>
+        </div>
+      </div>
+
+      <section class="section">
+        <h3>Luna Camp</h3>
+        <div class="links">
+          <a class="link accent" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-luna" aria-hidden="true">LC</span>
+            <span><strong>Enter Luna Camp</strong><small>telephanti.com</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Support / Pay</h3>
+        <div class="links">
+          <a class="link" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-paypal" aria-hidden="true">PP</span>
+            <span><strong>PayPal</strong><small>Donate</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://cash.app/$Telephantix" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-cashapp" aria-hidden="true">$</span>
+            <span><strong>Cash App</strong><small>$Telephantix</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://venmo.com/u/Telephantix" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-venmo" aria-hidden="true">V</span>
+            <span><strong>Venmo</strong><small>@Telephantix</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://gofund.me/52108a9d" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-gofundme" aria-hidden="true">GF</span>
+            <span><strong>GoFundMe</strong><small>Help support</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://www.buymeacoffee.com/Telephantics" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-coffee" aria-hidden="true">BMC</span>
+            <span><strong>Buy Me a Coffee</strong><small>Tip jar</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Featured</h3>
+        <div class="links">
+          <a class="link" href="https://music.youtube.com/playlist?list=OLAK5uy_nOw1iUh26P4Zj_Odt1SjaLloUo7C9j4FY&si=okOT2S_QAeNOEAbY" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-yt" aria-hidden="true">YT</span>
+            <span><strong>Telephantix Album</strong><small>YouTube Music</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://music.youtube.com/playlist?list=OLAK5uy_mCCAwPfN9jMXE9khpgsYFzA1xeei_i4NI&si=9fq0PvYupIDkFxeu" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-yt" aria-hidden="true">YT</span>
+            <span><strong>What Isn't Is</strong><small>YouTube Music</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://open.spotify.com/album/0TQgbKYS4r0fDmciMoiqKt?si=BIq_EokSSIOCVIru08AvlQ" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-spotify" aria-hidden="true">SP</span>
+            <span><strong>Spotify</strong><small>Album</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <a class="link" href="https://suno.com/@telephantix" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-suno" aria-hidden="true">SU</span>
+            <span><strong>Suno</strong><small>@telephantix — AI songs</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+          <button type="button" class="link link-btn" id="btn-music-sheet">
+            <span class="ico ico-suno" aria-hidden="true">▶</span>
+            <span><strong>Play music here</strong><small>Spotify / YouTube / Suno player</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </button>
+          <a class="link" href="https://telephanti.com/" target="_blank" rel="noopener noreferrer">
+            <span class="ico ico-luna" aria-hidden="true">LU</span>
+            <span><strong>Luna home</strong><small>telephanti.com</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Socials</h3>
+        <div class="links">
+          <a class="link" href="go-instagram.html">
+            <span class="ico ico-ig" aria-hidden="true">IG</span>
+            <span><strong>Instagram</strong><small>@telephantix</small></span>
+            <span class="arr" aria-hidden="true">&rarr;</span>
+          </a>
+        </div>
+        <div class="socials">
+          <a class="social ico-ig" href="go-instagram.html" title="Instagram @telephantix">IG</a>
+          <a class="social ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener" title="X">X</a>
+          <a class="social ico-fb" href="https://www.facebook.com/telephantics" target="_blank" rel="noopener" title="Facebook">f</a>
+          <a class="social ico-threads" href="https://www.threads.net/@telephantix" target="_blank" rel="noopener" title="Threads">Th</a>
+          <a class="social ico-in" href="https://www.linkedin.com/in/telephantics" target="_blank" rel="noopener" title="LinkedIn">in</a>
+          <a class="social ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener" title="Truth">T</a>
+          <a class="social ico-suno" href="https://suno.com/@telephantix" target="_blank" rel="noopener" title="Suno">Su</a>
+        </div>
+      </section>
+
+      <p class="foot">
+        <strong>telephantim.com</strong> &middot;
+        <a href="https://telephanti.com/firmament/play" target="_blank" rel="noopener">Luna Camp</a>
+      </p>
+    </div>
+  </aside>
+
+  <div hidden>
+    <div id="toggle-rotate" class="on"></div>
+    <div id="toggle-aura" class="on"></div>
+    <input id="spin-speed" type="range" value="35" />
+  </div>
+
+  <script>
+    // Sheet open/minimize + action-button tray
+    (function () {
+      var body = document.body;
+      var btn = document.getElementById("sheet-toggle");
+      var label = document.getElementById("sheet-toggle-label");
+      var hint = document.getElementById("sheet-hint");
+      var sheetBody = document.getElementById("sheet-body");
+      var actionsToggle = document.getElementById("btn-actions-toggle");
+      var actionsWrap = document.getElementById("float-actions");
+
+      function setOpen(open) {
+        body.classList.toggle("sheet-open", !!open);
+        if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (label) label.textContent = open ? "Minimize" : "Open";
+        if (hint) {
+          hint.textContent = open
+            ? "Scroll list - tap bar to minimize"
+            : "Tap bar to open Pay - Music - Socials";
+        }
+        if (open && sheetBody) sheetBody.scrollTop = 0;
+      }
+
+      // Start minimized so 3D is centered and clear on phone + desktop
+      setOpen(false);
+
+      if (btn) {
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          setOpen(!body.classList.contains("sheet-open"));
+        });
+      }
+
+      if (actionsToggle && actionsWrap) {
+        actionsToggle.addEventListener("click", function (e) {
+          e.preventDefault();
+          var collapsed = actionsWrap.classList.toggle("collapsed");
+          actionsToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          actionsToggle.textContent = collapsed ? "Buttons" : "Hide";
+          actionsToggle.title = collapsed ? "Show action buttons" : "Hide action buttons";
+        });
+      }
+
+      var sheet = document.getElementById("link-sheet");
+      if (sheet) {
+        ["touchstart", "touchmove", "wheel"].forEach(function (ev) {
+          sheet.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
+        });
+      }
+
+      // Instagram links go to go-instagram.html (clean page + manual tap).
+      // Auto-redirects / app schemes often end as blank white pages on phones.
+    })();
+  </script>
+
+  <!-- Sets window.TELEPHANTIM_API for public dual Ollama brains (any visitor) -->
+  <script src="api-config.js?v=40"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="music.js?v=40"></script>
+  <script type="module" src="personality.js?v=40"></script>
+  <script type="module" src="mjolnir.js?v=40"></script>
+  <script>
+    // Sheet "Play music here" opens the floating player
+    document.getElementById("btn-music-sheet")?.addEventListener("click", function () {
+      window.TelephantimMusic?.setOpen(true);
+      document.body.classList.remove("sheet-open");
+    });
+  </script>
+</body>
+</html>

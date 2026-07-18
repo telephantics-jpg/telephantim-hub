@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Instagram @telephantix</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #05070c;
+      color: #e8eef8;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      width: min(100%, 360px);
+      padding: 1.5rem 1.25rem 1.35rem;
+      border-radius: 18px;
+      border: 1px solid rgba(201, 162, 39, 0.35);
+      background: rgba(12, 16, 28, 0.95);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    }
+    .badge {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 0.9rem;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+      background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: 0.02em;
+    }
+    p {
+      margin: 0.55rem 0 1.15rem;
+      color: #8b97ad;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      border: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(135deg, #f58529, #dd2a7b 45%, #8134af);
+      box-shadow: 0 8px 22px rgba(221, 42, 123, 0.35);
+    }
+    .btn:active { transform: scale(0.98); }
+    .back {
+      display: inline-block;
+      margin-top: 1rem;
+      color: #c9a227;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge" aria-hidden="true">IG</div>
+    <h1>@telephantix</h1>
+    <p>
+      Tap the button below to open Instagram.
+      (Auto-open often shows a blank page on phones — a real tap works better.)
+    </p>
+    <!-- Plain link, user gesture, no JS redirect, no app scheme -->
+    <a
+      class="btn"
+      id="ig-open"
+      href="https://www.instagram.com/telephantix/"
+      rel="noopener"
+    >Open Instagram</a>
+    <a class="back" href="./">Back to Telephantim</a>
+  </div>
+  <script>
+    // Keep it simple: only navigate on real tap. Do NOT auto-redirect.
+    // Some phones still prefer same-tab; remove target if present.
+    document.getElementById("ig-open").addEventListener("click", function (e) {
+      // Allow default navigation (most reliable). Only force same-tab.
+      this.removeAttribute("target");
+    });
+  </script>
+</body>
+</html>
