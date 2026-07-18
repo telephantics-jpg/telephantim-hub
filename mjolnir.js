@@ -23,9 +23,9 @@ scene.background = new THREE.Color(0x05070c);
 scene.fog = new THREE.FogExp2(0x05070c, 0.028);
 
 const { w: sw0, h: sh0 } = stageSize();
-const camera = new THREE.PerspectiveCamera(isMobile() ? 30 : 36, sw0 / sh0, 0.1, 100);
-// Start zoomed out + centered on both relics
-camera.position.set(0, isMobile() ? 2.4 : 2.2, isMobile() ? 13.5 : 10.5);
+const camera = new THREE.PerspectiveCamera(isMobile() ? 28 : 34, sw0 / sh0, 0.1, 100);
+// Start zoomed out + centered so BOTH relics are on screen
+camera.position.set(0, isMobile() ? 2.55 : 2.35, isMobile() ? 14.2 : 11.2);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -242,13 +242,13 @@ for (let i = 0; i < 12; i++) {
   hammer.add(chip);
 }
 
-// Pedestal offset so both relics fit on the “map” (wider for zoomed-out start)
-hammer.position.set(-1.55, 0.05, 0);
+// Both relics on-screen together (left hammer · right staff)
+hammer.position.set(-1.2, 0.05, 0);
 scene.add(hammer);
 
 // ---------- Caduceus: staff + fluid DNA-like snakes ----------
 const caduceus = new THREE.Group();
-caduceus.position.set(1.65, 0.05, 0);
+caduceus.position.set(1.2, 0.05, 0);
 caduceus.userData.isCaduceus = true;
 
 const staffGold = new THREE.MeshStandardMaterial({
@@ -613,18 +613,20 @@ composer.addPass(new OutputPass());
 
 function fitCameraDefault() {
   const mobile = isMobile();
-  // Centered + zoomed out so hammer + staff both frame cleanly
-  camera.position.set(0, mobile ? 2.4 : 2.2, mobile ? 13.5 : 10.5);
-  camera.fov = mobile ? 30 : 36;
+  // Always show BOTH Mjolnir + Caduceus, centered, zoomed out
+  camera.position.set(0, mobile ? 2.55 : 2.35, mobile ? 14.2 : 11.2);
+  camera.fov = mobile ? 28 : 34;
   camera.updateProjectionMatrix();
-  controls.target.set(0, 1.1, 0);
+  controls.target.set(0, 1.05, 0);
+  controls.minDistance = mobile ? 4.0 : 3.8;
+  controls.maxDistance = 24;
   controls.update();
 }
 
 // ---------- Grabbable relics (Mjolnir + Caduceus) + cartoon hand ----------
 const homePos = {
-  hammer: new THREE.Vector3(-1.55, 0.05, 0),
-  caduceus: new THREE.Vector3(1.65, 0.05, 0),
+  hammer: new THREE.Vector3(-1.2, 0.05, 0),
+  caduceus: new THREE.Vector3(1.2, 0.05, 0),
 };
 const grab = {
   active: false,
@@ -1062,14 +1064,14 @@ window.addEventListener("keydown", (e) => {
 function resize() {
   const { w, h } = stageSize();
   camera.aspect = w / h;
-  camera.fov = isMobile() ? 30 : 36;
+  camera.fov = isMobile() ? 28 : 34;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   bloom.setSize(w, h);
   controls.enablePan = !isMobile();
-  // Keep look target centered on the pair
-  controls.target.set(0, 1.1, 0);
+  // Keep look target centered between both relics
+  controls.target.set(0, 1.05, 0);
 }
 
 window.addEventListener("resize", resize);
