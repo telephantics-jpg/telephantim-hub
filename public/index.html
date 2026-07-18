@@ -1,15 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Telephantim</title>
   <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-18" />
-  <meta name="description" content="Telephantim hub â€” Luna Camp, PayPal, Cash App, Venmo." />
+  <meta name="description" content="Telephantim hub  -  Luna Camp, PayPal, Cash App, Venmo." />
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=25" />
+  <link rel="stylesheet" href="styles.css?v=26" />
 </head>
 <body>
   <div class="flash" id="flash"></div>
@@ -21,12 +21,12 @@
     <div class="topbar">
       <div class="brand">
         <h1>Telephantim</h1>
-        <p id="grab-hint">Mjolnir + Caduceus Â· zoomed out Â· grab either</p>
+        <p id="grab-hint">Mjolnir + Caduceus  ·  zoomed out  ·  grab either</p>
       </div>
       <div class="badge-stack">
-        <div class="badge" id="brain-pill">AI â€¦</div>
+        <div class="badge" id="brain-pill">AI ...</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v24 DUAL</div>
+        <div class="badge">LIVE v26 DUAL</div>
       </div>
     </div>
 
@@ -38,21 +38,21 @@
           <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
         </div>
         <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
-        <div class="dbox-meta" id="box-mjolnir-meta">power Â· courage Â· lightning</div>
+        <div class="dbox-meta" id="box-mjolnir-meta">power  ·  courage  ·  lightning</div>
       </div>
       <div class="dbox dbox-caduceus show" id="box-caduceus">
         <div class="dbox-head">
           <span class="dbox-title">Caduceus</span>
           <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
         </div>
-        <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING â€” scroll the bubble if it runs tall.</div>
-        <div class="dbox-meta" id="box-caduceus-meta">healing Â· vitality Â· balance</div>
+        <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING  -  scroll the bubble if it runs tall.</div>
+        <div class="dbox-meta" id="box-caduceus-meta">healing  ·  vitality  ·  balance</div>
       </div>
     </div>
 
     <div class="float-actions" id="float-actions">
       <button type="button" class="btn-chip btn-min" id="btn-actions-toggle" aria-expanded="true" title="Hide action buttons">
-        Hide â–¾
+        Hide v
       </button>
       <div class="float-actions-main" id="float-actions-main">
         <a class="btn-luna" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
@@ -71,7 +71,7 @@
       <div class="sheet-handle-bar" aria-hidden="true"></div>
       <div class="sheet-handle-row">
         <div>
-          <strong>Pay Â· Music Â· Socials</strong>
+          <strong>Pay  ·  Music  ·  Socials</strong>
           <span class="sub" id="sheet-hint">Tap to open or minimize</span>
         </div>
         <span class="sheet-toggle" id="sheet-toggle-label">Open â–²</span>
@@ -86,7 +86,7 @@
         <div>
           <h2>Telephantix</h2>
           <p class="handle">@telephantix</p>
-          <p class="tag">Music Â· AI Â· Support</p>
+          <p class="tag">Music  ·  AI  ·  Support</p>
         </div>
       </div>
 
@@ -172,7 +172,7 @@
       </section>
 
       <p class="foot">
-        <strong>telephantim.com</strong> Â·
+        <strong>telephantim.com</strong>  · 
         <a href="https://telephanti.com/firmament/play" target="_blank" rel="noopener">Luna Camp</a>
       </p>
     </div>
@@ -198,11 +198,11 @@
       function setOpen(open) {
         body.classList.toggle("sheet-open", !!open);
         if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
-        if (label) label.textContent = open ? "Minimize â–¾" : "Open â–²";
+        if (label) label.textContent = open ? "Minimize v" : "Open â–²";
         if (hint) {
           hint.textContent = open
-            ? "Scroll list Â· tap bar to minimize"
-            : "Tap bar to open Pay Â· Music Â· Socials";
+            ? "Scroll list  ·  tap bar to minimize"
+            : "Tap bar to open Pay  ·  Music  ·  Socials";
         }
         if (open && sheetBody) sheetBody.scrollTop = 0;
       }
@@ -222,7 +222,7 @@
           e.preventDefault();
           var collapsed = actionsWrap.classList.toggle("collapsed");
           actionsToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-          actionsToggle.textContent = collapsed ? "Buttons â–´" : "Hide â–¾";
+          actionsToggle.textContent = collapsed ? "Buttons ^" : "Hide v";
           actionsToggle.title = collapsed ? "Show action buttons" : "Hide action buttons";
         });
       }
@@ -244,7 +244,7 @@
     }
   }
   </script>
-  <script type="module" src="personality.js?v=25"></script>
-  <script type="module" src="mjolnir.js?v=25"></script>
+  <script type="module" src="personality.js?v=26"></script>
+  <script type="module" src="mjolnir.js?v=26"></script>
 </body>
 </html>
