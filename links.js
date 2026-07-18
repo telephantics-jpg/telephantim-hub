@@ -123,7 +123,7 @@ export const SOCIALS = [
   { title: "Threads", url: "https://www.threads.net/@telephantix", icon: "threads" },
   { title: "LinkedIn", url: "https://www.linkedin.com/in/telephantics", icon: "in" },
   { title: "Truth Social", url: "https://truthsocial.com/@Telephantics", icon: "truth" },
-  { title: "Suno", url: "https://suno.com/@telephantix", icon: "suno" },
+  { title: "Suno", url: "go-suno.html", icon: "suno" },
 ];
 
 /** Plain text emblems (encoding-safe brand marks) */

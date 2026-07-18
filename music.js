@@ -1,13 +1,52 @@
 /**
- * On-page music player — Suno profile + Spotify / YouTube embeds.
- * Add more Suno tracks: { title, type: "suno", id: "SONG_UUID" }
- * Get UUID from a song share URL: suno.com/song/UUID
+ * On-page music player — Suno songs + Spotify / YouTube embeds.
+ * Profile (correct): https://suno.com/@telephantix  (NOT @telephantix-demo)
+ * Add more Suno tracks: { title, type: "suno", songId: "SONG_UUID" }
+ * UUID from share URL: suno.com/song/UUID
  */
 
 const SUNO_PROFILE = "https://suno.com/@telephantix";
+/** Reliable same-origin open page (avoids blank new-tab on phones). */
+const SUNO_OPEN = "go-suno.html";
 
 /** Default playable set (in-browser). Swap/add Suno song IDs anytime. */
 export const PLAYLIST = [
+  // Public @telephantix Suno tracks (embed plays on-page)
+  {
+    id: "suno-taccata",
+    title: "Taccata",
+    artist: "Suno · @telephantix",
+    type: "suno",
+    songId: "7642aa82-4650-4776-aca5-36e65e343e33",
+  },
+  {
+    id: "suno-desperation",
+    title: "Desperation",
+    artist: "Suno · @telephantix",
+    type: "suno",
+    songId: "c03108ad-f7a6-404f-b0f4-e6792e681818",
+  },
+  {
+    id: "suno-faint-whispers",
+    title: "Faint whispers",
+    artist: "Suno · @telephantix",
+    type: "suno",
+    songId: "c424705a-1002-40b0-a5a1-fbeab6865c68",
+  },
+  {
+    id: "suno-for-the-home",
+    title: "For the Home",
+    artist: "Suno · @telephantix",
+    type: "suno",
+    songId: "2f62b61b-aa1c-47ca-bbb7-c3916d3fd00e",
+  },
+  {
+    id: "suno-lucid-dreams",
+    title: "Lucid Dreams",
+    artist: "Suno · @telephantix",
+    type: "suno",
+    songId: "891fb230-b620-4825-8755-cd762463608b",
+  },
   {
     id: "spotify-album",
     title: "Telephantix — Spotify Album",
@@ -31,14 +70,6 @@ export const PLAYLIST = [
     type: "youtube",
     listId: "OLAK5uy_mCCAwPfN9jMXE9khpgsYFzA1xeei_i4NI",
   },
-  // Example Suno entries (uncomment / replace with your song UUIDs from share links):
-  // {
-  //   id: "suno-1",
-  //   title: "My Suno Track",
-  //   artist: "@telephantix",
-  //   type: "suno",
-  //   songId: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  // },
 ];
 
 function $(id) {
@@ -105,7 +136,8 @@ function loadTrack(autoPlayHint) {
 
   if (title) title.textContent = t ? t.title : "No tracks";
   if (sub) sub.textContent = t ? t.artist || t.type : "";
-  if (sunoLink) sunoLink.href = SUNO_PROFILE;
+  // Profile open uses go-suno.html (correct @telephantix, no -demo, reliable on phones)
+  if (sunoLink) sunoLink.href = SUNO_OPEN;
 
   if (!t) return;
 
@@ -170,11 +202,25 @@ function prev() {
   loadTrack(true);
 }
 
+/** Jump player to first Suno track (on-page embed). Profile opens via go-suno.html. */
+function playSunoFirst(e) {
+  // If user wants profile, leave default link; if we intercept, load Suno embed.
+  // Ctrl/Cmd-click or middle-click still opens profile page.
+  if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1)) return;
+  const i = PLAYLIST.findIndex((t) => t.type === "suno");
+  if (i < 0) return; // fall through to go-suno.html
+  e.preventDefault();
+  index = i;
+  setOpen(true);
+  loadTrack(true);
+}
+
 function wire() {
   $("btn-music")?.addEventListener("click", () => setOpen(!open));
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
+  $("music-suno-link")?.addEventListener("click", playSunoFirst);
   renderList();
   loadTrack(false);
 }

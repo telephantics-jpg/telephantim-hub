@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Suno @telephantix</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #05070c;
+      color: #e8eef8;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      width: min(100%, 360px);
+      padding: 1.5rem 1.25rem 1.35rem;
+      border-radius: 18px;
+      border: 1px solid rgba(124, 92, 255, 0.45);
+      background: rgba(12, 16, 28, 0.95);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    }
+    .badge {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 0.9rem;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 1rem;
+      color: #fff;
+      background: linear-gradient(145deg, #7c5cff, #4a2fd6);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: 0.02em;
+    }
+    p {
+      margin: 0.55rem 0 1.15rem;
+      color: #8b97ad;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      border: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(145deg, #7c5cff, #4a2fd6);
+      box-shadow: 0 8px 22px rgba(124, 92, 255, 0.35);
+    }
+    .btn:active { transform: scale(0.98); }
+    .back {
+      display: inline-block;
+      margin-top: 1rem;
+      color: #c9a227;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge" aria-hidden="true">Su</div>
+    <h1>@telephantix on Suno</h1>
+    <p>
+      Correct profile: suno.com/@telephantix
+      (not @telephantix-demo). Tap below to open — same-tab is most reliable on phones.
+    </p>
+    <a
+      class="btn"
+      id="suno-open"
+      href="https://suno.com/@telephantix"
+      rel="noopener"
+    >Open Suno @telephantix</a>
+    <a class="back" href="./">Back to Telephantim</a>
+  </div>
+  <script>
+    document.getElementById("suno-open").addEventListener("click", function () {
+      this.removeAttribute("target");
+    });
+  </script>
+</body>
+</html>
