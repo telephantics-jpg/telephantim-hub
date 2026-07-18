@@ -12,6 +12,8 @@ export const PROFILE = {
   beacons: "https://beacons.ai/telephantix",
   site: "https://telephantix.com",
   lunaCamp: "https://telephanti.com/firmament/play",
+  lunaCamp2d: "https://telephanti.com/firmament/play",
+  lunaCamp3d: "https://telephanti.com/firmament/3d",
   lunaHome: "https://telephanti.com/",
 };
 

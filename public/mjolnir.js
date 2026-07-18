@@ -701,7 +701,7 @@ function projectOntoDragPlane(event, target, worldPos) {
 
 function isUiTarget(event) {
   return !!event.target.closest?.(
-    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .dbox, .dialogue-layer"
+    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .dbox, .dialogue-layer, .world-switch, .scene-frame, .scene-fallback, .music-player"
   );
 }
 
@@ -1085,9 +1085,22 @@ fitCameraDefault();
 const clock = new THREE.Clock();
 let auraTimer = 0;
 let snakeTimer = 0;
+/** Pause WebGL when Luna Camp (or other external scene) fills the screen */
+let sceneActive = true;
+
+window.addEventListener("telephantim-scene", (e) => {
+  const d = e.detail || {};
+  sceneActive = d.active !== false && d.scene === "telephantim";
+  if (sceneActive) {
+    try {
+      clock.getDelta(); // reset dt spike after pause
+    } catch (_) {}
+  }
+});
 
 function animate() {
   requestAnimationFrame(animate);
+  if (!sceneActive) return;
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
