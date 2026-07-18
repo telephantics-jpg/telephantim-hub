@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=31" />
+  <link rel="stylesheet" href="styles.css?v=32" />
 </head>
 <body>
   <div class="flash" id="flash"></div>
@@ -26,7 +26,7 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">AI ...</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v31 DUAL</div>
+        <div class="badge">LIVE v32 DUAL</div>
       </div>
     </div>
 
@@ -166,20 +166,20 @@
       <section class="section">
         <h3>Socials</h3>
         <div class="links">
-          <a class="link" href="https://www.instagram.com/telephantix/" target="_blank" rel="noopener noreferrer">
+          <a class="link js-instagram" href="https://instagram.com/telephantix" data-ig-user="telephantix" target="_blank" rel="noopener">
             <span class="ico ico-ig" aria-hidden="true">IG</span>
             <span><strong>Instagram</strong><small>@telephantix</small></span>
             <span class="arr" aria-hidden="true">&rarr;</span>
           </a>
         </div>
         <div class="socials">
-          <a class="social ico-ig" href="https://www.instagram.com/telephantix/" target="_blank" rel="noopener noreferrer" title="Instagram @telephantix">IG</a>
-          <a class="social ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener noreferrer" title="X">X</a>
-          <a class="social ico-fb" href="https://www.facebook.com/telephantics" target="_blank" rel="noopener noreferrer" title="Facebook">f</a>
-          <a class="social ico-threads" href="https://www.threads.net/@telephantix" target="_blank" rel="noopener noreferrer" title="Threads">Th</a>
-          <a class="social ico-in" href="https://www.linkedin.com/in/telephantics" target="_blank" rel="noopener noreferrer" title="LinkedIn">in</a>
-          <a class="social ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener noreferrer" title="Truth">T</a>
-          <a class="social ico-suno" href="https://suno.com/@telephantix" target="_blank" rel="noopener noreferrer" title="Suno">Su</a>
+          <a class="social ico-ig js-instagram" href="https://instagram.com/telephantix" data-ig-user="telephantix" target="_blank" rel="noopener" title="Instagram @telephantix">IG</a>
+          <a class="social ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener" title="X">X</a>
+          <a class="social ico-fb" href="https://www.facebook.com/telephantics" target="_blank" rel="noopener" title="Facebook">f</a>
+          <a class="social ico-threads" href="https://www.threads.net/@telephantix" target="_blank" rel="noopener" title="Threads">Th</a>
+          <a class="social ico-in" href="https://www.linkedin.com/in/telephantics" target="_blank" rel="noopener" title="LinkedIn">in</a>
+          <a class="social ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener" title="Truth">T</a>
+          <a class="social ico-suno" href="https://suno.com/@telephantix" target="_blank" rel="noopener" title="Suno">Su</a>
         </div>
       </section>
 
@@ -210,11 +210,11 @@
       function setOpen(open) {
         body.classList.toggle("sheet-open", !!open);
         if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
-        if (label) label.textContent = open ? "Minimize v" : "Open â–²";
+        if (label) label.textContent = open ? "Minimize" : "Open";
         if (hint) {
           hint.textContent = open
-            ? "Scroll list  ·  tap bar to minimize"
-            : "Tap bar to open Pay  ·  Music  ·  Socials";
+            ? "Scroll list - tap bar to minimize"
+            : "Tap bar to open Pay - Music - Socials";
         }
         if (open && sheetBody) sheetBody.scrollTop = 0;
       }
@@ -234,7 +234,7 @@
           e.preventDefault();
           var collapsed = actionsWrap.classList.toggle("collapsed");
           actionsToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-          actionsToggle.textContent = collapsed ? "Buttons ^" : "Hide v";
+          actionsToggle.textContent = collapsed ? "Buttons" : "Hide";
           actionsToggle.title = collapsed ? "Show action buttons" : "Hide action buttons";
         });
       }
@@ -245,6 +245,40 @@
           sheet.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
         });
       }
+
+      // Instagram often opens a blank tab with target=_blank + noreferrer on mobile.
+      // Prefer app deep-link, then same-tab web profile.
+      function openInstagram(username) {
+        var user = username || "telephantix";
+        var web = "https://www.instagram.com/" + user + "/";
+        var mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
+        if (mobile) {
+          var app = "instagram://user?username=" + encodeURIComponent(user);
+          var fellBack = false;
+          var t = setTimeout(function () {
+            if (!fellBack) {
+              fellBack = true;
+              window.location.href = web;
+            }
+          }, 900);
+          try {
+            window.location.href = app;
+          } catch (err) {
+            clearTimeout(t);
+            window.location.href = web;
+          }
+          // If app opened, page is backgrounded; timeout still safe
+          return;
+        }
+        window.open(web, "_blank", "noopener");
+      }
+
+      document.querySelectorAll("a.js-instagram").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          openInstagram(a.getAttribute("data-ig-user") || "telephantix");
+        });
+      });
     })();
   </script>
 
@@ -256,7 +290,7 @@
     }
   }
   </script>
-  <script type="module" src="personality.js?v=31"></script>
-  <script type="module" src="mjolnir.js?v=31"></script>
+  <script type="module" src="personality.js?v=32"></script>
+  <script type="module" src="mjolnir.js?v=32"></script>
 </body>
 </html>
