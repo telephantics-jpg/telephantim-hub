@@ -1,5 +1,5 @@
 @echo off
-title Telephantim AI (Ollama)
+title Telephantim Dual Brains (Ollama)
 cd /d "%~dp0"
 
 echo.
@@ -8,12 +8,12 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr :8765 ^| findstr LISTENING') 
   taskkill /F /PID %%p >nul 2>&1
 )
 
-echo  Starting AI server (NOT plain http.server)...
+echo  Starting dual-mind AI server...
+echo  Mjolnir + Caduceus keep memory and talk for real.
 echo  Site: http://127.0.0.1:8765/
-echo  Status must say telephantim-ai
 echo.
 
-start "" "http://127.0.0.1:8765/"
+start "" "http://127.0.0.1:8765/?v=28"
 python server.py
 if errorlevel 1 (
   echo Python failed.
