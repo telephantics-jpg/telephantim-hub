@@ -8,16 +8,28 @@ import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 const wrap = document.getElementById("canvas-wrap");
 const flashEl = document.getElementById("flash");
 
+function stageSize() {
+  const w = Math.max(1, wrap?.clientWidth || window.innerWidth);
+  const h = Math.max(1, wrap?.clientHeight || Math.min(window.innerHeight * 0.52, 420));
+  return { w, h };
+}
+
+function isMobile() {
+  return window.matchMedia("(max-width: 899px)").matches;
+}
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070c);
-scene.fog = new THREE.FogExp2(0x05070c, 0.035);
+scene.fog = new THREE.FogExp2(0x05070c, 0.028);
 
-const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(3.6, 2.1, 4.4);
+const { w: sw0, h: sh0 } = stageSize();
+const camera = new THREE.PerspectiveCamera(isMobile() ? 38 : 42, sw0 / sh0, 0.1, 100);
+// Pull back so full hammer fits (especially phones)
+camera.position.set(isMobile() ? 0.2 : 3.2, isMobile() ? 1.35 : 1.9, isMobile() ? 6.2 : 5.0);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(sw0, sh0, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
@@ -27,12 +39,14 @@ wrap.appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.minDistance = 2.2;
-controls.maxDistance = 12;
-controls.target.set(0, 0.9, 0);
+controls.minDistance = 2.4;
+controls.maxDistance = 14;
+controls.target.set(0, 0.95, 0);
 controls.autoRotate = true;
-controls.autoRotateSpeed = 1.1;
+controls.autoRotateSpeed = 1.0;
 controls.maxPolarAngle = Math.PI * 0.92;
+// On mobile, allow page scroll outside canvas; keep rotate on canvas only
+controls.enablePan = !isMobile();
 
 const hemi = new THREE.HemisphereLight(0x6a8ab8, 0x1a1208, 0.55);
 scene.add(hemi);
@@ -344,9 +358,16 @@ function updateSparks(dt) {
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.4, 0.85);
+const bloom = new UnrealBloomPass(new THREE.Vector2(sw0, sh0), 0.5, 0.4, 0.85);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
+
+function fitCameraDefault() {
+  const mobile = isMobile();
+  camera.position.set(mobile ? 0.15 : 3.2, mobile ? 1.35 : 1.9, mobile ? 6.2 : 5.0);
+  controls.target.set(0, 0.95, 0);
+  controls.update();
+}
 
 let strikeTime = 0;
 
@@ -366,9 +387,11 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 function onPointerDown(event) {
-  if (event.target.closest?.(".panel, header, button, .toggle, input")) return;
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  if (event.target.closest?.(".panel, header, button, .toggle, input, .btn-luna, .btn-mini, .content, a")) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   if (raycaster.intersectObject(hammer, true).length) strike();
 }
@@ -412,26 +435,34 @@ spinSpeed?.addEventListener("input", () => {
 
 btnStrike?.addEventListener("click", strike);
 btnReset?.addEventListener("click", () => {
-  camera.position.set(3.6, 2.1, 4.4);
-  controls.target.set(0, 0.9, 0);
+  fitCameraDefault();
   hammer.rotation.set(0, 0, 0);
-  controls.update();
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
+  if (e.code === "Space" && !e.target.closest?.("input, textarea, a, button")) {
     e.preventDefault();
     strike();
   }
 });
 
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+function resize() {
+  const { w, h } = stageSize();
+  camera.aspect = w / h;
+  camera.fov = isMobile() ? 38 : 42;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
-  bloom.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  bloom.setSize(w, h);
+  controls.enablePan = !isMobile();
+}
+
+window.addEventListener("resize", resize);
+if (typeof ResizeObserver !== "undefined" && wrap) {
+  new ResizeObserver(resize).observe(wrap);
+}
+resize();
+fitCameraDefault();
 
 const clock = new THREE.Clock();
 let auraTimer = 0;
