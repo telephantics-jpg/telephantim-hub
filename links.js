@@ -117,7 +117,7 @@ export const FEATURED = [
 
 /** Socials */
 export const SOCIALS = [
-  { title: "Instagram", url: "https://instagram.com/telephantix", icon: "ig" },
+  { title: "Instagram", url: "https://www.instagram.com/telephantix/", icon: "ig" },
   { title: "X / Twitter", url: "https://x.com/Telephantix", icon: "x" },
   { title: "Facebook", url: "https://www.facebook.com/telephantics", icon: "fb" },
   { title: "Threads", url: "https://www.threads.net/@telephantix", icon: "threads" },
