@@ -126,20 +126,21 @@ export const SOCIALS = [
   { title: "Suno", url: "https://suno.com/@telephantix", icon: "suno" },
 ];
 
+/** Plain text emblems (encoding-safe brand marks) */
 export const ICONS = {
-  paypal: "💙",
-  cashapp: "💵",
-  venmo: "💙",
-  gofundme: "💚",
-  coffee: "☕",
-  music: "🎵",
-  spotify: "🎧",
-  spark: "✨",
-  ig: "📸",
-  x: "𝕏",
+  paypal: "PP",
+  cashapp: "$",
+  venmo: "V",
+  gofundme: "GF",
+  coffee: "BMC",
+  music: "YT",
+  spotify: "SP",
+  spark: "LU",
+  ig: "IG",
+  x: "X",
   fb: "f",
-  threads: "🧵",
+  threads: "Th",
   in: "in",
   truth: "T",
-  suno: "🎶",
+  suno: "Su",
 };

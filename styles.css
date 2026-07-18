@@ -460,10 +460,33 @@ body:not(.sheet-open) .sheet-body {
 }
 
 .link.accent { border-color: rgba(100,190,255,0.45); }
-.link .ico { text-align: center; font-size: 1rem; }
+.link .ico {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-align: center;
+  flex-shrink: 0;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+/* Brand-colored emblems (no emoji — encoding-safe) */
+.ico-paypal { background: linear-gradient(145deg, #0070ba, #003087); font-size: 0.72rem; }
+.ico-cashapp { background: linear-gradient(145deg, #00e676, #00c853); color: #062; font-size: 1.15rem; font-weight: 900; }
+.ico-venmo { background: linear-gradient(145deg, #3d95ce, #008cff); font-size: 0.95rem; }
+.ico-gofundme { background: linear-gradient(145deg, #02c07a, #02a95c); font-size: 0.65rem; }
+.ico-coffee { background: linear-gradient(145deg, #ffdd00, #f0b90b); color: #1a1200; font-size: 0.58rem; }
+.ico-yt { background: linear-gradient(145deg, #ff4444, #cc0000); }
+.ico-spotify { background: linear-gradient(145deg, #1ed760, #1db954); color: #041; }
+.ico-luna { background: linear-gradient(145deg, #4aa8ff, #1a4a7a); }
 .link strong { display: block; font-size: 0.9rem; font-weight: 600; }
 .link small { display: block; color: var(--muted); font-size: 0.7rem; margin-top: 0.12rem; }
-.link .arr { color: var(--muted); }
+.link .arr { color: var(--muted); font-size: 1rem; }
 
 .socials {
   display: flex;
@@ -479,9 +502,18 @@ body:not(.sheet-open) .sheet-body {
   border-radius: 11px;
   border: 1px solid rgba(138,155,176,0.28);
   background: rgba(255,255,255,0.04);
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: #fff;
 }
+.social.ico-ig { background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af); border-color: transparent; }
+.social.ico-x { background: #111; border-color: #333; font-size: 0.95rem; }
+.social.ico-fb { background: #1877f2; border-color: transparent; font-size: 1.1rem; font-family: Georgia, serif; }
+.social.ico-threads { background: #101010; border-color: #333; }
+.social.ico-in { background: #0a66c2; border-color: transparent; }
+.social.ico-truth { background: #5000b9; border-color: transparent; }
+.social.ico-suno { background: linear-gradient(145deg, #7c5cff, #4a2fd6); border-color: transparent; }
 
 .foot {
   margin-top: 1rem;
