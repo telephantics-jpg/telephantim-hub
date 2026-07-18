@@ -72,10 +72,19 @@ a { color: inherit; text-decoration: none; }
 }
 
 .brand p {
-  display: none;
+  display: block;
   font-size: 0.7rem;
   color: var(--muted);
   margin-top: 0.15rem;
+  max-width: min(70vw, 320px);
+  line-height: 1.3;
+}
+
+.badge-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
 }
 
 .badge {
@@ -88,6 +97,146 @@ a { color: inherit; text-decoration: none; }
   padding: 0.3rem 0.5rem;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+#brain-pill[data-mode="ollama"] {
+  border-color: rgba(100, 220, 160, 0.5);
+  color: #9fefc0;
+}
+#brain-pill[data-mode="offline"] {
+  border-color: rgba(180, 180, 180, 0.35);
+  color: #b0b8c4;
+}
+
+/* Speech bubbles — screen-space above each 3D speaker (Mjolnir / Caduceus) */
+.dialogue-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  overflow: hidden;
+}
+.dbox {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  /* JS sets left/top to speaker head; keep -50%/-100% so bubble sits above */
+  transform: translate(-50%, -100%);
+  width: min(58vw, 280px);
+  max-width: 280px;
+  padding: 0.5rem 0.6rem 0.48rem;
+  border-radius: 14px;
+  background: rgba(8, 12, 22, 0.94);
+  border: 1px solid rgba(138, 155, 176, 0.3);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.48);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: left, top, opacity;
+  transition: opacity 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.dbox.show {
+  opacity: 1;
+  visibility: visible;
+}
+.dbox.active-speaker {
+  opacity: 1;
+  filter: brightness(1.08);
+  z-index: 9;
+}
+.dbox.pulse {
+  animation: dbox-pulse 0.35s ease;
+}
+@keyframes dbox-pulse {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.28); }
+  100% { filter: brightness(1); }
+}
+/* Tail points down at the speaker */
+.dbox::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  transform: rotate(45deg);
+  background: rgba(8, 12, 22, 0.94);
+  border-right: 1px solid rgba(138, 155, 176, 0.3);
+  border-bottom: 1px solid rgba(138, 155, 176, 0.3);
+}
+.dbox-mjolnir {
+  border-color: rgba(240, 200, 80, 0.55);
+}
+.dbox-mjolnir.active-speaker {
+  border-color: rgba(255, 210, 90, 0.95);
+  box-shadow: 0 0 18px rgba(201, 162, 39, 0.32);
+}
+.dbox-caduceus {
+  border-color: rgba(80, 220, 180, 0.5);
+}
+.dbox-caduceus.active-speaker {
+  border-color: rgba(100, 255, 210, 0.9);
+  box-shadow: 0 0 18px rgba(80, 220, 180, 0.28);
+}
+.dbox-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.22rem;
+}
+.dbox-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+.dbox-caduceus .dbox-title { color: #8ef0c8; }
+.dbox-power {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 0.1rem 0.35rem;
+}
+.dbox-text {
+  font-size: 0.76rem;
+  line-height: 1.38;
+  color: var(--text);
+  max-height: 11em;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.dbox-meta {
+  margin-top: 0.2rem;
+  font-size: 0.55rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 520px) {
+  .dbox {
+    width: min(52vw, 210px);
+    max-width: 210px;
+    padding: 0.4rem 0.48rem 0.38rem;
+  }
+  .dbox-text {
+    font-size: 0.68rem;
+    max-height: 9.5em;
+  }
+  .dbox-meta { display: none; }
+}
+@media (min-width: 900px) {
+  .dbox {
+    width: min(300px, 32vw);
+    max-width: 300px;
+  }
+  .dbox-text { font-size: 0.84rem; max-height: 12em; }
 }
 
 .float-actions {

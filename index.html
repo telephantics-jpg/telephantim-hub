@@ -8,28 +8,53 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=22" />
 </head>
 <body>
   <div class="flash" id="flash"></div>
 
-  <!-- Full-screen 3D hammer -->
-  <section class="stage" aria-label="3D Mjolnir">
+  <!-- Full-screen 3D relics: Mjolnir + Caduceus -->
+  <section class="stage" aria-label="3D relics">
     <div id="canvas-wrap"></div>
 
     <div class="topbar">
       <div class="brand">
         <h1>Telephantim</h1>
-        <p>Drag · open menu for pay links</p>
+        <p id="grab-hint">Longer chats above each speaker · grab · Relic duel</p>
       </div>
-      <div class="badge">BUILD v9</div>
+      <div class="badge-stack">
+        <div class="badge" id="brain-pill">AI …</div>
+        <div class="badge" id="bond-pill">Bond 1</div>
+        <div class="badge">LIVE v22</div>
+      </div>
+    </div>
+
+    <!-- Bubbles track each 3D speaker (positions set in mjolnir.js) -->
+    <div class="dialogue-layer" aria-live="polite">
+      <div class="dbox dbox-mjolnir show" id="box-mjolnir">
+        <div class="dbox-head">
+          <span class="dbox-title">Mjolnir</span>
+          <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
+        </div>
+        <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
+        <div class="dbox-meta" id="box-mjolnir-meta">power · courage · lightning</div>
+      </div>
+      <div class="dbox dbox-caduceus show" id="box-caduceus">
+        <div class="dbox-head">
+          <span class="dbox-title">Caduceus</span>
+          <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
+        </div>
+        <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING — scroll the bubble if it runs tall.</div>
+        <div class="dbox-meta" id="box-caduceus-meta">healing · vitality · balance</div>
+      </div>
     </div>
 
     <div class="float-actions">
       <a class="btn-luna" href="https://telephanti.com/firmament/play" target="_blank" rel="noopener noreferrer">
-        🏕️ Luna Camp
+        Luna Camp
       </a>
-      <button type="button" class="btn-chip" id="btn-strike">⚡ Strike</button>
+      <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
+      <button type="button" class="btn-chip" id="btn-strike">Strike</button>
       <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
     </div>
   </section>
@@ -209,6 +234,7 @@
     }
   }
   </script>
-  <script type="module" src="mjolnir.js?v=9"></script>
+  <script type="module" src="personality.js?v=22"></script>
+  <script type="module" src="mjolnir.js?v=22"></script>
 </body>
 </html>
