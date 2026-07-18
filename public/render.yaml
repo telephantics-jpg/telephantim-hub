@@ -1,15 +1,18 @@
-# Render Static Site — files at repo ROOT (index.html, styles.css, mjolnir.js)
+﻿# Render Static Site — MUST publish repo ROOT (dual Mjolnir + Caduceus LIVE v24)
 services:
   - type: web
     name: telephantim-hub
     runtime: static
-    # Publish whole repo root so deploy matches GitHub Pages
+    branch: master
     staticPublishPath: .
     buildCommand: ""
     headers:
       - path: /*
         name: Cache-Control
-        value: "public, max-age=60"
+        value: "no-store, no-cache, must-revalidate, max-age=0"
+      - path: /*
+        name: Pragma
+        value: "no-cache"
     routes:
       - type: rewrite
         source: /*
