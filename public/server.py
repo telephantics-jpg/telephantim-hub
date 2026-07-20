@@ -16,6 +16,7 @@ import random
 import re
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -102,6 +103,138 @@ POWER = {"mjolnir": 1, "caduceus": 1, "bond": 1}
 # Shared living dialogue: list of {persona, name, text}
 MEMORY: list[dict] = []
 MEMORY_MAX = 24
+
+# Daily Word cache (one generated paragraph per UTC/local day key)
+DAILY_CACHE: dict[str, dict] = {}
+DAILY_CACHE_FILE = ROOT / "data" / "daily-wisdom-cache.json"
+
+DAILY_SYSTEM = (
+    "You write the Telephantim Daily Word: one powerful paragraph for a public sacred-tech site. "
+    "Style: esoteric, mythic, clear English — potent but readable. "
+    "Content MUST be grounded in real science, real history, or real philosophy. "
+    "Frame truth in sacred language; do NOT invent false history, fake physics, medical cures, or conspiracies. "
+    "No markdown, no bullet lists, no quotes around the whole piece, no hashtags. "
+    "Do not mention AI, models, Ollama, Grok, or that you are generating text."
+)
+
+
+def _daily_cache_load() -> None:
+    global DAILY_CACHE
+    try:
+        if DAILY_CACHE_FILE.is_file():
+            data = json.loads(DAILY_CACHE_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                DAILY_CACHE = data
+    except Exception:
+        pass
+
+
+def _daily_cache_save() -> None:
+    try:
+        DAILY_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        DAILY_CACHE_FILE.write_text(json.dumps(DAILY_CACHE, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] daily cache save failed:", e)
+
+
+_daily_cache_load()
+
+
+def _parse_daily_text(raw: str) -> tuple[str, str]:
+    text = (raw or "").strip()
+    title = "Daily Word"
+    body = text
+    m = re.match(r"(?is)^\s*TITLE:\s*(.+?)\s*(?:\n+|$)(.*)$", text)
+    if m:
+        title = re.sub(r"\s+", " ", m.group(1)).strip()[:80] or title
+        body = (m.group(2) or "").strip()
+    body = re.sub(r"\s+", " ", body).strip()
+    if len(body) < 40:
+        return "", ""
+    # Cap length for UI
+    if len(body) > 900:
+        body = body[:897].rsplit(" ", 1)[0] + "…"
+    return title, body
+
+
+def generate_daily_wisdom(day: str) -> dict | None:
+    """Try XAI → Groq → Ollama once for this day. Returns payload or None."""
+    user = (
+        f"Date key: {day}. Write today's Daily Word.\n"
+        "Line 1 exactly: TITLE: <short title>\n"
+        "Then one paragraph 120-220 words: esoteric tone, strictly true core "
+        "(science, history, psychology, natural philosophy). No lists."
+    )
+    # Prefer cloud on live; still try all
+    attempts: list[tuple[str, callable]] = []
+    if XAI_API_KEY:
+        attempts.append(("xai", lambda: chat_xai(DAILY_SYSTEM, user)))
+    if GROQ_API_KEY:
+        attempts.append(
+            (
+                "groq",
+                lambda: chat_openai_compat(
+                    GROQ_URL,
+                    GROQ_API_KEY,
+                    GROQ_MODEL_CADUCEUS,
+                    DAILY_SYSTEM,
+                    user,
+                ),
+            )
+        )
+    # Ollama last (home PC / local)
+    def _ollama() -> str:
+        models = ollama_models()
+        model = resolve_model(MODEL_CADUCEUS, models) or resolve_model(MODEL_MJOLNIR, models)
+        if not model:
+            return ""
+        return chat_ollama(DAILY_SYSTEM, user, model)
+
+    attempts.append(("ollama", _ollama))
+
+    for source, fn in attempts:
+        try:
+            raw = fn() or ""
+            title, body = _parse_daily_text(raw)
+            if body:
+                return {
+                    "ok": True,
+                    "date": day,
+                    "title": title,
+                    "body": body,
+                    "source": source,
+                }
+        except Exception as e:
+            print(f"[telephantim] daily-wisdom {source} failed:", e)
+    return None
+
+
+def get_daily_wisdom(day: str | None = None) -> dict:
+    day_key = (day or datetime.now(timezone.utc).strftime("%Y-%m-%d")).strip()
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", day_key):
+        day_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if day_key in DAILY_CACHE and DAILY_CACHE[day_key].get("body"):
+        out = dict(DAILY_CACHE[day_key])
+        out["ok"] = True
+        out["cached"] = True
+        return out
+    gen = generate_daily_wisdom(day_key)
+    if gen:
+        DAILY_CACHE[day_key] = {
+            "date": gen["date"],
+            "title": gen["title"],
+            "body": gen["body"],
+            "source": gen["source"],
+        }
+        _daily_cache_save()
+        gen["cached"] = False
+        return gen
+    return {
+        "ok": False,
+        "date": day_key,
+        "error": "no_generator",
+        "hint": "Client will use local vault. Set XAI_API_KEY or GROQ_API_KEY on Render, or run Ollama locally.",
+    }
 
 # Surprising true remarks the duo can riff on
 TRUE_FACTS = [
@@ -458,6 +591,16 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path == "/api/memory":
             self._json(200, {"ok": True, "lines": MEMORY[-20:], "power": dict(POWER)})
+            return
+        if path == "/api/daily-wisdom":
+            # ?day=YYYY-MM-DD optional
+            day = None
+            if "?" in self.path:
+                from urllib.parse import parse_qs, urlparse
+
+                q = parse_qs(urlparse(self.path).query)
+                day = (q.get("day") or [None])[0]
+            self._json(200, get_daily_wisdom(day))
             return
         return super().do_GET()
 
