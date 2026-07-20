@@ -1,0 +1,37 @@
+GOOGLE ANALYTICS (telephantim.com)
+==================================
+
+What was added
+--------------
+  • GA4 script loads from api-config.js → TELEPHANTIM_GA_ID
+  • Default ID: G-418J7T1HZ1 (same as Luna Camp / telephanti.com)
+  • Tracks page views + world switches (Relics / Bio / 2D / 3D)
+  • Tracks music open, sheet open, bio link clicks
+
+Where to see reports
+--------------------
+  https://analytics.google.com/
+
+  Realtime → check live visitors after you open telephantim.com
+  Reports → Acquisition / Engagement for traffic over time
+
+If this is a NEW site stream (recommended for clean telephantim.com data)
+------------------------------------------------------------------------
+  1. Open Google Analytics → Admin
+  2. Data streams → Add stream → Web
+  3. Website URL: https://telephantim.com
+  4. Stream name: Telephantim hub
+  5. Copy the Measurement ID (looks like G-XXXXXXXX)
+  6. Paste into:
+       C:\Users\Stood\telephantix-demo\api-config.js
+       window.TELEPHANTIM_GA_ID = "G-XXXXXXXX";
+  7. Redeploy / hard-refresh
+
+Disable tracking
+----------------
+  window.TELEPHANTIM_GA_ID = "";
+
+Privacy note
+------------
+  IP anonymization is on (anonymize_ip).
+  If you need a cookie consent banner for your region, say the word and we can add one.
