@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=53" />
+  <link rel="stylesheet" href="styles.css?v=54" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -54,7 +54,18 @@
           <p id="bio-quote-text"></p>
           <cite id="bio-quote-by"></cite>
         </blockquote>
-        <p class="bio-hint">Drop media/bg.mp4 or media/bg.jpg Â· edit bio-config.js</p>
+
+        <!-- Daily Word: new esoteric-true paragraph each calendar day -->
+        <article class="daily-word daily-word-bio" aria-label="Daily Word">
+          <header class="daily-word-head">
+            <span class="daily-word-kicker">Daily Word</span>
+            <span class="daily-word-meta" data-daily-meta>…</span>
+          </header>
+          <h2 class="daily-word-title" data-daily-title>Loading…</h2>
+          <p class="daily-word-body" data-daily-body>A new powerful paragraph each day.</p>
+        </article>
+
+        <p class="bio-hint">Drop media/bg.mp4 or media/bg.jpg · edit bio-config.js</p>
         <div class="bio-links" id="bio-links"></div>
       </div>
     </div>
@@ -92,7 +103,7 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v53 DUAL</div>
+        <div class="badge">LIVE v54 DUAL</div>
       </div>
     </div>
 
@@ -100,6 +111,17 @@
       <p class="dedication-line">Happy Birthday Mother</p>
       <p class="dedication-from">love Josh</p>
     </div>
+
+    <!-- Compact Daily Word on Relics (full text on Bio) -->
+    <article class="daily-word daily-word-stage" aria-label="Daily Word" hidden>
+      <header class="daily-word-head">
+        <span class="daily-word-kicker">Daily Word</span>
+        <span class="daily-word-meta" data-daily-meta></span>
+      </header>
+      <h2 class="daily-word-title" data-daily-title></h2>
+      <p class="daily-word-body" data-daily-body></p>
+      <button type="button" class="daily-word-open-bio" id="daily-open-bio">Read on Bio</button>
+    </article>
 
     <!-- Bubbles track each 3D speaker (positions set in mjolnir.js) -->
     <div class="dialogue-layer" aria-live="polite">
@@ -340,8 +362,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=53"></script>
-  <script src="analytics.js?v=53"></script>
+  <script src="api-config.js?v=54"></script>
+  <script src="analytics.js?v=54"></script>
   <script type="importmap">
   {
     "imports": {
@@ -350,13 +372,15 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=53"></script>
-  <script type="module" src="bio.js?v=53"></script>
-  <script type="module" src="music.js?v=53"></script>
-  <script type="module" src="personality.js?v=53"></script>
-  <script type="module" src="mjolnir.js?v=53"></script>
+  <script type="module" src="scenes.js?v=54"></script>
+  <script type="module" src="bio.js?v=54"></script>
+  <script type="module" src="daily-wisdom.js?v=54"></script>
+  <script type="module" src="music.js?v=54"></script>
+  <script type="module" src="personality.js?v=54"></script>
+  <script type="module" src="mjolnir.js?v=54"></script>
   <script>
     // Sheet "Play music here" opens the floating player
+    document.getElementById("daily-open-bio")?.addEventListener("click", function () { window.TelephantimScenes?.setScene("bio"); });
     document.getElementById("btn-music-sheet")?.addEventListener("click", function () {
       window.TelephantimMusic?.setOpen(true);
       document.body.classList.remove("sheet-open");
