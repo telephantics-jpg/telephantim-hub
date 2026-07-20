@@ -17,7 +17,7 @@ export const PROFILE = {
   lunaHome: "https://telephanti.com/",
 };
 
-/** Primary support / 3rd-party pay apps (display:true on Beacons) */
+/** Primary support links (one working path each — no duplicates) */
 export const SUPPORT = [
   {
     id: "paypal",
@@ -28,28 +28,12 @@ export const SUPPORT = [
     accent: "#003087",
   },
   {
-    id: "paypal2",
-    title: "My PayPal",
-    subtitle: "Another PayPal donate",
-    url: "https://www.paypal.com/donate/?hosted_button_id=DRVU9279ZM9Z2",
-    icon: "paypal",
-    accent: "#009cde",
-  },
-  {
     id: "cashapp",
     title: "Cash App",
     subtitle: "$Telephantix",
     url: "https://cash.app/$Telephantix",
     icon: "cashapp",
     accent: "#00d632",
-  },
-  {
-    id: "cashapp2",
-    title: "Cash App",
-    subtitle: "$Telephantics",
-    url: "https://cash.app/$Telephantics",
-    icon: "cashapp",
-    accent: "#00c853",
   },
   {
     id: "venmo",
@@ -66,14 +50,6 @@ export const SUPPORT = [
     url: "https://gofund.me/52108a9d",
     icon: "gofundme",
     accent: "#02a95c",
-  },
-  {
-    id: "gofundme2",
-    title: "My GoFundMe",
-    subtitle: "All appreciated",
-    url: "https://gofund.me/3dce33f2",
-    icon: "gofundme",
-    accent: "#00b964",
   },
   {
     id: "bmc",
