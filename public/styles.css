@@ -354,6 +354,17 @@ body.scene-bio .sheet {
 .daily-word-bio {
   margin: 0.35rem 0 0.25rem;
 }
+.daily-word-bio.collapsed {
+  padding: 0.4rem 0.55rem;
+  border-radius: 999px;
+}
+.daily-word-bio.collapsed .daily-word-meta,
+.daily-word-bio.collapsed .daily-word-expand {
+  display: none !important;
+}
+.daily-word-bio.collapsed .daily-word-head {
+  margin-bottom: 0;
+}
 .daily-word-stage {
   position: absolute;
   z-index: 12;
@@ -423,20 +434,36 @@ body.scene-bio .daily-word-stage {
 .daily-word-min {
   appearance: none;
   flex: 0 0 auto;
-  border: 1px solid rgba(201, 162, 39, 0.45);
-  background: rgba(12, 18, 32, 0.9);
+  margin-left: auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid rgba(201, 162, 39, 0.55);
+  background: rgba(12, 18, 32, 0.95);
   color: var(--gold-bright);
-  border-radius: 999px;
-  padding: 0.28rem 0.55rem;
+  border-radius: 8px;
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   line-height: 1;
   pointer-events: auto;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.daily-word-min:hover {
+  border-color: rgba(240, 208, 96, 0.85);
+  background: rgba(40, 30, 10, 0.95);
 }
 .daily-word-min:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
+}
+.daily-word-stage.collapsed .daily-word-min,
+.daily-word-bio.collapsed .daily-word-min {
+  width: 1.45rem;
+  height: 1.45rem;
+  font-size: 0.95rem;
 }
 .daily-word-title {
   margin: 0 0 0.4rem;
