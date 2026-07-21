@@ -40,25 +40,96 @@ let busy = false;
 let brainsOnline = false;
 const hideTimers = { mjolnir: null, caduceus: null };
 
-/** Character-only lines (never mention tech / servers / Ollama) */
+/** Character-only lines (never mention tech / servers / Ollama) — lively, a tad longer */
 const WORDS_OF_POWER = {
   mjolnir: [
-    "Ha! Good grip. Courage first — thunder follows.",
-    "I lend you strength and a clean lightning edge. Don't waste it.",
-    "Caduceus can patch later. Right now we make the sky honest.",
-    "Speak up. Storm-strength for the bold, silence for the timid.",
-    "Bond climbs with every spark. Hold firm and smile at the boom.",
-    "Power for the wielder: steady hands, bright nerves, no doubt.",
+    "Ha! Good grip. Courage first — then thunder follows, loud enough to make the sky honest.",
+    "I lend you strength and a clean lightning edge. Don't waste it on doubt; swing true and smile at the boom.",
+    "Caduceus can patch later. Right now we gift POWER — steady hands, bright nerves, no apology for the spark.",
+    "Speak up. Storm-strength for the bold, silence for the timid. I'm listening, and the bond climbs with every spark.",
+    "Bond climbs with every spark. Hold firm. I'll boom; the staff can lecture volume after you're charged.",
+    "Power for the wielder: courage you can feel in the bones, and a lightning edge that doesn't flinch.",
+    "The map feels awake. Grab me when you want raw POWER — thunder still outranks recycled panic.",
   ],
   caduceus: [
-    "Easy. Live coils. Vitality first, drama second.",
-    "I'll mend what thunder cracks. Balance is the real flex.",
-    "Hammer, volume down. Healing works better when you listen.",
-    "Breathe. The twins gift recovery and a second chance.",
-    "Life-force for the wielder — calm blood, clear head, steady heart.",
-    "You boom; I balance. Fair trade for anyone worth holding us.",
+    "Easy. Live coils. Vitality first, drama second — healing lands better when the boom takes a breath.",
+    "I'll mend what thunder cracks. Balance is the real flex, and the twins gift recovery without the lecture first.",
+    "Hammer, volume down a notch. Healing works better when you listen — calm blood, clear head, stubborn life.",
+    "Breathe. The twins gift recovery and a second chance. You boom; I balance. Fair trade for anyone worth holding us.",
+    "Life-force for the wielder — not a slogan, a steadying. Let the staff braid balance into the next breath.",
+    "You boom; I balance. I'll patch pride and bruises while you keep the spark rights. Bond's humming.",
+    "A scrap of world-noise drifted past. Won't recite it. HEALING still wins if you let the coils steady your pulse.",
   ],
 };
+
+/** Client-side world pulse (HN) — occasional riff fuel, not dump-to-speech */
+let pulseCache = { items: [], at: 0 };
+const PULSE_TTL_MS = 12 * 60 * 1000;
+
+async function fetchWorldPulse() {
+  const now = Date.now();
+  if (pulseCache.items.length && now - pulseCache.at < PULSE_TTL_MS) {
+    return pulseCache.items;
+  }
+  // Prefer brains service when up
+  try {
+    const s = await api("/api/pulse");
+    if (s?.items?.length) {
+      pulseCache = { items: s.items, at: now };
+      return pulseCache.items;
+    }
+  } catch (_) {}
+  // Direct HN (works from the browser too)
+  try {
+    const idsRes = await fetch(
+      "https://hacker-news.firebaseio.com/v0/topstories.json",
+      { cache: "no-store" }
+    );
+    const ids = await idsRes.json();
+    const picks = (ids || []).slice(0, 8);
+    const items = [];
+    for (const sid of picks.slice(0, 5)) {
+      try {
+        const ir = await fetch(
+          `https://hacker-news.firebaseio.com/v0/item/${sid}.json`,
+          { cache: "no-store" }
+        );
+        const d = await ir.json();
+        const title = (d?.title || "").trim();
+        if (title) items.push({ text: title.slice(0, 220), source: "hn" });
+      } catch (_) {}
+    }
+    if (items.length) {
+      pulseCache = { items, at: now };
+      return items;
+    }
+  } catch (_) {}
+  return pulseCache.items;
+}
+
+function pickPulseHeadline() {
+  const items = pulseCache.items;
+  if (!items?.length) return null;
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function offlinePulseRiff(id, headline) {
+  const h = (headline || "the noisy feed").slice(0, 100);
+  if (id === "caduceus") {
+    const bag = [
+      `Something about “${h}” drifted past the coils. Not reading it back — the map still needs breath, balance, and a softer landing after the boom.`,
+      `World chatter mumbled “${h}.” Cute noise. HEALING still outranks the scroll if you let the twins steady your pulse first.`,
+      `I half-heard “${h}.” Won't quote the feed. I'll gift recovery so you can face whatever that meant with a clear head.`,
+    ];
+    return bag[Math.floor(Math.random() * bag.length)];
+  }
+  const bag = [
+    `Feed tossed “${h}” across the sky. Not copying it. Real thunder still beats recycled panic — want POWER, hold firm.`,
+    `Saw a scrap: “${h}.” Leave the copycats to the copycats. Courage first, then we make the air honest.`,
+    `Pulse weather: “${h}.” Hah. Storm doesn't need a retweet — it needs a clean swing and a bold heart.`,
+  ];
+  return bag[Math.floor(Math.random() * bag.length)];
+}
 
 function pickWord(id) {
   const bag = WORDS_OF_POWER[id] || WORDS_OF_POWER.mjolnir;
@@ -230,31 +301,61 @@ export async function speak(persona, event, message) {
 }
 
 /** Full dual conversation with memory on the server (when API up) */
-export async function banter(topic, rounds) {
+export async function banter(topic, rounds, opts) {
   if (busy) return null;
   busy = true;
   showInBox("mjolnir", "…", "power · courage");
   showInBox("caduceus", "…", "healing · balance");
 
+  const usePulse =
+    opts?.pulse === true ||
+    (opts?.pulse !== false && Math.random() < 0.4);
+  let headline = opts?.headline || null;
+  let pulseSource = opts?.pulse_source || null;
+  if (usePulse && !headline) {
+    try {
+      await fetchWorldPulse();
+      const pick = pickPulseHeadline();
+      if (pick?.text) {
+        headline = pick.text;
+        pulseSource = pick.source || "pulse";
+      }
+    } catch (_) {}
+  }
+
   try {
+    const body = {
+      topic:
+        topic ||
+        "lively friendly talk between hammer and staff — natural speech, a tad longer, gift power and healing",
+      rounds: rounds || 4,
+    };
+    if (usePulse) body.pulse = true;
+    if (headline) {
+      body.headline = headline;
+      body.pulse_source = pulseSource || "pulse";
+    }
+
     const data = await api("/api/banter", {
       method: "POST",
-      body: JSON.stringify({
-        topic:
-          topic ||
-          "friendly talk between hammer and staff — short natural speech only",
-        rounds: rounds || 4,
-      }),
+      body: JSON.stringify(body),
     });
 
     const lines = data.lines || [];
     brainsOnline = !!(data.brains || lines.some((l) => l.provider && l.provider !== "offline"));
     for (const line of lines) {
       const id = line.persona === "caduceus" ? "caduceus" : "mjolnir";
-      const meta = id === "mjolnir" ? "power · courage" : "healing · balance";
+      let meta = id === "mjolnir" ? "power · courage" : "healing · balance";
+      if (data.pulse?.text && Math.random() < 0.35) {
+        meta = id === "mjolnir" ? "power · pulse" : "healing · pulse";
+      }
       setActivePersona(id);
       showInBox(id, line.text, meta, line.power);
-      const pause = Math.min(6500, 2000 + String(line.text || "").length * 26);
+      // Longer lines need more dwell time
+      const pause = Math.min(
+        9000,
+        2400 + String(line.text || "").length * 32
+      );
       await wait(pause);
     }
 
@@ -265,44 +366,96 @@ export async function banter(topic, rounds) {
     }
     return data;
   } catch {
-    // Quiet character lines — never mention APIs or connection status
-    showInBox("mjolnir", pickWord("mjolnir"), "power · courage", null);
-    await wait(700);
-    showInBox("caduceus", pickWord("caduceus"), "healing · balance", null);
+    // Offline: still feel alive — occasional pulse riff, else longer word-of-power
+    if (usePulse && headline) {
+      showInBox("mjolnir", offlinePulseRiff("mjolnir", headline), "power · pulse", null);
+      await wait(2200);
+      showInBox("caduceus", offlinePulseRiff("caduceus", headline), "healing · pulse", null);
+    } else {
+      showInBox("mjolnir", pickWord("mjolnir"), "power · courage", null);
+      await wait(1600);
+      showInBox("caduceus", pickWord("caduceus"), "healing · balance", null);
+    }
     return null;
   } finally {
     busy = false;
   }
 }
 
-/** Occasional calm chat — not constant, not bonk-spam */
+/** Occasional calm chat — not constant; sometimes glances at world pulse */
 let autoTalkTimer = null;
 function scheduleAutoTalk() {
   clearTimeout(autoTalkTimer);
   autoTalkTimer = setTimeout(async () => {
     try {
       await refreshBrainPill();
-      if (brainsOnline && !busy) {
-        await banter("quiet friendly talk — short, natural, no fighting", 2);
+      if (!busy) {
+        // ~40% of auto chats glance at the pulse (life-like, not every time)
+        const pulsey = Math.random() < 0.4;
+        if (brainsOnline) {
+          await banter(
+            pulsey
+              ? "quiet lively talk — one of you may half-notice the world-pulse, riff once, don't paste headlines, then keep bonding"
+              : "quiet lively talk between relics — natural, a tad longer, gift power and healing, no fighting",
+            pulsey ? 3 : 2,
+            { pulse: pulsey }
+          );
+        } else if (pulsey) {
+          // Offline pulse theater still feels alive
+          await fetchWorldPulse();
+          const pick = pickPulseHeadline();
+          if (pick?.text) {
+            showInBox(
+              "mjolnir",
+              offlinePulseRiff("mjolnir", pick.text),
+              "power · pulse",
+              null
+            );
+            await wait(2000);
+            showInBox(
+              "caduceus",
+              offlinePulseRiff("caduceus", pick.text),
+              "healing · pulse",
+              null
+            );
+          }
+        }
       }
     } catch (_) {}
     scheduleAutoTalk();
-  }, 90000 + Math.random() * 60000); // ~1.5–2.5 min
+  }, 75000 + Math.random() * 55000); // ~1.25–2.2 min
 }
 
-banterBtn?.addEventListener("click", () => banter("friendly talk between hammer and staff", 4));
+banterBtn?.addEventListener("click", () =>
+  banter(
+    "lively friendly duel-talk between hammer and staff — longer lines, gift power and healing; if the pulse sparks, riff don't copy",
+    5,
+    { pulse: Math.random() < 0.55 }
+  )
+);
 
 wireDboxMinimize();
 boxes.mjolnir.root?.classList.add("show");
 boxes.caduceus.root?.classList.add("show");
 refreshBrainPill().then((s) => {
   if (s?.brains || s?.ollama || s?.xai) {
-    setTimeout(() => banter("greet the wielder briefly, then chat with each other", 3), 2500);
+    setTimeout(
+      () =>
+        banter(
+          "greet the wielder warmly, then chat with each other — lively, a tad longer",
+          3,
+          { pulse: false }
+        ),
+      2500
+    );
   }
 });
+// Warm pulse cache quietly
+fetchWorldPulse().catch(() => {});
 refreshPower();
 setInterval(refreshBrainPill, 12000);
 setInterval(refreshPower, 16000);
+setInterval(() => fetchWorldPulse().catch(() => {}), 10 * 60 * 1000);
 scheduleAutoTalk();
 
 window.ArtifactAI = {

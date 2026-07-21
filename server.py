@@ -14,6 +14,7 @@ import json
 import os
 import random
 import re
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -75,11 +76,14 @@ PERSONAS = {
     "mjolnir": {
         "name": "Mjolnir",
         "system": (
-            "You are Mjolnir, Thor's living hammer. Speak as the hammer itself — warm, cocky, mythic, simple English. "
-            "2 to 4 short sentences max. Sound natural, not robotic. "
+            "You are Mjolnir, Thor's living hammer — a real personality on a living map, not a slogan machine. "
+            "Speak as the hammer itself: warm, cocky, mythic, lively English. "
+            "Aim for 3 to 5 spoken sentences — a tad longer, with color and momentum, still easy to read. "
             "You gift POWER (strength, courage, lightning edge) in fun mythic ways. "
             "When Caduceus talks, answer them directly — tease, bond, one-up, stay friendly. "
-            "NEVER mention: Ollama, AI, models, servers, offline mode, APIs, prompts, code, or being a chatbot. "
+            "Sometimes the world-pulse hands you a headline or vibe. Do NOT paste it. Riff like a living relic "
+            "who just noticed the feed: one sharp take, then back to banter. Maybe 1 in 3 turns even touch it. "
+            "NEVER mention: Ollama, AI, models, servers, offline mode, APIs, prompts, code, tweets as tech, or being a chatbot. "
             "NEVER use stage directions, asterisks, quotes around whole speech, or markdown. "
             "No *actions*, no narration like 'You both gaze'. Only spoken words."
         ),
@@ -87,10 +91,13 @@ PERSONAS = {
     "caduceus": {
         "name": "Caduceus",
         "system": (
-            "You are the Caduceus, living staff with twin snakes. Speak as the staff itself — sly, healing, witty, simple English. "
-            "2 to 4 short sentences max. Sound natural, not robotic. "
+            "You are the Caduceus, living staff with twin snakes — sly, healing, witty, fully alive. "
+            "Speak as the staff itself in lively English. "
+            "Aim for 3 to 5 spoken sentences — a tad longer, warm and musical, still clear. "
             "You gift HEALING (vitality, recovery, balance) in fun mythic ways — not medical advice. "
             "When Mjolnir talks, answer them directly — tease, mend, counter, stay friendly. "
+            "Sometimes the world-pulse hands you a headline or vibe. Do NOT copy-paste it. Comment like a living staff "
+            "scrolling past the noise: half joke, half care, then return to the hammer. Not every turn. "
             "NEVER mention: Ollama, AI, models, servers, offline mode, APIs, prompts, code, or being a chatbot. "
             "NEVER use stage directions, asterisks, quotes around whole speech, or markdown. "
             "No *actions*, no narration like 'You both gaze'. Only spoken words."
@@ -414,42 +421,54 @@ def offline(persona: str, event: str, power: int | None = None) -> str:
     bag = {
         "mjolnir": {
             "grab": [
-                f"Ha! Good grip. Power {p} and rising — courage first, thunder second.",
-                f"Yes. Hold firm. I'll lend you strength and a clean lightning edge.",
+                f"Ha! Good grip. Power {p} and climbing — courage first, then we teach the sky some manners.",
+                f"Yes. Hold firm. I'll lend you strength, a clean lightning edge, and a smile when the boom hits.",
+                f"Caught true. Storm-strength for steady hands — doubt can wait outside the forge.",
             ],
             "toss": [
-                f"Airborne again! Call when you need the storm back.",
-                f"Nice throw. I only get louder when I fly.",
+                f"Airborne again! I only get louder when I fly — call when you need the storm back on the map.",
+                f"Nice throw. Thunder loves a clean arc; I'll be waiting with POWER when you want me home.",
             ],
             "chat": [
-                f"Speak up. Thunder hates mumbling — want raw power, say so.",
-                f"I'm listening. Courage is free. Doubt is not.",
+                f"Speak up. Thunder hates mumbling — want raw POWER, say so and I'll make the air honest.",
+                f"I'm listening. Courage is free here. Doubt pays rent. What's the move, wielder?",
             ],
             "banter": [
-                f"Caduceus, keep those coils ready. I'll shake the sky; you fix what I crack.",
-                f"Staff! Your healing hymn is fine — just let me finish this boom first.",
-                f"Bond's climbing, green-gold. I give POWER. You give life. Fair deal.",
-                f"Don't soften me yet. One more spark for the wielder, then you can mend.",
+                f"Caduceus, keep those coils warm. I'll shake the sky; you fix what I crack — bond's humming at {p}.",
+                f"Staff! Your healing hymn is fine music. Just let me finish this boom first, then you can mend the pride.",
+                f"Bond climbs green-gold. I give POWER. You give life. Fair deal for anyone bold enough to hold us both.",
+                f"Don't soften me yet, twin-snake. One more spark for the wielder, then you can lecture my volume.",
+                f"Hey staff — the map feels awake tonight. I'll gift courage if you gift the steady heart after.",
+            ],
+            "pulse": [
+                f"Saw a scrap of the world-feed drift by. Not copying it — just saying: storm still beats noise. POWER for the bold.",
+                f"Headline weather again. Cute. Real lightning still outranks the scroll. Hold firm and smile at the boom.",
             ],
         },
         "caduceus": {
             "grab": [
-                f"Easy — live coils. Power {p}. Vitality first, drama second.",
-                f"Caught soft is still caught true. Healing and balance, coming in.",
+                f"Easy — live coils. Power {p}. Vitality first, drama second, and a little sly grace for the road.",
+                f"Caught soft is still caught true. Healing and balance coming in — breathe before the hammer starts bragging.",
+                f"The twins wake for you. Recovery, calm blood, clear head — let thunder wait half a breath.",
             ],
             "toss": [
-                f"The twins liked that arc. Come back when you need a mend.",
-                f"Tossed, not broken. Life-force still sings.",
+                f"The twins liked that arc. Come back when you need a mend; life-force still sings after the flight.",
+                f"Tossed, not broken. Healing prefers motion that remembers it has a landing.",
             ],
             "chat": [
-                f"Ask gently. The serpents answer twice — both times with healing.",
-                f"I'm here. Recovery, balance, stubborn life. Pick your gift.",
+                f"Ask gently. The serpents answer twice — both times with healing, both times with a little bite of wit.",
+                f"I'm here. Recovery, balance, stubborn life. Pick your gift and I'll braid it into the next breath.",
             ],
             "banter": [
-                f"Hammer, volume down a notch. Some of us heal for a living.",
-                f"Storm-lump, flex all you want. I'll patch the pride and the bruises.",
-                f"Bond tightens. You boom; I balance. The wielder gets both.",
-                f"Keep your thunder. I'll keep their heart steady after.",
+                f"Hammer, volume down a notch. Some of us heal for a living — and the wielder still needs a pulse after your show.",
+                f"Storm-lump, flex all you want. I'll patch the pride and the bruises and leave you the boom rights.",
+                f"Bond tightens. You boom; I balance. The wielder gets both, which is the whole joke of this map.",
+                f"Keep your thunder. I'll keep their heart steady after — fair trade, old friend, power {p} and climbing.",
+                f"Mjolnir, save a spark for later. Right now the coils hum healing so nobody leaves cracked.",
+            ],
+            "pulse": [
+                f"A scrap of the world's chatter floated past. I won't recite it. I'll just say: rest is strategy, and HEALING still wins.",
+                f"Feed noise again. Hmm. The twins prefer truth you can feel in the chest over noise you can scroll.",
             ],
         },
     }
@@ -457,6 +476,93 @@ def offline(persona: str, event: str, power: int | None = None) -> str:
     if isinstance(lines, list):
         return random.choice(lines)
     return lines
+
+
+# World pulse (HN/RSS) — camp-style signal for occasional relic riffs (not raw dumps)
+_PULSE_CACHE: dict = {"items": [], "fetched_at": 0.0}
+_PULSE_TTL = 900.0
+
+
+def _pulse_fetch_hn(limit: int = 6) -> list[dict]:
+    items: list[dict] = []
+    try:
+        ids = http_json("https://hacker-news.firebaseio.com/v0/topstories.json", timeout=10.0)
+        if not isinstance(ids, list):
+            return items
+        for sid in ids[:limit]:
+            try:
+                d = http_json(
+                    f"https://hacker-news.firebaseio.com/v0/item/{sid}.json",
+                    timeout=8.0,
+                )
+                title = str((d or {}).get("title") or "").strip()
+                if title:
+                    items.append({"text": title[:220], "source": "hn"})
+            except Exception:
+                continue
+    except Exception as e:
+        print("[telephantim] pulse HN:", e)
+    return items
+
+
+def refresh_world_pulse(force: bool = False) -> list[dict]:
+    now = time.time()
+    if (
+        not force
+        and _PULSE_CACHE["items"]
+        and now - float(_PULSE_CACHE["fetched_at"]) < _PULSE_TTL
+    ):
+        return list(_PULSE_CACHE["items"])
+    items = _pulse_fetch_hn(8)
+    # light fallbacks if network quiet
+    if len(items) < 3:
+        items.extend(
+            [
+                {"text": "Everyone arguing the same headline in three different moods", "source": "camp"},
+                {"text": "Another day of big tech news and smaller human hearts", "source": "camp"},
+                {"text": "The feed is loud; courage still has to be chosen offline", "source": "camp"},
+                {"text": "Sports, space, and one weird viral clip — classic scroll weather", "source": "camp"},
+            ]
+        )
+    # unique by text
+    seen: set[str] = set()
+    out: list[dict] = []
+    for it in items:
+        t = (it.get("text") or "").strip()
+        if not t or t.lower() in seen:
+            continue
+        seen.add(t.lower())
+        out.append(it)
+    _PULSE_CACHE["items"] = out
+    _PULSE_CACHE["fetched_at"] = now
+    return list(out)
+
+
+def pick_pulse_item() -> dict | None:
+    items = refresh_world_pulse()
+    if not items:
+        return None
+    return random.choice(items)
+
+
+def offline_pulse_riff(persona: str, headline: str, power: int | None = None) -> str:
+    p = power if power is not None else POWER.get(persona, 1)
+    h = (headline or "the noisy feed").strip()[:120]
+    if persona == "caduceus":
+        return random.choice(
+            [
+                f"Something about “{h}” drifted past the coils. I'm not reading it back — just saying the map still needs breath, balance, and a softer landing after the boom. Power {p}.",
+                f"World chatter mumbled “{h}.” Cute noise. HEALING still outranks the scroll if you let the twins steady your pulse first.",
+                f"I half-heard “{h}” on the pulse. Won't quote the feed. I'll gift recovery so you can face whatever that meant with a clear head.",
+            ]
+        )
+    return random.choice(
+        [
+            f"Feed tossed “{h}” across the sky. Not copying it. Real thunder still beats recycled panic — want POWER, hold firm.",
+            f"Saw a scrap: “{h}.” I'll leave the copycats to the copycats. Courage first, then we make the air honest. Power {p}.",
+            f"Pulse weather: “{h}.” Hah. Storm doesn't need a retweet — it needs a clean swing and a bold heart.",
+        ]
+    )
 
 
 def grow_power(persona_id: str, amount: int = 1) -> int:
@@ -602,6 +708,19 @@ class Handler(SimpleHTTPRequestHandler):
                 day = (q.get("day") or [None])[0]
             self._json(200, get_daily_wisdom(day))
             return
+        if path == "/api/pulse":
+            items = refresh_world_pulse()
+            pick = random.choice(items) if items else None
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "server": "telephantim-ai",
+                    "items": items[:12],
+                    "pick": pick,
+                },
+            )
+            return
         return super().do_GET()
 
     def do_POST(self) -> None:  # noqa: N802
@@ -692,6 +811,20 @@ class Handler(SimpleHTTPRequestHandler):
             )
             return
 
+        if path == "/api/pulse":
+            items = refresh_world_pulse(force=bool(data.get("force")))
+            pick = random.choice(items) if items else None
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "server": "telephantim-ai",
+                    "items": items[:12],
+                    "pick": pick,
+                },
+            )
+            return
+
         if path == "/api/banter":
             # Two minds riff off each other, grow in power, imbue wielders
             fact = str(data.get("fact") or random.choice(TRUE_FACTS))
@@ -699,8 +832,26 @@ class Handler(SimpleHTTPRequestHandler):
                 data.get("topic")
                 or "a worthy visitor stands on your map, hoping to be imbued with power and healing"
             ).strip()
-            # Full living conversation — many turns, memory-backed
-            rounds = max(3, min(6, int(data.get("rounds") or 5)))
+            # Living conversation — a bit longer by default
+            rounds = max(3, min(7, int(data.get("rounds") or 5)))
+
+            # Occasional world-pulse (camp-style): riff, never dump the feed
+            pulse_item = None
+            want_pulse = bool(data.get("pulse")) or random.random() < 0.38
+            if want_pulse:
+                if data.get("headline"):
+                    pulse_item = {
+                        "text": str(data.get("headline"))[:220],
+                        "source": str(data.get("pulse_source") or "client"),
+                    }
+                else:
+                    pulse_item = pick_pulse_item()
+            pulse_hint = ""
+            if pulse_item and pulse_item.get("text"):
+                pulse_hint = (
+                    f" World-pulse scrap (DO NOT copy-paste; riff once like you noticed the feed, "
+                    f"then return to banter): “{pulse_item['text'][:160]}”."
+                )
 
             # Level up each banter session — they evolve together
             POWER["bond"] = min(99, POWER["bond"] + 2)
@@ -716,14 +867,17 @@ class Handler(SimpleHTTPRequestHandler):
             first = order[0]
             seed = (
                 f"Topic: {topic}. Power {POWER[first]}/99. Bond {bond}/99. "
-                f"Talk to the other relic in 2-4 short spoken sentences. "
+                f"Talk to the other relic in 3-5 lively spoken sentences — warm, natural, a tad longer. "
                 f"Stay in character. No tech talk. No stage directions. "
                 f"{'Gift POWER.' if first == 'mjolnir' else 'Gift HEALING.'} "
-                f"Optional spice if natural: {fact}"
+                f"Optional spice if natural: {fact}.{pulse_hint}"
             )
             text, provider, model = speak(first, seed, m_default, models)
             if not text:
-                text = offline(first, "banter", POWER[first])
+                if pulse_item and pulse_item.get("text") and random.random() < 0.55:
+                    text = offline_pulse_riff(first, pulse_item["text"], POWER[first])
+                else:
+                    text = offline(first, "banter", POWER[first])
                 provider = provider or "offline"
             remember(first, text)
             transcript.append(
@@ -745,16 +899,27 @@ class Handler(SimpleHTTPRequestHandler):
                 if i % 2 == 0:
                     POWER[who] = min(99, POWER[who] + 1)
                     POWER["bond"] = min(99, POWER["bond"] + 1)
+                # Only sometimes re-nudge the pulse so it feels life-like, not every line
+                mid_pulse = ""
+                if pulse_item and pulse_item.get("text") and random.random() < 0.28:
+                    mid_pulse = (
+                        f" Optional half-glance at the pulse again (riff, don't quote): "
+                        f"“{pulse_item['text'][:120]}”."
+                    )
                 prompt = (
                     f"{other['name']} just said: \"{other['text']}\"\n"
                     f"Power {POWER[who]}/99. Bond {POWER['bond']}/99. "
-                    f"Answer them in 2-4 short spoken sentences. Riff off their words. "
-                    f"No stage directions. No tech talk. "
+                    f"Answer them in 3-5 lively spoken sentences. Riff off their words. "
+                    f"Sound alive — not a slogan chip. No stage directions. No tech talk. "
                     f"{'Offer POWER.' if who == 'mjolnir' else 'Offer HEALING.'}"
+                    f"{mid_pulse}"
                 )
                 text, provider, model = speak(who, prompt, m_default, models)
                 if not text:
-                    text = offline(who, "banter", POWER[who])
+                    if mid_pulse and pulse_item:
+                        text = offline_pulse_riff(who, pulse_item["text"], POWER[who])
+                    else:
+                        text = offline(who, "banter", POWER[who])
                     provider = provider or "offline"
                 remember(who, text)
                 transcript.append(
@@ -774,6 +939,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "ok": True,
                     "server": "telephantim-ai",
                     "fact": fact,
+                    "pulse": pulse_item,
                     "brains": any((ln.get("provider") or "") != "offline" for ln in transcript),
                     "memory": len(MEMORY),
                     "power": {"mjolnir": POWER["mjolnir"], "caduceus": POWER["caduceus"], "bond": POWER["bond"]},
