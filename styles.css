@@ -1010,6 +1010,51 @@ body.sheet-open .float-actions {
   box-shadow: 0 0 12px rgba(140, 100, 255, 0.28);
 }
 
+/*
+ * Desktop only: Play music sits center-lower for discovery.
+ * When open (or still playing in background), it returns to the left
+ * action tray next to Hide / Relic duel. Mobile keeps the tray layout always.
+ */
+@media (min-width: 900px) {
+  #btn-music {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--sheet-peek) + 18px + var(--safe-bottom));
+    transform: translateX(-50%);
+    z-index: 16;
+    min-width: 8.5rem;
+    font-weight: 700;
+    padding: 0.65rem 1.1rem;
+    font-size: 0.82rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    transition:
+      left 0.28s ease,
+      transform 0.28s ease,
+      bottom 0.25s ease,
+      box-shadow 0.2s ease,
+      padding 0.2s ease;
+  }
+  body.sheet-open #btn-music {
+    bottom: calc(55vh + 16px + var(--safe-bottom));
+  }
+  /* Open player or background play: rejoin left tray */
+  body.music-open #btn-music,
+  body:not(.music-open) #btn-music.playing-bg {
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.75rem;
+    box-shadow: none;
+  }
+  body.scene-external #btn-music,
+  body.scene-bio #btn-music {
+    display: none;
+  }
+}
+
 /* ===== MUSIC PLAYER DOCK ===== */
 .music-player {
   position: absolute;

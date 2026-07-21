@@ -353,6 +353,8 @@ function setOpen(v) {
     panel.hidden = !open;
     panel.classList.toggle("open", open);
   }
+  // Desktop CSS: center Play music when closed, slide left when open
+  document.body.classList.toggle("music-open", open);
   updateMusicButtonLabel();
   if (open) {
     // Don't restart mid-song if already playing this track in the background
