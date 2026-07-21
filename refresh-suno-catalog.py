@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
 Refresh suno-catalog.json from public Suno pages for @telephantix.
-Sources:
-  - Profile https://suno.com/@telephantix
-  - Playlist "All I Got" https://suno.com/playlist/eb4d09a6-f232-4b1a-8582-fcbf0d76a5f7
 
-Run locally anytime you publish more songs, then redeploy the hub:
+Rules:
+  - Proper song titles from Suno clip objects (title + id + audio_url + duration)
+  - No duplicates (by id, audio_url, normalized title)
+  - Only tracks 3–7 minutes (180–420 seconds)
+
+Sources:
+  - Playlist "All I Got" (primary — full clip schema)
+  - Profile https://suno.com/@telephantix (extra public clips)
+
+Run anytime you publish more songs, then commit/redeploy the hub:
   python refresh-suno-catalog.py
 """
 from __future__ import annotations
@@ -15,15 +21,21 @@ import pathlib
 import re
 import sys
 import urllib.request
+from collections import OrderedDict
 
 ROOT = pathlib.Path(__file__).resolve().parent
 OUT = ROOT / "suno-catalog.json"
 HANDLE = "telephantix"
 PLAYLIST_ID = "eb4d09a6-f232-4b1a-8582-fcbf0d76a5f7"
-JUNK_TITLES = {
-    "untitled",
-    "(verse 1)",
-    "17.6s recording (feb 28 @ 12:06 pm)",
+MIN_SEC = 180.0  # 3 minutes
+MAX_SEC = 420.0  # 7 minutes
+JUNK_TITLE_RE = re.compile(
+    r"^(verse\s*\d+|untitled|recording\b.*@|\d+(\.\d+)?s\s+recording)",
+    re.I,
+)
+SKIP_IDS = {
+    "0c0754b1-c8c9-4d0c-bed8-f51d3e543fec",  # profile user id
+    PLAYLIST_ID,
 }
 
 
@@ -39,108 +51,220 @@ def fetch(url: str) -> str:
             "Referer": f"https://suno.com/@{HANDLE}",
         },
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=90) as resp:
         return resp.read().decode("utf-8", "replace")
 
 
 def unescape(s: str) -> str:
-    try:
-        return bytes(s, "utf-8").decode("unicode_escape")
-    except Exception:
-        return s.replace("\\/", "/").replace('\\"', '"').replace("\\n", " ")
+    return (
+        s.replace("\\/", "/")
+        .replace("\\u0026", "&")
+        .replace("\\n", " ")
+        .replace('\\"', '"')
+    )
 
 
-def extract(html: str) -> list[dict]:
+def extract_playlist_clips(html: str) -> list[dict]:
+    """
+    Authoritative pairing from playlist_clips:
+      "clip":{"status":"complete","title":"...","id":"...","audio_url":"...","metadata":{...,"duration":N}
+    """
     clips: list[dict] = []
-
-    for b in re.finditer(r'\\"audio_url\\":\\"(https:[^\\"]+)\\"', html):
-        window = html[max(0, b.start() - 4000) : min(len(html), b.end() + 4000)]
-        idm = re.search(r'\\"id\\":\\"([0-9a-f-]{36})\\"', window)
-        tm = re.search(r'\\"title\\":\\"((?:\\\\.|[^\\"\\\\])*)\\"', window)
-        if not idm:
+    pat = re.compile(
+        r'\\"clip\\":\{'
+        r'\\"status\\":\\"complete\\",'
+        r'\\"title\\":\\"((?:\\\\.|[^\\"\\\\])*)\\",'
+        r"(?:(?!\\\"clip\\\":).){0,600}?"
+        r'\\"id\\":\\"([0-9a-f-]{36})\\",'
+        r"(?:(?!\\\"clip\\\":).){0,1000}?"
+        r'\\"audio_url\\":\\"(https:[^\\"]+)\\",'
+        r"(?:(?!\\\"clip\\\":).){0,8000}?"
+        r'\\"duration\\":([0-9.]+)',
+        re.DOTALL,
+    )
+    for m in pat.finditer(html):
+        title = re.sub(r"\s+", " ", unescape(m.group(1)).strip())
+        cid = m.group(2)
+        audio = unescape(m.group(3))
+        duration = float(m.group(4))
+        if not cid or cid.startswith("00000000") or cid in SKIP_IDS:
             continue
-        cid = idm.group(1)
-        if cid.startswith("00000000"):
-            continue
-        title = unescape(tm.group(1)) if tm else "Untitled"
-        audio = b.group(1).replace("\\/", "/").replace("\\u0026", "&")
-        clips.append({"id": cid, "title": title, "audio_url": audio})
-
-    # title/id pairings without audio_url still map to CDN mp3
-    patterns = [
-        r'\\"id\\":\\"([0-9a-f-]{36})\\"(?:(?!\\"id\\").){0,2200}?\\"title\\":\\"((?:\\\\.|[^\\"\\\\])*)\\"',
-        r'\\"title\\":\\"((?:\\\\.|[^\\"\\\\])*)\\"(?:(?!\\"title\\").){0,2200}?\\"id\\":\\"([0-9a-f-]{36})\\"',
-    ]
-    for i, pat in enumerate(patterns):
-        for m in re.finditer(pat, html):
-            if i == 0:
-                cid, title = m.group(1), unescape(m.group(2))
-            else:
-                title, cid = unescape(m.group(1)), m.group(2)
-            if cid.startswith("00000000"):
-                continue
-            clips.append(
-                {
-                    "id": cid,
-                    "title": title,
-                    "audio_url": f"https://cdn1.suno.ai/{cid}.mp3",
-                }
-            )
-    return clips
-
-
-def clean(clips: list[dict]) -> list[dict]:
-    seen: set[str] = set()
-    out: list[dict] = []
-    for c in clips:
-        cid = (c.get("id") or "").strip()
-        title = re.sub(r"\s+", " ", (c.get("title") or "").strip())
-        if not cid or cid in seen or cid.startswith("00000000"):
-            continue
-        if not title or title.lower() in JUNK_TITLES:
-            continue
-        # skip profile user id if it ever sneaks in as a clip
-        if cid == "0c0754b1-c8c9-4d0c-bed8-f51d3e543fec":
-            continue
-        if cid == PLAYLIST_ID:
-            continue
-        seen.add(cid)
-        out.append(
+        # Always bind audio to song id (canonical CDN)
+        audio = f"https://cdn1.suno.ai/{cid}.mp3"
+        clips.append(
             {
                 "id": cid,
                 "title": title,
-                "audio_url": c.get("audio_url") or f"https://cdn1.suno.ai/{cid}.mp3",
-                "artist": f"Suno · @{HANDLE}",
+                "audio_url": audio,
+                "duration": duration,
             }
         )
+    return clips
+
+
+def extract_profile_clips(html: str) -> list[dict]:
+    """Fallback for profile page: title → id → audio_url near duration."""
+    clips: list[dict] = []
+    pat = re.compile(
+        r'\\"title\\":\\"((?:\\\\.|[^\\"\\\\])*)\\"'
+        r"(?:(?!\\\"title\\\").){0,900}?"
+        r'\\"id\\":\\"([0-9a-f-]{36})\\"'
+        r"(?:(?!\\\"id\\\").){0,1500}?"
+        r'\\"audio_url\\":\\"(https:[^\\"]+)\\"',
+        re.DOTALL,
+    )
+    for m in pat.finditer(html):
+        title = re.sub(r"\s+", " ", unescape(m.group(1)).strip())
+        cid = m.group(2)
+        if not cid or cid.startswith("00000000") or cid in SKIP_IDS:
+            continue
+        window = html[m.start() : min(len(html), m.end() + 5000)]
+        durs = re.findall(r'\\"duration\\":([0-9.]+)', window)
+        duration = None
+        for d in durs:
+            val = float(d)
+            if 30.0 <= val <= 900.0:
+                duration = val
+                break
+        clips.append(
+            {
+                "id": cid,
+                "title": title,
+                "audio_url": f"https://cdn1.suno.ai/{cid}.mp3",
+                "duration": duration,
+            }
+        )
+    return clips
+
+
+def extract_ui_title_ids(html: str) -> dict[str, str]:
+    """Visible song list: title attribute + /song/uuid (confirm display names)."""
+    pairs = re.findall(
+        r'title="([^"]+)"[^>]*>\s*<a href="/song/([0-9a-f-]{36})"',
+        html,
+    )
+    out: dict[str, str] = {}
+    for title, cid in pairs:
+        title = re.sub(r"\s+", " ", title.strip())
+        if cid and title:
+            out[cid] = title
     return out
 
 
-def main() -> int:
-    urls = [
-        f"https://suno.com/@{HANDLE}",
-        f"https://suno.com/playlist/{PLAYLIST_ID}",
-    ]
-    all_clips: list[dict] = []
-    for url in urls:
-        print(f"fetch {url}")
-        try:
-            html = fetch(url)
-        except Exception as e:
-            print(f"  FAIL {e}")
-            continue
-        clips = extract(html)
-        print(f"  raw clips {len(clips)} html_len={len(html)}")
-        all_clips.extend(clips)
+def norm_title(t: str) -> str:
+    t = (t or "").strip().lower()
+    t = re.sub(r"[^\w\s]", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
 
-    final = clean(all_clips)
-    OUT.write_text(json.dumps(final, indent=2, ensure_ascii=False), encoding="utf-8")
+
+def clean(clips: list[dict], ui_titles: dict[str, str]) -> tuple[list[dict], list[str]]:
+    by_id: OrderedDict[str, dict] = OrderedDict()
+    for c in clips:
+        cid = c["id"]
+        # Prefer UI display title when available (what you see on Suno)
+        if cid in ui_titles:
+            c = {**c, "title": ui_titles[cid]}
+        if cid not in by_id:
+            by_id[cid] = c
+            continue
+        prev = by_id[cid]
+        # Prefer entry with duration
+        if prev.get("duration") is None and c.get("duration") is not None:
+            by_id[cid] = c
+        elif c.get("title") and not prev.get("title"):
+            by_id[cid] = c
+
+    out: list[dict] = []
+    seen_titles: set[str] = set()
+    seen_audio: set[str] = set()
+    skipped: list[str] = []
+
+    for c in by_id.values():
+        title = re.sub(r"\s+", " ", (c.get("title") or "").strip())
+        nt = norm_title(title)
+        audio = f"https://cdn1.suno.ai/{c['id']}.mp3"
+        dur = c.get("duration")
+
+        if not title or not nt or JUNK_TITLE_RE.search(title):
+            skipped.append(f"junk: {title or '(empty)'}")
+            continue
+        if dur is None:
+            skipped.append(f"no duration: {title}")
+            continue
+        if not (MIN_SEC <= float(dur) <= MAX_SEC):
+            skipped.append(f"length {float(dur)/60:.1f}m: {title}")
+            continue
+        if nt in seen_titles:
+            skipped.append(f"dup title: {title}")
+            continue
+        if audio in seen_audio:
+            skipped.append(f"dup audio: {title}")
+            continue
+
+        seen_titles.add(nt)
+        seen_audio.add(audio)
+        out.append(
+            {
+                "id": c["id"],
+                "title": title,
+                "audio_url": audio,
+                "duration_sec": round(float(dur), 2),
+                "artist": f"Suno · @{HANDLE}",
+            }
+        )
+
+    out.sort(key=lambda x: (-x["duration_sec"], x["title"].lower()))
+    return out, skipped
+
+
+def main() -> int:
+    playlist_url = f"https://suno.com/playlist/{PLAYLIST_ID}"
+    profile_url = f"https://suno.com/@{HANDLE}"
+
+    all_clips: list[dict] = []
+    ui_titles: dict[str, str] = {}
+
+    print(f"fetch {playlist_url}")
+    try:
+        pl_html = fetch(playlist_url)
+        pl = extract_playlist_clips(pl_html)
+        ui_titles.update(extract_ui_title_ids(pl_html))
+        print(f"  playlist clips {len(pl)}  ui titles {len(ui_titles)}")
+        all_clips.extend(pl)
+    except Exception as e:
+        print(f"  FAIL {e}")
+
+    print(f"fetch {profile_url}")
+    try:
+        pr_html = fetch(profile_url)
+        pr = extract_profile_clips(pr_html)
+        ui_titles.update(extract_ui_title_ids(pr_html))
+        print(f"  profile clips {len(pr)}  ui titles total {len(ui_titles)}")
+        all_clips.extend(pr)
+    except Exception as e:
+        print(f"  FAIL {e}")
+
+    final, skipped = clean(all_clips, ui_titles)
+    text = json.dumps(final, indent=2, ensure_ascii=False) + "\n"
+    OUT.write_text(text, encoding="utf-8")
     public = ROOT / "public" / "suno-catalog.json"
     if public.parent.is_dir():
-        public.write_text(OUT.read_text(encoding="utf-8"), encoding="utf-8")
-    print(f"wrote {OUT} ({len(final)} tracks)")
+        public.write_text(text, encoding="utf-8")
+
+    print(f"\nwrote {OUT} ({len(final)} tracks · 3–7 min · proper titles · no dups)")
     for c in final:
-        print(f"  - {c['title']}")
+        print(f"  {c['duration_sec']/60:4.1f}m  {c['title']}")
+
+    if skipped:
+        print(f"\nskipped {len(skipped)}:")
+        for s in skipped:
+            print(f"  - {s}")
+
+    # Final sanity
+    bad = [c for c in final if not c["title"] or c["id"] not in c["audio_url"]]
+    if bad:
+        print("ERROR: bad title/audio pairs", len(bad))
+        return 1
     return 0 if final else 1
 
 
