@@ -226,43 +226,59 @@ function render(payload) {
   } catch (_) {}
 }
 
-const MIN_KEY = "telephantim-daily-word-collapsed";
+const MIN_KEY_STAGE = "telephantim-daily-word-collapsed";
+const MIN_KEY_BIO = "telephantim-daily-word-bio-collapsed";
 
-function setStageCollapsed(collapsed) {
-  const stage = document.getElementById("daily-word-stage");
-  const btn = document.getElementById("daily-word-min");
-  if (!stage) return;
-  stage.classList.toggle("collapsed", !!collapsed);
+function setBoxCollapsed(boxId, btnId, storageKey, collapsed) {
+  const box = document.getElementById(boxId);
+  const btn = document.getElementById(btnId);
+  if (!box) return;
+  box.classList.toggle("collapsed", !!collapsed);
   if (btn) {
-    btn.textContent = collapsed ? "Open" : "Min";
+    btn.textContent = collapsed ? "+" : "−";
     btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
     btn.title = collapsed ? "Expand Daily Word" : "Minimize Daily Word";
   }
   try {
-    localStorage.setItem(MIN_KEY, collapsed ? "1" : "0");
+    localStorage.setItem(storageKey, collapsed ? "1" : "0");
   } catch (_) {}
 }
 
-function wireMinimize() {
-  const stage = document.getElementById("daily-word-stage");
-  const btn = document.getElementById("daily-word-min");
-  if (!stage || !btn || btn.dataset.wired) return;
+function wireOneMinimize(boxId, btnId, storageKey, defaultCollapsed) {
+  const box = document.getElementById(boxId);
+  const btn = document.getElementById(btnId);
+  if (!box || !btn || btn.dataset.wired) return;
   btn.dataset.wired = "1";
 
-  // Default minimized so relics stay visible; remember last choice
-  let collapsed = true;
+  let collapsed = !!defaultCollapsed;
   try {
-    const saved = localStorage.getItem(MIN_KEY);
+    const saved = localStorage.getItem(storageKey);
     if (saved === "0") collapsed = false;
     if (saved === "1") collapsed = true;
   } catch (_) {}
-  setStageCollapsed(collapsed);
+  setBoxCollapsed(boxId, btnId, storageKey, collapsed);
 
   btn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setStageCollapsed(!stage.classList.contains("collapsed"));
+    setBoxCollapsed(
+      boxId,
+      btnId,
+      storageKey,
+      !box.classList.contains("collapsed")
+    );
   });
+}
+
+function wireMinimize() {
+  // Relics: start minimized (chip only) so "North Star Ethics" etc. don't cover the stage
+  wireOneMinimize("daily-word-stage", "daily-word-min", MIN_KEY_STAGE, true);
+  // Bio: can minimize too; default open so reading is easy first visit
+  wireOneMinimize("daily-word-bio", "daily-word-bio-min", MIN_KEY_BIO, false);
+}
+
+function setStageCollapsed(collapsed) {
+  setBoxCollapsed("daily-word-stage", "daily-word-min", MIN_KEY_STAGE, collapsed);
 }
 
 async function fetchRemote(key) {
