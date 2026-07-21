@@ -311,13 +311,14 @@ function loadTrack(autoPlayHint) {
 
   renderList();
   const label = $("btn-music-label");
-  if (label) label.textContent = open ? "Hide music" : "Play music";
+  if (label) label.textContent = open ? "Playing…" : "Play music";
 }
 
 function setOpen(v) {
   open = !!v;
   const panel = $("music-player");
   const btn = $("btn-music");
+  const hideBtn = $("btn-music-hide");
   if (panel) {
     panel.hidden = !open;
     panel.classList.toggle("open", open);
@@ -326,8 +327,12 @@ function setOpen(v) {
     btn.setAttribute("aria-expanded", open ? "true" : "false");
     btn.classList.toggle("on", open);
   }
+  if (hideBtn) {
+    hideBtn.hidden = !open;
+  }
   const label = $("btn-music-label");
-  if (label) label.textContent = open ? "Hide music" : "Play music";
+  // Keep Play label stable; Hide is its own chip beside it
+  if (label) label.textContent = open ? "Playing…" : "Play music";
   if (open) loadTrack(true);
   else {
     const audio = $("music-audio");
@@ -378,7 +383,9 @@ function onAudioEnded() {
 }
 
 function wire() {
-  $("btn-music")?.addEventListener("click", () => setOpen(!open));
+  // Play opens; if already open, keep playing (use Hide to close)
+  $("btn-music")?.addEventListener("click", () => setOpen(true));
+  $("btn-music-hide")?.addEventListener("click", () => setOpen(false));
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
