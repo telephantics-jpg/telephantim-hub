@@ -147,9 +147,77 @@ body.scene-bio .stage {
   visibility: hidden;
   pointer-events: none;
 }
-body.scene-bio .float-actions,
+/* Pay sheet stays off on Bio; music controls stay on (same Play music placement) */
 body.scene-bio .sheet {
   display: none !important;
+}
+/* Keep float-actions shell so #btn-music can surface; hide relic-only chips */
+body.scene-bio .float-actions {
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: none;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  justify-content: center;
+}
+body.scene-bio .float-actions #btn-actions-toggle,
+body.scene-bio .float-actions #btn-banter,
+body.scene-bio .float-actions #btn-strike,
+body.scene-bio .float-actions #btn-reset {
+  display: none !important;
+}
+body.scene-bio .float-actions-main {
+  display: flex !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: none;
+  margin: 0 !important;
+}
+/* Parent stage is visibility:hidden — children must re-assert visible */
+body.scene-bio #btn-music {
+  display: inline-flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(18px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  z-index: 55;
+  min-width: 8.5rem;
+  font-weight: 700;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.82rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+/* While panel open or still playing: park left (same as Relics desktop) */
+body.scene-bio.music-open #btn-music,
+body.scene-bio #btn-music.playing-bg {
+  left: 0.85rem;
+  transform: none;
+}
+body.scene-bio #music-player {
+  display: block;
+  visibility: visible !important;
+  pointer-events: none;
+  position: fixed !important;
+  z-index: 54;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%) translateY(12px);
+  bottom: calc(72px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  width: min(420px, calc(100vw - 1.3rem));
+  max-width: min(420px, 100%);
+}
+body.scene-bio #music-player.open {
+  pointer-events: auto !important;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+body.scene-bio #music-player:not(.open) {
+  display: none;
 }
 .bio-page[hidden] {
   display: none !important;
@@ -1049,9 +1117,33 @@ body.sheet-open .float-actions {
     font-size: 0.75rem;
     box-shadow: none;
   }
-  body.scene-external #btn-music,
-  body.scene-bio #btn-music {
+  body.scene-external #btn-music {
     display: none;
+  }
+  /* Bio: keep centered Play music (overrides tray-rejoin static) */
+  body.scene-bio #btn-music,
+  body.scene-bio.music-open #btn-music,
+  body.scene-bio #btn-music.playing-bg {
+    display: inline-flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    z-index: 55;
+  }
+  body.scene-bio #btn-music {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(18px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+    min-width: 8.5rem;
+    font-weight: 700;
+    padding: 0.65rem 1.1rem;
+    font-size: 0.82rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+  body.scene-bio.music-open #btn-music,
+  body.scene-bio #btn-music.playing-bg {
+    left: 0.85rem;
+    transform: none;
   }
 }
 
