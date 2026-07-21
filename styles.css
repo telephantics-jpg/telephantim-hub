@@ -147,10 +147,7 @@ body.scene-bio .stage {
   visibility: hidden;
   pointer-events: none;
 }
-/* Pay sheet stays off on Bio; music controls stay on (same Play music placement) */
-body.scene-bio .sheet {
-  display: none !important;
-}
+/* Pay · Music · Socials menu stays available on Bio (and all modes) */
 /* Keep float-actions shell so #btn-music can surface; hide relic-only chips */
 body.scene-bio .float-actions {
   display: flex !important;
@@ -159,7 +156,7 @@ body.scene-bio .float-actions {
   z-index: 40;
   left: 0;
   right: 0;
-  bottom: calc(18px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  bottom: calc(var(--sheet-peek) + 10px + var(--safe-bottom));
   justify-content: center;
 }
 body.scene-bio .float-actions #btn-actions-toggle,
@@ -184,7 +181,7 @@ body.scene-bio #btn-music {
   position: fixed !important;
   left: 50%;
   transform: translateX(-50%);
-  bottom: calc(18px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
   z-index: 55;
   min-width: 8.5rem;
   font-weight: 700;
@@ -207,7 +204,7 @@ body.scene-bio #music-player {
   left: 50%;
   right: auto;
   transform: translateX(-50%) translateY(12px);
-  bottom: calc(72px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
+  bottom: calc(var(--sheet-peek) + 68px + var(--safe-bottom));
   width: min(420px, calc(100vw - 1.3rem));
   max-width: min(420px, 100%);
 }
@@ -578,27 +575,73 @@ body.scene-bio .daily-word-stage {
     bottom: 0.85rem;
   }
 }
-body.scene-external .music-player {
-  /* keep music available over camp if user opened it */
-  z-index: 30;
-  /* sit above talk bar area so it doesn't cover who/talk controls */
-  bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  left: 0.5rem;
-  right: auto;
-  max-width: min(360px, calc(100vw - 1rem));
+/* 2D / 3D: same Play music + menu chrome as Relics / Bio */
+body.scene-external .float-actions {
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: none;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--sheet-peek) + 10px + var(--safe-bottom));
+  justify-content: center;
 }
-/* Minimized Pay sheet was covering Luna's talk menu — hide while camp is on screen */
-body.scene-external .sheet {
+body.scene-external .float-actions #btn-actions-toggle,
+body.scene-external .float-actions #btn-banter,
+body.scene-external .float-actions #btn-strike,
+body.scene-external .float-actions #btn-reset {
   display: none !important;
-  pointer-events: none !important;
+}
+body.scene-external .float-actions-main {
+  display: flex !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: none;
+  margin: 0 !important;
+}
+body.scene-external #btn-music {
+  display: inline-flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
+  z-index: 55;
+  min-width: 8.5rem;
+  font-weight: 700;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.82rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+body.scene-external.music-open #btn-music,
+body.scene-external #btn-music.playing-bg {
+  left: 0.85rem;
+  transform: none;
+}
+body.scene-external .music-player {
+  position: fixed !important;
+  z-index: 54;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%) translateY(12px);
+  bottom: calc(var(--sheet-peek) + 68px + var(--safe-bottom));
+  width: min(420px, calc(100vw - 1.3rem));
+  max-width: min(420px, 100%);
+  pointer-events: none;
+}
+body.scene-external .music-player.open {
+  pointer-events: auto !important;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 body.scene-external .scene-fallback {
-  /* keep full-page link out of the talk bar zone */
-  bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--sheet-peek) + 56px + var(--safe-bottom));
   left: auto;
   right: 0.5rem;
   transform: none;
-  z-index: 25;
+  z-index: 42;
 }
 /* Leave a thin top safe zone so Luna's world-nav isn't under notches */
 body.scene-external .scene-frame {
@@ -1117,31 +1160,39 @@ body.sheet-open .float-actions {
     font-size: 0.75rem;
     box-shadow: none;
   }
-  body.scene-external #btn-music {
-    display: none;
-  }
-  /* Bio: keep centered Play music (overrides tray-rejoin static) */
+  /* Bio + external: fixed Play music (overrides tray-rejoin static) */
   body.scene-bio #btn-music,
   body.scene-bio.music-open #btn-music,
-  body.scene-bio #btn-music.playing-bg {
+  body.scene-bio #btn-music.playing-bg,
+  body.scene-external #btn-music,
+  body.scene-external.music-open #btn-music,
+  body.scene-external #btn-music.playing-bg {
     display: inline-flex !important;
     visibility: visible !important;
     pointer-events: auto !important;
     position: fixed !important;
     z-index: 55;
   }
-  body.scene-bio #btn-music {
+  body.scene-bio #btn-music,
+  body.scene-external #btn-music {
     left: 50%;
     transform: translateX(-50%);
-    bottom: calc(18px + var(--safe-bottom, env(safe-area-inset-bottom, 0px)));
     min-width: 8.5rem;
     font-weight: 700;
     padding: 0.65rem 1.1rem;
     font-size: 0.82rem;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   }
+  body.scene-bio #btn-music {
+    bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
+  }
+  body.scene-external #btn-music {
+    bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
+  }
   body.scene-bio.music-open #btn-music,
-  body.scene-bio #btn-music.playing-bg {
+  body.scene-bio #btn-music.playing-bg,
+  body.scene-external.music-open #btn-music,
+  body.scene-external #btn-music.playing-bg {
     left: 0.85rem;
     transform: none;
   }
@@ -1346,10 +1397,10 @@ body.sheet-open .float-actions {
   color: var(--text);
 }
 
-/* ===== BOTTOM SHEET ===== */
+/* ===== BOTTOM SHEET (all modes: Relics · Bio · 2D · 3D) ===== */
 .sheet {
   position: fixed;
-  z-index: 30;
+  z-index: 50;
   left: 0;
   right: 0;
   bottom: 0;
