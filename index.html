@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=56" />
+  <link rel="stylesheet" href="styles.css?v=57" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -103,7 +103,7 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v56 DUAL</div>
+        <div class="badge">LIVE v57 DUAL</div>
       </div>
     </div>
 
@@ -137,17 +137,23 @@
         <div class="dbox-head">
           <span class="dbox-title">Mjolnir</span>
           <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
+          <button type="button" class="dbox-min" data-dbox-min="mjolnir" aria-expanded="true" title="Minimize bubble">−</button>
         </div>
-        <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
-        <div class="dbox-meta" id="box-mjolnir-meta">power  Â·  courage  Â·  lightning</div>
+        <div class="dbox-body">
+          <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
+          <div class="dbox-meta" id="box-mjolnir-meta">power · courage · lightning</div>
+        </div>
       </div>
       <div class="dbox dbox-caduceus show" id="box-caduceus">
         <div class="dbox-head">
           <span class="dbox-title">Caduceus</span>
           <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
+          <button type="button" class="dbox-min" data-dbox-min="caduceus" aria-expanded="true" title="Minimize bubble">−</button>
         </div>
-        <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING  -  scroll the bubble if it runs tall.</div>
-        <div class="dbox-meta" id="box-caduceus-meta">healing  Â·  vitality  Â·  balance</div>
+        <div class="dbox-body">
+          <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING - scroll the bubble if it runs tall.</div>
+          <div class="dbox-meta" id="box-caduceus-meta">healing · vitality · balance</div>
+        </div>
       </div>
     </div>
 
@@ -370,8 +376,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=56"></script>
-  <script src="analytics.js?v=56"></script>
+  <script src="api-config.js?v=57"></script>
+  <script src="analytics.js?v=57"></script>
   <script type="importmap">
   {
     "imports": {
@@ -380,13 +386,13 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=56"></script>
-  <script type="module" src="bio.js?v=56"></script>
-  <script type="module" src="daily-wisdom.js?v=56"></script>
-  <script type="module" src="oracle.js?v=56"></script>
-  <script type="module" src="music.js?v=56"></script>
-  <script type="module" src="personality.js?v=56"></script>
-  <script type="module" src="mjolnir.js?v=56"></script>
+  <script type="module" src="scenes.js?v=57"></script>
+  <script type="module" src="bio.js?v=57"></script>
+  <script type="module" src="daily-wisdom.js?v=57"></script>
+  <script type="module" src="oracle.js?v=57"></script>
+  <script type="module" src="music.js?v=57"></script>
+  <script type="module" src="personality.js?v=57"></script>
+  <script type="module" src="mjolnir.js?v=57"></script>
   <script>
     // Sheet "Play music here" opens the floating player
     document.getElementById("daily-open-bio")?.addEventListener("click", function () { window.TelephantimScenes?.setScene("bio"); });
