@@ -116,7 +116,11 @@ def norm_title(t: str) -> str:
 
 
 def dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
-    """Keep first occurrence by id, then drop later same title / same audio."""
+    """
+    Keep every unique song id (full playlist).
+    Only skip true duplicates: same id or same audio URL.
+    Same title with different ids = different takes — keep both and label.
+    """
     by_id: OrderedDict[str, dict] = OrderedDict()
     skipped: list[str] = []
 
@@ -128,31 +132,29 @@ def dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
         by_id[cid] = c
 
     out: list[dict] = []
-    seen_titles: set[str] = set()
     seen_audio: set[str] = set()
+    title_counts: dict[str, int] = {}
 
     for c in by_id.values():
         title = re.sub(r"\s+", " ", (c.get("title") or "").strip())
         if not title:
-            # Keep the clip; use a stable readable fallback so the player shows something
             title = f"Untitled · {c['id'][:8]}"
         nt = norm_title(title)
-        audio = (c.get("audio_url") or f"https://cdn1.suno.ai/{c['id']}.mp3").strip()
-        # Canonical CDN by id
         audio = f"https://cdn1.suno.ai/{c['id']}.mp3"
 
-        if nt in seen_titles:
-            skipped.append(f"dup title: {title}")
-            continue
         if audio in seen_audio:
             skipped.append(f"dup audio: {title}")
             continue
-
-        seen_titles.add(nt)
         seen_audio.add(audio)
+
+        # Disambiguate repeated titles so both show in the queue
+        n = title_counts.get(nt, 0) + 1
+        title_counts[nt] = n
+        display = title if n == 1 else f"{title} ({n})"
+
         row = {
             "id": c["id"],
-            "title": title,
+            "title": display,
             "audio_url": audio,
             "artist": f"Suno · @{HANDLE}",
         }
