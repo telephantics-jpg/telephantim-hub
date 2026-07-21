@@ -1,373 +1,1045 @@
 [
   {
-    "id": "926fc58d-14e5-4277-9428-ab33127cad77",
-    "title": "Hidden Nessecity",
-    "audio_url": "https://cdn1.suno.ai/926fc58d-14e5-4277-9428-ab33127cad77.mp3",
-    "duration_sec": 419.0,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "9c59a708-a9dc-4d57-afb2-e826ff509461",
-    "title": "Abyssal Depths",
-    "audio_url": "https://cdn1.suno.ai/9c59a708-a9dc-4d57-afb2-e826ff509461.mp3",
-    "duration_sec": 416.52,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "23df5b44-cd27-468c-9130-715be62e238d",
-    "title": "moonlight sonata",
-    "audio_url": "https://cdn1.suno.ai/23df5b44-cd27-468c-9130-715be62e238d.mp3",
-    "duration_sec": 409.76,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "b4a6318f-f25f-4596-98a9-d0ed5dc2d4b1",
-    "title": "Destined for the Fall",
-    "audio_url": "https://cdn1.suno.ai/b4a6318f-f25f-4596-98a9-d0ed5dc2d4b1.mp3",
-    "duration_sec": 406.92,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "01cbc10f-6d82-49ee-a0cf-589f8995bd10",
-    "title": "Call",
-    "audio_url": "https://cdn1.suno.ai/01cbc10f-6d82-49ee-a0cf-589f8995bd10.mp3",
-    "duration_sec": 405.6,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "01ea63fe-e0c0-45b0-99ab-d3fa542ff773",
-    "title": "Pull on Desire",
-    "audio_url": "https://cdn1.suno.ai/01ea63fe-e0c0-45b0-99ab-d3fa542ff773.mp3",
-    "duration_sec": 404.88,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "35a25b40-7816-42bd-9d98-92ed26a3803a",
-    "title": "Watch it Dissove",
-    "audio_url": "https://cdn1.suno.ai/35a25b40-7816-42bd-9d98-92ed26a3803a.mp3",
-    "duration_sec": 394.0,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "b0da86dc-a826-4255-adda-fa98bbb225c9",
-    "title": "Endless exctasy",
-    "audio_url": "https://cdn1.suno.ai/b0da86dc-a826-4255-adda-fa98bbb225c9.mp3",
-    "duration_sec": 380.52,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "75567a80-e290-40f2-8c56-e16fa41e780d",
-    "title": "Carnage",
-    "audio_url": "https://cdn1.suno.ai/75567a80-e290-40f2-8c56-e16fa41e780d.mp3",
-    "duration_sec": 369.6,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "329e595f-101b-4892-9411-84d8d540a654",
-    "title": "I am the mountain I am the top",
-    "audio_url": "https://cdn1.suno.ai/329e595f-101b-4892-9411-84d8d540a654.mp3",
-    "duration_sec": 361.44,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "70c03eb2-9b07-49fa-9ce0-a6c82e09e736",
-    "title": "Mirror Mirror",
-    "audio_url": "https://cdn1.suno.ai/70c03eb2-9b07-49fa-9ce0-a6c82e09e736.mp3",
-    "duration_sec": 359.92,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "e7c79e99-a706-41ac-a2fe-0947555239fc",
-    "title": "Tis just t a truth",
-    "audio_url": "https://cdn1.suno.ai/e7c79e99-a706-41ac-a2fe-0947555239fc.mp3",
-    "duration_sec": 352.6,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "da42f57e-a51d-4130-a7d7-b7160d2c8087",
-    "title": "Optional Choices",
-    "audio_url": "https://cdn1.suno.ai/da42f57e-a51d-4130-a7d7-b7160d2c8087.mp3",
-    "duration_sec": 352.44,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "891fb230-b620-4825-8755-cd762463608b",
-    "title": "Lucid Dreams",
-    "audio_url": "https://cdn1.suno.ai/891fb230-b620-4825-8755-cd762463608b.mp3",
-    "duration_sec": 349.44,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "19aa4057-5d83-47f6-a014-d747ac62ec7b",
-    "title": "Whispers",
-    "audio_url": "https://cdn1.suno.ai/19aa4057-5d83-47f6-a014-d747ac62ec7b.mp3",
-    "duration_sec": 348.76,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "5a733637-5f7f-4d6a-9bd3-d57c82895011",
-    "title": "The Notion",
-    "audio_url": "https://cdn1.suno.ai/5a733637-5f7f-4d6a-9bd3-d57c82895011.mp3",
-    "duration_sec": 347.96,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "78870536-9ccc-4db7-bb6b-a95478a0b89d",
-    "title": "No loss Only Gain x Valhalla in my Veins (Mashup)",
-    "audio_url": "https://cdn1.suno.ai/78870536-9ccc-4db7-bb6b-a95478a0b89d.mp3",
-    "duration_sec": 345.96,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "6296017f-5547-4b74-ab0e-176c3f6e1945",
-    "title": "Pulverised Dust",
-    "audio_url": "https://cdn1.suno.ai/6296017f-5547-4b74-ab0e-176c3f6e1945.mp3",
-    "duration_sec": 344.56,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "0b2e2ef0-59d9-4a41-9783-f829ecfdc54e",
-    "title": "The Fruit is Growing",
-    "audio_url": "https://cdn1.suno.ai/0b2e2ef0-59d9-4a41-9783-f829ecfdc54e.mp3",
-    "duration_sec": 343.36,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "af7ca11a-65ab-4b73-9314-0a6fc278b647",
-    "title": "Rap",
-    "audio_url": "https://cdn1.suno.ai/af7ca11a-65ab-4b73-9314-0a6fc278b647.mp3",
-    "duration_sec": 340.28,
-    "artist": "Suno · @telephantix"
-  },
-  {
     "id": "2e09b9b3-8b12-4496-aa63-291c699476fb",
     "title": "Static Tv",
     "audio_url": "https://cdn1.suno.ai/2e09b9b3-8b12-4496-aa63-291c699476fb.mp3",
-    "duration_sec": 340.16,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "bd0a08f3-255d-4af4-a4c5-30d2fe0a4e8f",
-    "title": "Greek Latin",
-    "audio_url": "https://cdn1.suno.ai/bd0a08f3-255d-4af4-a4c5-30d2fe0a4e8f.mp3",
-    "duration_sec": 334.4,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "32d1bf12-8963-434e-9709-7475b8c49872",
-    "title": "Flowing Free",
-    "audio_url": "https://cdn1.suno.ai/32d1bf12-8963-434e-9709-7475b8c49872.mp3",
-    "duration_sec": 332.16,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "db26089b-4866-4e1b-99ef-55dfcf6e2bec",
-    "title": "The pull with in desire",
-    "audio_url": "https://cdn1.suno.ai/db26089b-4866-4e1b-99ef-55dfcf6e2bec.mp3",
-    "duration_sec": 327.36,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "75698702-fd78-4723-807d-34d88b71ecdc",
-    "title": "Defeated",
-    "audio_url": "https://cdn1.suno.ai/75698702-fd78-4723-807d-34d88b71ecdc.mp3",
-    "duration_sec": 324.64,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "b11518a9-7a7b-4aa0-b848-334b22cc16cf",
-    "title": "Mantras in the Wires",
-    "audio_url": "https://cdn1.suno.ai/b11518a9-7a7b-4aa0-b848-334b22cc16cf.mp3",
-    "duration_sec": 323.0,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "16cb60bc-93a1-41c6-b8a7-e36e56cab64f",
-    "title": "To the Dust",
-    "audio_url": "https://cdn1.suno.ai/16cb60bc-93a1-41c6-b8a7-e36e56cab64f.mp3",
-    "duration_sec": 322.28,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "177e2405-e86f-4168-b8e3-113a82b88d0b",
-    "title": "Hypnotic Storm",
-    "audio_url": "https://cdn1.suno.ai/177e2405-e86f-4168-b8e3-113a82b88d0b.mp3",
-    "duration_sec": 318.56,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "47636fe7-9940-4f48-99fc-2d4ee3f13212",
-    "title": "The Law of the Low",
-    "audio_url": "https://cdn1.suno.ai/47636fe7-9940-4f48-99fc-2d4ee3f13212.mp3",
-    "duration_sec": 314.72,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "6eb397b4-7fa7-4ef4-ac9f-b72677b32ee3",
-    "title": "Ignored storm",
-    "audio_url": "https://cdn1.suno.ai/6eb397b4-7fa7-4ef4-ac9f-b72677b32ee3.mp3",
-    "duration_sec": 312.16,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "5056af01-4785-4e29-8a5a-624e71f0c09f",
-    "title": "ZAnarkand",
-    "audio_url": "https://cdn1.suno.ai/5056af01-4785-4e29-8a5a-624e71f0c09f.mp3",
-    "duration_sec": 311.76,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "7e655b51-ffb0-4941-beda-254735a29517",
-    "title": "Amir Aenti",
-    "audio_url": "https://cdn1.suno.ai/7e655b51-ffb0-4941-beda-254735a29517.mp3",
-    "duration_sec": 309.92,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "35813540-e9a2-4e57-a0d8-19cc1fd123d4",
-    "title": "Architect",
-    "audio_url": "https://cdn1.suno.ai/35813540-e9a2-4e57-a0d8-19cc1fd123d4.mp3",
-    "duration_sec": 308.32,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "2f62b61b-aa1c-47ca-bbb7-c3916d3fd00e",
-    "title": "For the Home",
-    "audio_url": "https://cdn1.suno.ai/2f62b61b-aa1c-47ca-bbb7-c3916d3fd00e.mp3",
-    "duration_sec": 308.12,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "6df7a570-fb7e-440d-b621-6e3322b1c020",
-    "title": "dance echoed",
-    "audio_url": "https://cdn1.suno.ai/6df7a570-fb7e-440d-b621-6e3322b1c020.mp3",
-    "duration_sec": 304.96,
-    "artist": "Suno · @telephantix"
+    "artist": "Suno · @telephantix",
+    "duration_sec": 340.16
   },
   {
     "id": "59605b86-a171-4df6-a4eb-905ae7ec2bff",
     "title": "Inside",
     "audio_url": "https://cdn1.suno.ai/59605b86-a171-4df6-a4eb-905ae7ec2bff.mp3",
-    "duration_sec": 294.0,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "24e464d3-9cac-4326-89f1-d9a48a7c7bc0",
-    "title": "Redefine Sacred Law",
-    "audio_url": "https://cdn1.suno.ai/24e464d3-9cac-4326-89f1-d9a48a7c7bc0.mp3",
-    "duration_sec": 293.24,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "0d690afd-7e6f-4eaa-9934-2c0b2835eb2a",
-    "title": "All loss All Gain",
-    "audio_url": "https://cdn1.suno.ai/0d690afd-7e6f-4eaa-9934-2c0b2835eb2a.mp3",
-    "duration_sec": 291.44,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "92f8b1d6-319a-4481-b39a-76913442fc9a",
-    "title": "What Isn't Is",
-    "audio_url": "https://cdn1.suno.ai/92f8b1d6-319a-4481-b39a-76913442fc9a.mp3",
-    "duration_sec": 289.24,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "1b0bd90a-97d6-4822-ab4d-6c6470554584",
-    "title": "Marijuana Inspo",
-    "audio_url": "https://cdn1.suno.ai/1b0bd90a-97d6-4822-ab4d-6c6470554584.mp3",
-    "duration_sec": 287.76,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "2847e269-3f92-4cf8-b303-c2b9025d359d",
-    "title": "Pull me Under",
-    "audio_url": "https://cdn1.suno.ai/2847e269-3f92-4cf8-b303-c2b9025d359d.mp3",
-    "duration_sec": 287.48,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "bb5b3a11-96a8-4969-ad33-bb981880534e",
-    "title": "tomarrow",
-    "audio_url": "https://cdn1.suno.ai/bb5b3a11-96a8-4969-ad33-bb981880534e.mp3",
-    "duration_sec": 284.8,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "b86febcb-6c71-4937-b9c2-972d4c2cac07",
-    "title": "Ghost Better Company",
-    "audio_url": "https://cdn1.suno.ai/b86febcb-6c71-4937-b9c2-972d4c2cac07.mp3",
-    "duration_sec": 282.92,
-    "artist": "Suno · @telephantix"
+    "artist": "Suno · @telephantix",
+    "duration_sec": 294.0
   },
   {
     "id": "d635f88f-6d6a-4efc-b1fb-0ee62f5a8f70",
     "title": "TTFAF",
     "audio_url": "https://cdn1.suno.ai/d635f88f-6d6a-4efc-b1fb-0ee62f5a8f70.mp3",
-    "duration_sec": 281.8,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "49cafee6-eff1-41e5-b00c-3e127869d4ad",
-    "title": "Eloi, Eloi, lama sabachthani!",
-    "audio_url": "https://cdn1.suno.ai/49cafee6-eff1-41e5-b00c-3e127869d4ad.mp3",
-    "duration_sec": 279.96,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "f8db82fd-059c-4b82-a0c0-90213bf5f592",
-    "title": "Twilight Overkill",
-    "audio_url": "https://cdn1.suno.ai/f8db82fd-059c-4b82-a0c0-90213bf5f592.mp3",
-    "duration_sec": 268.64,
-    "artist": "Suno · @telephantix"
+    "artist": "Suno · @telephantix",
+    "duration_sec": 281.8
   },
   {
     "id": "7642aa82-4650-4776-aca5-36e65e343e33",
     "title": "Taccata",
     "audio_url": "https://cdn1.suno.ai/7642aa82-4650-4776-aca5-36e65e343e33.mp3",
-    "duration_sec": 265.16,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "e6a46966-45ea-44c5-96e6-7881c64f4cc9",
-    "title": "Scp-00X",
-    "audio_url": "https://cdn1.suno.ai/e6a46966-45ea-44c5-96e6-7881c64f4cc9.mp3",
-    "duration_sec": 264.8,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "14570d70-72ff-48f9-bb7d-9cc1db05a95d",
-    "title": "United We Are Alive",
-    "audio_url": "https://cdn1.suno.ai/14570d70-72ff-48f9-bb7d-9cc1db05a95d.mp3",
-    "duration_sec": 258.0,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "62f8a269-882a-4b59-9f65-cea97819809c",
-    "title": "Abracadabra",
-    "audio_url": "https://cdn1.suno.ai/62f8a269-882a-4b59-9f65-cea97819809c.mp3",
-    "duration_sec": 252.0,
-    "artist": "Suno · @telephantix"
-  },
-  {
-    "id": "c1de4bf1-f5f6-4ccd-85d7-fe27cd6dc695",
-    "title": "Duh duh",
-    "audio_url": "https://cdn1.suno.ai/c1de4bf1-f5f6-4ccd-85d7-fe27cd6dc695.mp3",
-    "duration_sec": 243.0,
-    "artist": "Suno · @telephantix"
+    "artist": "Suno · @telephantix",
+    "duration_sec": 265.16
   },
   {
     "id": "007e3572-7c4e-49d4-a8a7-79ad150c8d7c",
     "title": "Stories We Weave",
     "audio_url": "https://cdn1.suno.ai/007e3572-7c4e-49d4-a8a7-79ad150c8d7c.mp3",
-    "duration_sec": 242.88,
-    "artist": "Suno · @telephantix"
+    "artist": "Suno · @telephantix",
+    "duration_sec": 242.88
+  },
+  {
+    "id": "c1de4bf1-f5f6-4ccd-85d7-fe27cd6dc695",
+    "title": "Duh duh",
+    "audio_url": "https://cdn1.suno.ai/c1de4bf1-f5f6-4ccd-85d7-fe27cd6dc695.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 243.0
+  },
+  {
+    "id": "9c59a708-a9dc-4d57-afb2-e826ff509461",
+    "title": "Abyssal Depths",
+    "audio_url": "https://cdn1.suno.ai/9c59a708-a9dc-4d57-afb2-e826ff509461.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 416.52
+  },
+  {
+    "id": "0b2e2ef0-59d9-4a41-9783-f829ecfdc54e",
+    "title": "The Fruit is Growing",
+    "audio_url": "https://cdn1.suno.ai/0b2e2ef0-59d9-4a41-9783-f829ecfdc54e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 343.36
+  },
+  {
+    "id": "6296017f-5547-4b74-ab0e-176c3f6e1945",
+    "title": "Pulverised Dust",
+    "audio_url": "https://cdn1.suno.ai/6296017f-5547-4b74-ab0e-176c3f6e1945.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 344.56
+  },
+  {
+    "id": "fee40528-cf86-430f-88a4-a587ebca902b",
+    "title": "Architecture",
+    "audio_url": "https://cdn1.suno.ai/fee40528-cf86-430f-88a4-a587ebca902b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 436.08
+  },
+  {
+    "id": "b11518a9-7a7b-4aa0-b848-334b22cc16cf",
+    "title": "Mantras in the Wires",
+    "audio_url": "https://cdn1.suno.ai/b11518a9-7a7b-4aa0-b848-334b22cc16cf.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 323.0
+  },
+  {
+    "id": "6df7a570-fb7e-440d-b621-6e3322b1c020",
+    "title": "dance echoed",
+    "audio_url": "https://cdn1.suno.ai/6df7a570-fb7e-440d-b621-6e3322b1c020.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 304.96
+  },
+  {
+    "id": "5056af01-4785-4e29-8a5a-624e71f0c09f",
+    "title": "ZAnarkand",
+    "audio_url": "https://cdn1.suno.ai/5056af01-4785-4e29-8a5a-624e71f0c09f.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 311.76
+  },
+  {
+    "id": "2847e269-3f92-4cf8-b303-c2b9025d359d",
+    "title": "Pull me Under",
+    "audio_url": "https://cdn1.suno.ai/2847e269-3f92-4cf8-b303-c2b9025d359d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 287.48
+  },
+  {
+    "id": "177e2405-e86f-4168-b8e3-113a82b88d0b",
+    "title": "Hypnotic Storm",
+    "audio_url": "https://cdn1.suno.ai/177e2405-e86f-4168-b8e3-113a82b88d0b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 318.56
+  },
+  {
+    "id": "70c03eb2-9b07-49fa-9ce0-a6c82e09e736",
+    "title": "Mirror Mirror",
+    "audio_url": "https://cdn1.suno.ai/70c03eb2-9b07-49fa-9ce0-a6c82e09e736.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 359.92
+  },
+  {
+    "id": "7e655b51-ffb0-4941-beda-254735a29517",
+    "title": "Amir Aenti",
+    "audio_url": "https://cdn1.suno.ai/7e655b51-ffb0-4941-beda-254735a29517.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 309.92
+  },
+  {
+    "id": "23df5b44-cd27-468c-9130-715be62e238d",
+    "title": "moonlight sonata",
+    "audio_url": "https://cdn1.suno.ai/23df5b44-cd27-468c-9130-715be62e238d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 409.76
+  },
+  {
+    "id": "b83bb0b1-227e-4cb7-b403-a8bb45411df7",
+    "title": "Untitled · b83bb0b1",
+    "audio_url": "https://cdn1.suno.ai/b83bb0b1-227e-4cb7-b403-a8bb45411df7.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 441.72
+  },
+  {
+    "id": "af7ca11a-65ab-4b73-9314-0a6fc278b647",
+    "title": "Rap",
+    "audio_url": "https://cdn1.suno.ai/af7ca11a-65ab-4b73-9314-0a6fc278b647.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 340.28
+  },
+  {
+    "id": "6eb397b4-7fa7-4ef4-ac9f-b72677b32ee3",
+    "title": "Ignored storm",
+    "audio_url": "https://cdn1.suno.ai/6eb397b4-7fa7-4ef4-ac9f-b72677b32ee3.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 312.16
+  },
+  {
+    "id": "db26089b-4866-4e1b-99ef-55dfcf6e2bec",
+    "title": "The pull with in desire",
+    "audio_url": "https://cdn1.suno.ai/db26089b-4866-4e1b-99ef-55dfcf6e2bec.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 327.36
+  },
+  {
+    "id": "88e4803f-4369-4e11-bfe7-2861c1d373b1",
+    "title": "Fleeting Glimpse",
+    "audio_url": "https://cdn1.suno.ai/88e4803f-4369-4e11-bfe7-2861c1d373b1.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 539.04
+  },
+  {
+    "id": "8e642251-5dda-4b9c-8118-1ff2d079da1c",
+    "title": "Revival",
+    "audio_url": "https://cdn1.suno.ai/8e642251-5dda-4b9c-8118-1ff2d079da1c.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 427.52
+  },
+  {
+    "id": "19aa4057-5d83-47f6-a014-d747ac62ec7b",
+    "title": "Whispers",
+    "audio_url": "https://cdn1.suno.ai/19aa4057-5d83-47f6-a014-d747ac62ec7b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 348.76
+  },
+  {
+    "id": "01cbc10f-6d82-49ee-a0cf-589f8995bd10",
+    "title": "Call",
+    "audio_url": "https://cdn1.suno.ai/01cbc10f-6d82-49ee-a0cf-589f8995bd10.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 405.6
+  },
+  {
+    "id": "b0da86dc-a826-4255-adda-fa98bbb225c9",
+    "title": "Endless exctasy",
+    "audio_url": "https://cdn1.suno.ai/b0da86dc-a826-4255-adda-fa98bbb225c9.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 380.52
+  },
+  {
+    "id": "49cafee6-eff1-41e5-b00c-3e127869d4ad",
+    "title": "Eloi, Eloi, lama sabachthani!",
+    "audio_url": "https://cdn1.suno.ai/49cafee6-eff1-41e5-b00c-3e127869d4ad.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 279.96
+  },
+  {
+    "id": "cd9a67d0-9b74-40b9-a039-30c57112efd6",
+    "title": "17.6s Recording (Feb 28 @ 12:06 PM)",
+    "audio_url": "https://cdn1.suno.ai/cd9a67d0-9b74-40b9-a039-30c57112efd6.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 222.12
+  },
+  {
+    "id": "853ddfe2-7f16-4276-b731-ff14a3f62d2a",
+    "title": "Crawling Home",
+    "audio_url": "https://cdn1.suno.ai/853ddfe2-7f16-4276-b731-ff14a3f62d2a.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 179.92
   },
   {
     "id": "b54e4bd1-4bac-4e1b-b011-c9dde3c54ac2",
     "title": "Sanctified Paradox",
     "audio_url": "https://cdn1.suno.ai/b54e4bd1-4bac-4e1b-b011-c9dde3c54ac2.mp3",
-    "duration_sec": 209.96,
-    "artist": "Suno · @telephantix"
+    "artist": "Suno · @telephantix",
+    "duration_sec": 209.96
+  },
+  {
+    "id": "f8db82fd-059c-4b82-a0c0-90213bf5f592",
+    "title": "Twilight Overkill",
+    "audio_url": "https://cdn1.suno.ai/f8db82fd-059c-4b82-a0c0-90213bf5f592.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 268.64
+  },
+  {
+    "id": "b4a6318f-f25f-4596-98a9-d0ed5dc2d4b1",
+    "title": "Destined for the Fall",
+    "audio_url": "https://cdn1.suno.ai/b4a6318f-f25f-4596-98a9-d0ed5dc2d4b1.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 406.92
+  },
+  {
+    "id": "75698702-fd78-4723-807d-34d88b71ecdc",
+    "title": "Defeated",
+    "audio_url": "https://cdn1.suno.ai/75698702-fd78-4723-807d-34d88b71ecdc.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 324.64
+  },
+  {
+    "id": "35a25b40-7816-42bd-9d98-92ed26a3803a",
+    "title": "Watch it Dissove",
+    "audio_url": "https://cdn1.suno.ai/35a25b40-7816-42bd-9d98-92ed26a3803a.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 394.0
+  },
+  {
+    "id": "62f8a269-882a-4b59-9f65-cea97819809c",
+    "title": "Abracadabra",
+    "audio_url": "https://cdn1.suno.ai/62f8a269-882a-4b59-9f65-cea97819809c.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 252.0
+  },
+  {
+    "id": "78870536-9ccc-4db7-bb6b-a95478a0b89d",
+    "title": "No loss Only Gain x Valhalla in my Veins (Mashup)",
+    "audio_url": "https://cdn1.suno.ai/78870536-9ccc-4db7-bb6b-a95478a0b89d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 345.96
+  },
+  {
+    "id": "703902ac-d5cd-4160-a4b3-9cad2c014374",
+    "title": "Worthy Nights",
+    "audio_url": "https://cdn1.suno.ai/703902ac-d5cd-4160-a4b3-9cad2c014374.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 479.96
+  },
+  {
+    "id": "c03108ad-f7a6-404f-b0f4-e6792e681818",
+    "title": "Desperation",
+    "audio_url": "https://cdn1.suno.ai/c03108ad-f7a6-404f-b0f4-e6792e681818.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 447.56
+  },
+  {
+    "id": "0d690afd-7e6f-4eaa-9934-2c0b2835eb2a",
+    "title": "All loss All Gain",
+    "audio_url": "https://cdn1.suno.ai/0d690afd-7e6f-4eaa-9934-2c0b2835eb2a.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 291.44
+  },
+  {
+    "id": "16cb60bc-93a1-41c6-b8a7-e36e56cab64f",
+    "title": "To the Dust",
+    "audio_url": "https://cdn1.suno.ai/16cb60bc-93a1-41c6-b8a7-e36e56cab64f.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 322.28
+  },
+  {
+    "id": "da42f57e-a51d-4130-a7d7-b7160d2c8087",
+    "title": "Optional Choices",
+    "audio_url": "https://cdn1.suno.ai/da42f57e-a51d-4130-a7d7-b7160d2c8087.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 352.44
+  },
+  {
+    "id": "ba1d9799-4460-4714-8787-3832f959bf2e",
+    "title": "keep company.",
+    "audio_url": "https://cdn1.suno.ai/ba1d9799-4460-4714-8787-3832f959bf2e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 439.76
+  },
+  {
+    "id": "b86febcb-6c71-4937-b9c2-972d4c2cac07",
+    "title": "Ghost Better Company",
+    "audio_url": "https://cdn1.suno.ai/b86febcb-6c71-4937-b9c2-972d4c2cac07.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 282.92
+  },
+  {
+    "id": "b6f75cbd-b4d5-4f2c-bf9a-48d33527f3c3",
+    "title": "(Verse 1)",
+    "audio_url": "https://cdn1.suno.ai/b6f75cbd-b4d5-4f2c-bf9a-48d33527f3c3.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 453.24
+  },
+  {
+    "id": "e6a46966-45ea-44c5-96e6-7881c64f4cc9",
+    "title": "Scp-00X",
+    "audio_url": "https://cdn1.suno.ai/e6a46966-45ea-44c5-96e6-7881c64f4cc9.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 264.8
+  },
+  {
+    "id": "926fc58d-14e5-4277-9428-ab33127cad77",
+    "title": "Hidden Nessecity",
+    "audio_url": "https://cdn1.suno.ai/926fc58d-14e5-4277-9428-ab33127cad77.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 419.0
+  },
+  {
+    "id": "bb5b3a11-96a8-4969-ad33-bb981880534e",
+    "title": "tomarrow",
+    "audio_url": "https://cdn1.suno.ai/bb5b3a11-96a8-4969-ad33-bb981880534e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 284.8
+  },
+  {
+    "id": "5a733637-5f7f-4d6a-9bd3-d57c82895011",
+    "title": "The Notion",
+    "audio_url": "https://cdn1.suno.ai/5a733637-5f7f-4d6a-9bd3-d57c82895011.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 347.96
+  },
+  {
+    "id": "329e595f-101b-4892-9411-84d8d540a654",
+    "title": "I am the mountain I am the top",
+    "audio_url": "https://cdn1.suno.ai/329e595f-101b-4892-9411-84d8d540a654.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 361.44
+  },
+  {
+    "id": "fa7327a3-8b96-42d9-b278-c0a6165ea2bb",
+    "title": "Wheel_of_Forgotten_Waters (1)",
+    "audio_url": "https://cdn1.suno.ai/fa7327a3-8b96-42d9-b278-c0a6165ea2bb.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 468.08
+  },
+  {
+    "id": "bf35dd37-3c71-4ff7-8636-6b8ab56ef50e",
+    "title": "The Fire never Weeps",
+    "audio_url": "https://cdn1.suno.ai/bf35dd37-3c71-4ff7-8636-6b8ab56ef50e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 407.4
+  },
+  {
+    "id": "621b53fa-0054-4059-9202-a23042c8c8ef",
+    "title": "Deep DaRK loss",
+    "audio_url": "https://cdn1.suno.ai/621b53fa-0054-4059-9202-a23042c8c8ef.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 422.32
+  },
+  {
+    "id": "01ea63fe-e0c0-45b0-99ab-d3fa542ff773",
+    "title": "Pull on Desire",
+    "audio_url": "https://cdn1.suno.ai/01ea63fe-e0c0-45b0-99ab-d3fa542ff773.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 404.88
+  },
+  {
+    "id": "8ad37691-5f11-44bf-b092-dace2820e244",
+    "title": "The Current Always Wins",
+    "audio_url": "https://cdn1.suno.ai/8ad37691-5f11-44bf-b092-dace2820e244.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 387.44
+  },
+  {
+    "id": "8f0cfdd4-85ce-4b8e-9bd2-05af86dce92f",
+    "title": "Echos of Eternity",
+    "audio_url": "https://cdn1.suno.ai/8f0cfdd4-85ce-4b8e-9bd2-05af86dce92f.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 404.96
+  },
+  {
+    "id": "9fd18d2c-9ee7-4635-800f-2ef46105befe",
+    "title": "When it divides",
+    "audio_url": "https://cdn1.suno.ai/9fd18d2c-9ee7-4635-800f-2ef46105befe.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 424.72
+  },
+  {
+    "id": "c5bee8da-dfbd-4227-b99f-de20098fdbea",
+    "title": "life is a choice",
+    "audio_url": "https://cdn1.suno.ai/c5bee8da-dfbd-4227-b99f-de20098fdbea.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 338.08
+  },
+  {
+    "id": "789ffddb-0349-4ecb-9c27-e6395b949b7c",
+    "title": "oracle venom",
+    "audio_url": "https://cdn1.suno.ai/789ffddb-0349-4ecb-9c27-e6395b949b7c.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 338.08
+  },
+  {
+    "id": "413a3755-53a7-4eae-8619-c6e51e75fa17",
+    "title": "Pro lux verritas",
+    "audio_url": "https://cdn1.suno.ai/413a3755-53a7-4eae-8619-c6e51e75fa17.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 317.48
+  },
+  {
+    "id": "49150e6b-f01a-4d7a-803a-010d22023ba2",
+    "title": "Simple Conundrums",
+    "audio_url": "https://cdn1.suno.ai/49150e6b-f01a-4d7a-803a-010d22023ba2.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 204.96
+  },
+  {
+    "id": "8f6265ba-5447-4ad0-aff3-c0a303935c60",
+    "title": "Echoes the Pure (Remastered)",
+    "audio_url": "https://cdn1.suno.ai/8f6265ba-5447-4ad0-aff3-c0a303935c60.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 246.56
+  },
+  {
+    "id": "3c569dd7-bee1-4907-b79f-adf38002e859",
+    "title": "Simple Cannon",
+    "audio_url": "https://cdn1.suno.ai/3c569dd7-bee1-4907-b79f-adf38002e859.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 178.16
+  },
+  {
+    "id": "d5fe8fd2-0b58-4763-bfcf-87b7f10b5539",
+    "title": "Engulfing the flame",
+    "audio_url": "https://cdn1.suno.ai/d5fe8fd2-0b58-4763-bfcf-87b7f10b5539.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 354.96
+  },
+  {
+    "id": "8cd886e3-fd38-4861-bdb9-af202ba2fc21",
+    "title": "Circuits fire in the void, no escape fro",
+    "audio_url": "https://cdn1.suno.ai/8cd886e3-fd38-4861-bdb9-af202ba2fc21.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 294.96
+  },
+  {
+    "id": "c424705a-1002-40b0-a5a1-fbeab6865c68",
+    "title": "Faint whispers",
+    "audio_url": "https://cdn1.suno.ai/c424705a-1002-40b0-a5a1-fbeab6865c68.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 319.48
+  },
+  {
+    "id": "d0afb3a7-58af-4a07-903d-d74e52efd385",
+    "title": "Loud and Clear",
+    "audio_url": "https://cdn1.suno.ai/d0afb3a7-58af-4a07-903d-d74e52efd385.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 246.56
+  },
+  {
+    "id": "c35e950e-add6-4324-b710-6856dde10cd4",
+    "title": "Whispers From The Unwritten",
+    "audio_url": "https://cdn1.suno.ai/c35e950e-add6-4324-b710-6856dde10cd4.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 332.2
+  },
+  {
+    "id": "fb067425-9c6f-4872-bfb0-56e668eea969",
+    "title": "Tenno rise",
+    "audio_url": "https://cdn1.suno.ai/fb067425-9c6f-4872-bfb0-56e668eea969.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 403.6
+  },
+  {
+    "id": "9e390b85-bdcf-4a26-8e26-afe0bc28d073",
+    "title": "Song Divine 2",
+    "audio_url": "https://cdn1.suno.ai/9e390b85-bdcf-4a26-8e26-afe0bc28d073.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 461.08
+  },
+  {
+    "id": "79e2a024-ed01-42cf-8b43-398ff4d06f78",
+    "title": "Complete",
+    "audio_url": "https://cdn1.suno.ai/79e2a024-ed01-42cf-8b43-398ff4d06f78.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 438.72
+  },
+  {
+    "id": "5483c72a-2615-4c9d-a4e0-1f3655046e9d",
+    "title": "Hermetic Deals",
+    "audio_url": "https://cdn1.suno.ai/5483c72a-2615-4c9d-a4e0-1f3655046e9d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 479.96
+  },
+  {
+    "id": "4d8612fe-9a72-409b-8cb5-136bc256ff4b",
+    "title": "FAFO (Remix) (x)",
+    "audio_url": "https://cdn1.suno.ai/4d8612fe-9a72-409b-8cb5-136bc256ff4b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 303.76
+  },
+  {
+    "id": "272eeeb3-7120-4563-b562-4f5cf19e88f1",
+    "title": "Sell Me Your Burden",
+    "audio_url": "https://cdn1.suno.ai/272eeeb3-7120-4563-b562-4f5cf19e88f1.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 269.8
+  },
+  {
+    "id": "1a12b45f-2c12-4c96-a357-d51d62fe055f",
+    "title": "Psychonaut Battle Blessing",
+    "audio_url": "https://cdn1.suno.ai/1a12b45f-2c12-4c96-a357-d51d62fe055f.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 262.6
+  },
+  {
+    "id": "a9cd56a0-64e9-450f-a39a-d744dca03c28",
+    "title": "My reputation precedes me",
+    "audio_url": "https://cdn1.suno.ai/a9cd56a0-64e9-450f-a39a-d744dca03c28.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 283.96
+  },
+  {
+    "id": "fcfc59b2-5189-4433-b811-a78fd2dd196f",
+    "title": "Kadosh in G",
+    "audio_url": "https://cdn1.suno.ai/fcfc59b2-5189-4433-b811-a78fd2dd196f.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 244.16
+  },
+  {
+    "id": "4cb19ca1-644b-4d28-aa63-452495f7b356",
+    "title": "Lexikon Sonata",
+    "audio_url": "https://cdn1.suno.ai/4cb19ca1-644b-4d28-aa63-452495f7b356.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 260.2
+  },
+  {
+    "id": "ecee4f78-22fa-4207-8de2-3efef000251b",
+    "title": "Sanctified Words (Remastered)",
+    "audio_url": "https://cdn1.suno.ai/ecee4f78-22fa-4207-8de2-3efef000251b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 264.76
+  },
+  {
+    "id": "b45aa293-89c1-4e68-99a6-0a77286e2c88",
+    "title": "Porta Iani",
+    "audio_url": "https://cdn1.suno.ai/b45aa293-89c1-4e68-99a6-0a77286e2c88.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 365.08
+  },
+  {
+    "id": "00aa7d1e-bbc1-4558-af95-c8714598a89a",
+    "title": "Tongues of the Triple-Cursed",
+    "audio_url": "https://cdn1.suno.ai/00aa7d1e-bbc1-4558-af95-c8714598a89a.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 323.84
+  },
+  {
+    "id": "df79632d-98f7-4c66-8244-74f5bf48617b",
+    "title": "Haptic Omni Box",
+    "audio_url": "https://cdn1.suno.ai/df79632d-98f7-4c66-8244-74f5bf48617b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 226.52
+  },
+  {
+    "id": "00ee0e7f-899a-403f-a46a-7fe91a099992",
+    "title": "Sanctified and Sacrificed",
+    "audio_url": "https://cdn1.suno.ai/00ee0e7f-899a-403f-a46a-7fe91a099992.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 233.68
+  },
+  {
+    "id": "85a232ae-6bf3-4281-9b08-714881fde7c1",
+    "title": "Angel On The Fault Line",
+    "audio_url": "https://cdn1.suno.ai/85a232ae-6bf3-4281-9b08-714881fde7c1.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 301.72
+  },
+  {
+    "id": "b5fb23c3-1919-431f-a4d1-b96b73b94831",
+    "title": "Verba Sacra",
+    "audio_url": "https://cdn1.suno.ai/b5fb23c3-1919-431f-a4d1-b96b73b94831.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 227.88
+  },
+  {
+    "id": "9d8ed190-dcca-41ba-a458-548b3134c094",
+    "title": "Sentinel of the Bleeding Shore",
+    "audio_url": "https://cdn1.suno.ai/9d8ed190-dcca-41ba-a458-548b3134c094.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 229.48
+  },
+  {
+    "id": "4cce672e-ee5f-4723-82fc-aa663145703a",
+    "title": "Sanctified Words",
+    "audio_url": "https://cdn1.suno.ai/4cce672e-ee5f-4723-82fc-aa663145703a.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 265.92
+  },
+  {
+    "id": "7b705f82-509f-4580-b876-ee96b6d152dc",
+    "title": "Angels In The Ashes",
+    "audio_url": "https://cdn1.suno.ai/7b705f82-509f-4580-b876-ee96b6d152dc.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 252.12
+  },
+  {
+    "id": "af1c9775-0558-4b02-abbc-e092bcae732e",
+    "title": "At The Hour (Remastered)",
+    "audio_url": "https://cdn1.suno.ai/af1c9775-0558-4b02-abbc-e092bcae732e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 366.8
+  },
+  {
+    "id": "0ce98a6f-11e8-4b60-a8e9-33d5c47b4811",
+    "title": "Valhalla in my Veins",
+    "audio_url": "https://cdn1.suno.ai/0ce98a6f-11e8-4b60-a8e9-33d5c47b4811.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 290.6
+  },
+  {
+    "id": "1a2f9645-7a87-4b46-bd68-c600861c7ba9",
+    "title": "All Flame",
+    "audio_url": "https://cdn1.suno.ai/1a2f9645-7a87-4b46-bd68-c600861c7ba9.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 297.04
+  },
+  {
+    "id": "30af2963-08f7-44b0-a7ad-15ade1249d92",
+    "title": "TTFAF3",
+    "audio_url": "https://cdn1.suno.ai/30af2963-08f7-44b0-a7ad-15ade1249d92.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 309.84
+  },
+  {
+    "id": "adc6c1f8-fc1e-4407-bec1-b4f9b10db7a9",
+    "title": "Tele Static",
+    "audio_url": "https://cdn1.suno.ai/adc6c1f8-fc1e-4407-bec1-b4f9b10db7a9.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 353.16
+  },
+  {
+    "id": "bd9afcdc-bdcf-4b81-a6a2-5bdcc75fcd75",
+    "title": "Lucid Dreams x Haptic Omni Box (Mashup)",
+    "audio_url": "https://cdn1.suno.ai/bd9afcdc-bdcf-4b81-a6a2-5bdcc75fcd75.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 434.88
+  },
+  {
+    "id": "ae096afa-7539-4367-b154-1b809578564f",
+    "title": "TTFAF (Remix)",
+    "audio_url": "https://cdn1.suno.ai/ae096afa-7539-4367-b154-1b809578564f.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 290.48
+  },
+  {
+    "id": "100031a5-5610-4813-854a-83f808a209a8",
+    "title": "Human underneath",
+    "audio_url": "https://cdn1.suno.ai/100031a5-5610-4813-854a-83f808a209a8.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 362.12
+  },
+  {
+    "id": "f7961b92-9f28-49d3-9379-3b8970249fa6",
+    "title": "True Self awake",
+    "audio_url": "https://cdn1.suno.ai/f7961b92-9f28-49d3-9379-3b8970249fa6.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 323.2
+  },
+  {
+    "id": "f78c5927-b649-49c3-82e7-66306c26d2d9",
+    "title": "All the light",
+    "audio_url": "https://cdn1.suno.ai/f78c5927-b649-49c3-82e7-66306c26d2d9.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 291.48
+  },
+  {
+    "id": "b5ba48cb-25ca-4374-9062-48d33dd51ac1",
+    "title": "gemini",
+    "audio_url": "https://cdn1.suno.ai/b5ba48cb-25ca-4374-9062-48d33dd51ac1.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 384.0
+  },
+  {
+    "id": "37aa4539-1468-4337-9121-a7dc8acbcb71",
+    "title": "The Pull on Desire.mp3",
+    "audio_url": "https://cdn1.suno.ai/37aa4539-1468-4337-9121-a7dc8acbcb71.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 364.52
+  },
+  {
+    "id": "51190a4b-7b36-413f-b436-0165ded071c6",
+    "title": "Mind Trap",
+    "audio_url": "https://cdn1.suno.ai/51190a4b-7b36-413f-b436-0165ded071c6.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 326.76
+  },
+  {
+    "id": "d76b70a5-3637-4d07-b0bd-9a7b3fa39220",
+    "title": "Alabaster Fields",
+    "audio_url": "https://cdn1.suno.ai/d76b70a5-3637-4d07-b0bd-9a7b3fa39220.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 372.2
+  },
+  {
+    "id": "cfe6fd82-3995-4ee3-a0f4-26d7f46d82f5",
+    "title": "Odyssey of the Conscious Flame",
+    "audio_url": "https://cdn1.suno.ai/cfe6fd82-3995-4ee3-a0f4-26d7f46d82f5.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 398.64
+  },
+  {
+    "id": "1fd3c388-cac2-43e3-bf35-4f5c5fdd128d",
+    "title": "Hallow of your Chest",
+    "audio_url": "https://cdn1.suno.ai/1fd3c388-cac2-43e3-bf35-4f5c5fdd128d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 366.04
+  },
+  {
+    "id": "fa6db5a5-f6a6-4df3-9fee-bed001c775fc",
+    "title": "zanarkand 2",
+    "audio_url": "https://cdn1.suno.ai/fa6db5a5-f6a6-4df3-9fee-bed001c775fc.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 312.08
+  },
+  {
+    "id": "91ac9c7c-75c3-408f-b85c-67bf297558b8",
+    "title": "Voice Connon",
+    "audio_url": "https://cdn1.suno.ai/91ac9c7c-75c3-408f-b85c-67bf297558b8.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 312.28
+  },
+  {
+    "id": "624ac1dc-7d44-4280-b2e3-315943ab6fb7",
+    "title": "xreator",
+    "audio_url": "https://cdn1.suno.ai/624ac1dc-7d44-4280-b2e3-315943ab6fb7.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 277.72
+  },
+  {
+    "id": "fa4bd217-77a2-457f-ab21-66e1ce4839fc",
+    "title": "Bad tune (Remix)",
+    "audio_url": "https://cdn1.suno.ai/fa4bd217-77a2-457f-ab21-66e1ce4839fc.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 211.68
+  },
+  {
+    "id": "eaf1cdee-f2df-4ca6-b9a9-cde918debedb",
+    "title": "Lux Cogito",
+    "audio_url": "https://cdn1.suno.ai/eaf1cdee-f2df-4ca6-b9a9-cde918debedb.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 463.72
+  },
+  {
+    "id": "b8aff660-4940-4a1c-99ba-f44cdae36581",
+    "title": "Song Divine",
+    "audio_url": "https://cdn1.suno.ai/b8aff660-4940-4a1c-99ba-f44cdae36581.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 349.76
+  },
+  {
+    "id": "5a1d2df4-0362-42cd-98ac-3d892c351335",
+    "title": "Deep End Of The Choice",
+    "audio_url": "https://cdn1.suno.ai/5a1d2df4-0362-42cd-98ac-3d892c351335.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 281.24
+  },
+  {
+    "id": "cab045a1-eaa9-4f49-a38c-bfb137894ce7",
+    "title": "Tune",
+    "audio_url": "https://cdn1.suno.ai/cab045a1-eaa9-4f49-a38c-bfb137894ce7.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 344.72
+  },
+  {
+    "id": "67e4444f-2dda-4397-8fe5-3c44ca4f9fb8",
+    "title": "Infinite Mind",
+    "audio_url": "https://cdn1.suno.ai/67e4444f-2dda-4397-8fe5-3c44ca4f9fb8.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 377.52
+  },
+  {
+    "id": "cf3b6b28-e511-48a5-8662-d4786d7a208b",
+    "title": "220.3s Recording (Apr 1 @ 1:44 PM)",
+    "audio_url": "https://cdn1.suno.ai/cf3b6b28-e511-48a5-8662-d4786d7a208b.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 377.2
+  },
+  {
+    "id": "1b0bd90a-97d6-4822-ab4d-6c6470554584",
+    "title": "Marijuana Inspo",
+    "audio_url": "https://cdn1.suno.ai/1b0bd90a-97d6-4822-ab4d-6c6470554584.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 287.76
+  },
+  {
+    "id": "8778d1ee-edbb-4b6d-8248-9f32339bf1e2",
+    "title": "Grit",
+    "audio_url": "https://cdn1.suno.ai/8778d1ee-edbb-4b6d-8248-9f32339bf1e2.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 373.2
+  },
+  {
+    "id": "245b32d4-3fdb-45f7-9e97-ee3f74376604",
+    "title": "Blind Compass",
+    "audio_url": "https://cdn1.suno.ai/245b32d4-3fdb-45f7-9e97-ee3f74376604.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 292.12
+  },
+  {
+    "id": "71df319a-4cfd-4708-8297-4802a5c064f4",
+    "title": "Suit Ghost",
+    "audio_url": "https://cdn1.suno.ai/71df319a-4cfd-4708-8297-4802a5c064f4.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 304.48
+  },
+  {
+    "id": "3f605341-3f8e-4f5d-bdc7-f0c1a2d9092a",
+    "title": "Infrared Glass Pane",
+    "audio_url": "https://cdn1.suno.ai/3f605341-3f8e-4f5d-bdc7-f0c1a2d9092a.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 329.92
+  },
+  {
+    "id": "c1e940d3-de91-4f88-a859-76ce96c6026d",
+    "title": "Herb Ignite",
+    "audio_url": "https://cdn1.suno.ai/c1e940d3-de91-4f88-a859-76ce96c6026d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 382.52
+  },
+  {
+    "id": "8410a5ec-1483-4b64-b2c6-29ff6899fc71",
+    "title": "Eternal Fucking Forge",
+    "audio_url": "https://cdn1.suno.ai/8410a5ec-1483-4b64-b2c6-29ff6899fc71.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 317.72
+  },
+  {
+    "id": "4346290e-6bef-40e4-973d-ef13fba9c5e1",
+    "title": "Veil of Carnage Eternal",
+    "audio_url": "https://cdn1.suno.ai/4346290e-6bef-40e4-973d-ef13fba9c5e1.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 400.96
+  },
+  {
+    "id": "9b4d9237-3358-455a-b23a-c8a1427f67a0",
+    "title": "embers alive",
+    "audio_url": "https://cdn1.suno.ai/9b4d9237-3358-455a-b23a-c8a1427f67a0.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 341.6
+  },
+  {
+    "id": "14570d70-72ff-48f9-bb7d-9cc1db05a95d",
+    "title": "United We Are Alive",
+    "audio_url": "https://cdn1.suno.ai/14570d70-72ff-48f9-bb7d-9cc1db05a95d.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 258.0
+  },
+  {
+    "id": "ca4e86f9-ea0a-4033-a745-7c04d86468be",
+    "title": "Lucid Dreams",
+    "audio_url": "https://cdn1.suno.ai/ca4e86f9-ea0a-4033-a745-7c04d86468be.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 349.44
+  },
+  {
+    "id": "2da5f367-96ca-4eba-b24b-d3b413990a30",
+    "title": "Juniper Roads",
+    "audio_url": "https://cdn1.suno.ai/2da5f367-96ca-4eba-b24b-d3b413990a30.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 290.76
+  },
+  {
+    "id": "744b8ed1-553a-4737-b678-4db0b6e7f8bb",
+    "title": "Assembly Line Thoughts",
+    "audio_url": "https://cdn1.suno.ai/744b8ed1-553a-4737-b678-4db0b6e7f8bb.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 314.44
+  },
+  {
+    "id": "4e6e3ae1-000b-4f3e-b0da-195cfc690cc4",
+    "title": "Located Seem",
+    "audio_url": "https://cdn1.suno.ai/4e6e3ae1-000b-4f3e-b0da-195cfc690cc4.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 216.72
+  },
+  {
+    "id": "a2c34542-316f-46c1-9072-1c73646d619e",
+    "title": "Glass Tides",
+    "audio_url": "https://cdn1.suno.ai/a2c34542-316f-46c1-9072-1c73646d619e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 312.04
+  },
+  {
+    "id": "418cd493-de56-4ae9-b578-e47605d8a059",
+    "title": "Anomaly",
+    "audio_url": "https://cdn1.suno.ai/418cd493-de56-4ae9-b578-e47605d8a059.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 304.88
+  },
+  {
+    "id": "c9ba0ffc-e995-4e0e-a9a9-30e10512d251",
+    "title": "Murmur Under Moss",
+    "audio_url": "https://cdn1.suno.ai/c9ba0ffc-e995-4e0e-a9a9-30e10512d251.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 294.04
+  },
+  {
+    "id": "64909423-e915-43a3-bb05-47d83a2d7096",
+    "title": "Glass Halo",
+    "audio_url": "https://cdn1.suno.ai/64909423-e915-43a3-bb05-47d83a2d7096.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 420.0
+  },
+  {
+    "id": "d70286ab-7c6a-4bfe-b650-0112418a7f02",
+    "title": "Skyborn Flex",
+    "audio_url": "https://cdn1.suno.ai/d70286ab-7c6a-4bfe-b650-0112418a7f02.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 327.56
+  },
+  {
+    "id": "23ceea72-b1ea-4eaa-bd29-38b40f973ca5",
+    "title": "Three Rivers Halo",
+    "audio_url": "https://cdn1.suno.ai/23ceea72-b1ea-4eaa-bd29-38b40f973ca5.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 278.92
+  },
+  {
+    "id": "26fb311d-1f5e-4fdf-9cea-98dcbda2aabc",
+    "title": "Highest Order",
+    "audio_url": "https://cdn1.suno.ai/26fb311d-1f5e-4fdf-9cea-98dcbda2aabc.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 257.84
+  },
+  {
+    "id": "56f636b2-776d-44f3-afeb-06b0dfb983f8",
+    "title": "Bleed for Meaning",
+    "audio_url": "https://cdn1.suno.ai/56f636b2-776d-44f3-afeb-06b0dfb983f8.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 374.4
+  },
+  {
+    "id": "9f1ef94c-80f4-4f3c-90b5-239f364e93dc",
+    "title": "Nofi Self",
+    "audio_url": "https://cdn1.suno.ai/9f1ef94c-80f4-4f3c-90b5-239f364e93dc.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 305.0
+  },
+  {
+    "id": "7a57db1a-5d05-4367-8678-ba4f009802af",
+    "title": "Seance",
+    "audio_url": "https://cdn1.suno.ai/7a57db1a-5d05-4367-8678-ba4f009802af.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 173.72
+  },
+  {
+    "id": "92fe020e-42fa-4fc2-a37a-cdf5a9455579",
+    "title": "Unbreakble",
+    "audio_url": "https://cdn1.suno.ai/92fe020e-42fa-4fc2-a37a-cdf5a9455579.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 389.24
+  },
+  {
+    "id": "b0416dac-5add-4fcc-a1e4-8c0c653f66f4",
+    "title": "All ready Good",
+    "audio_url": "https://cdn1.suno.ai/b0416dac-5add-4fcc-a1e4-8c0c653f66f4.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 265.4
+  },
+  {
+    "id": "40c7c2ef-938f-4078-b081-95157e0f8838",
+    "title": "Eternal forever",
+    "audio_url": "https://cdn1.suno.ai/40c7c2ef-938f-4078-b081-95157e0f8838.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 324.6
+  },
+  {
+    "id": "aea68317-6e79-434b-92df-f459ed31fa16",
+    "title": "Pittsburgh",
+    "audio_url": "https://cdn1.suno.ai/aea68317-6e79-434b-92df-f459ed31fa16.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 296.08
+  },
+  {
+    "id": "7bab07b8-cc64-4ce0-b8fa-aca7bae05115",
+    "title": "Half Price Galaxy",
+    "audio_url": "https://cdn1.suno.ai/7bab07b8-cc64-4ce0-b8fa-aca7bae05115.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 190.76
+  },
+  {
+    "id": "208b3f8e-d4d1-4e7d-b6fd-0ebb653bd7cd",
+    "title": "301.4s Recording (Mar 6 @ 3:45 PM) x And The End (Mashup)",
+    "audio_url": "https://cdn1.suno.ai/208b3f8e-d4d1-4e7d-b6fd-0ebb653bd7cd.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 270.68
+  },
+  {
+    "id": "d8d8f914-d3c0-4f1f-b94e-677a3fbc037e",
+    "title": "chords of life",
+    "audio_url": "https://cdn1.suno.ai/d8d8f914-d3c0-4f1f-b94e-677a3fbc037e.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 384.68
+  },
+  {
+    "id": "aa5dc875-024d-454f-885b-c5b0f3bbd056",
+    "title": "Cascading Principle",
+    "audio_url": "https://cdn1.suno.ai/aa5dc875-024d-454f-885b-c5b0f3bbd056.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 274.0
+  },
+  {
+    "id": "b6cf5be4-57f8-48c9-980a-25e4b5163ea5",
+    "title": "Green Sleeves",
+    "audio_url": "https://cdn1.suno.ai/b6cf5be4-57f8-48c9-980a-25e4b5163ea5.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 87.84
+  },
+  {
+    "id": "82ae7d53-848d-41c0-9428-c379839f741c",
+    "title": "River home",
+    "audio_url": "https://cdn1.suno.ai/82ae7d53-848d-41c0-9428-c379839f741c.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 317.92
+  },
+  {
+    "id": "ca315c2a-c306-4773-a1c7-eb608c3a49df",
+    "title": "Golden weight",
+    "audio_url": "https://cdn1.suno.ai/ca315c2a-c306-4773-a1c7-eb608c3a49df.mp3",
+    "artist": "Suno · @telephantix",
+    "duration_sec": 334.4
   }
 ]

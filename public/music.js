@@ -41,12 +41,17 @@ export let PLAYLIST = [...BASE_ALBUMS];
 /** Full published Suno set from suno-catalog.json (source of truth for "play all"). */
 let allSunoTracks = [];
 
+/** Ordered Suno tracks before shuffle (restore when shuffle turns off). */
+let orderedSunoTracks = [];
+
 /** "all" = suno then albums; "suno" = only published Suno songs */
 let mode = "all";
 let index = 0;
 let open = false;
 let sunoCount = 0;
 let catalogLoaded = false;
+/** Fisher–Yates shuffle of the current queue; Next/Prev follow shuffled order. */
+let shuffleOn = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -72,6 +77,56 @@ function rebuildPlaylist() {
     PLAYLIST = [...allSunoTracks, ...BASE_ALBUMS];
   }
   if (index >= PLAYLIST.length) index = 0;
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function applyShuffle(preserveCurrent) {
+  const cur = preserveCurrent ? current() : null;
+  const curId = cur && (cur.songId || cur.id);
+
+  if (shuffleOn) {
+    // Shuffle Suno songs; keep albums at the end in "all" mode
+    const suno = shuffleArray(orderedSunoTracks.length ? orderedSunoTracks : allSunoTracks);
+    allSunoTracks = suno;
+  } else {
+    allSunoTracks = orderedSunoTracks.length
+      ? [...orderedSunoTracks]
+      : [...allSunoTracks];
+  }
+  rebuildPlaylist();
+
+  if (curId) {
+    const i = PLAYLIST.findIndex((t) => (t.songId || t.id) === curId);
+    if (i >= 0) index = i;
+  }
+  updateShuffleChip();
+  renderList();
+}
+
+function updateShuffleChip() {
+  const btn = $("music-shuffle");
+  if (!btn) return;
+  btn.classList.toggle("on", shuffleOn);
+  btn.setAttribute("aria-pressed", shuffleOn ? "true" : "false");
+  btn.textContent = shuffleOn ? "Shuffle · on" : "Shuffle";
+  btn.title = shuffleOn
+    ? "Shuffle on — queue is randomized. Click to restore playlist order."
+    : "Shuffle the full Suno queue (no duplicates).";
+}
+
+function toggleShuffle() {
+  shuffleOn = !shuffleOn;
+  applyShuffle(true);
+  // If shuffle just turned on and we are already open, stay on same song
+  loadTrack(false);
 }
 
 function sunoFromCatalog(rows) {
@@ -103,10 +158,16 @@ async function loadSunoCatalog() {
     });
     if (!res.ok) throw new Error(`catalog ${res.status}`);
     const rows = await res.json();
-    allSunoTracks = sunoFromCatalog(rows);
-    rebuildPlaylist();
+    orderedSunoTracks = sunoFromCatalog(rows);
+    allSunoTracks = [...orderedSunoTracks];
+    if (shuffleOn) {
+      applyShuffle(false);
+    } else {
+      rebuildPlaylist();
+    }
     catalogLoaded = true;
     updateSunoChip();
+    updateShuffleChip();
     renderList();
     // Prefer landing on the full Suno queue once catalog is ready
     if (allSunoTracks.length && !isSunoTrack(current())) {
@@ -163,10 +224,11 @@ function updateHint() {
   const hint = document.querySelector(".music-hint");
   if (!hint) return;
   if (sunoCount > 0) {
+    const shuf = shuffleOn ? " · shuffle on" : "";
     hint.textContent =
       mode === "suno"
-        ? `Suno queue: ${sunoCount} published songs · auto-next · profile ${SUNO_PROFILE.replace("https://", "")}`
-        : `${sunoCount} Suno songs + albums · tap “Play all Suno” for the full queue`;
+        ? `Suno queue: ${sunoCount} songs from All I Got · auto-next${shuf} · no duplicates`
+        : `${sunoCount} Suno songs + albums · Shuffle or Play all Suno${shuf}`;
   } else {
     hint.textContent = `Loading Suno catalog… or open ${SUNO_PROFILE.replace("https://", "")}`;
   }
@@ -292,11 +354,13 @@ function playAllSuno(e) {
 
   mode = "suno";
   const start = () => {
-    rebuildPlaylist();
+    if (shuffleOn) applyShuffle(false);
+    else rebuildPlaylist();
     index = 0;
     setOpen(true);
     loadTrack(true);
     updateSunoChip();
+    updateShuffleChip();
     updateHint();
   };
 
@@ -318,6 +382,7 @@ function wire() {
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
+  $("music-shuffle")?.addEventListener("click", toggleShuffle);
   $("music-suno-link")?.addEventListener("click", playAllSuno);
 
   const audio = $("music-audio");
@@ -352,6 +417,10 @@ window.TelephantimMusic = {
   loadTrack,
   playAllSuno,
   loadSunoCatalog,
+  toggleShuffle,
+  get shuffleOn() {
+    return shuffleOn;
+  },
   get sunoCount() {
     return sunoCount;
   },
