@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=58" />
+  <link rel="stylesheet" href="styles.css?v=61" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -160,14 +160,21 @@
       </div>
     </div>
 
+    <!-- Music dock: center-lower — Play + Hide sit together -->
+    <div class="music-dock" id="music-dock" aria-label="Music controls">
+      <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
+        <span id="btn-music-label">Play music</span>
+      </button>
+      <button type="button" class="btn-chip btn-music-hide ghost" id="btn-music-hide" title="Hide music player" hidden>
+        Hide
+      </button>
+    </div>
+
     <div class="float-actions" id="float-actions">
       <button type="button" class="btn-chip btn-min" id="btn-actions-toggle" aria-expanded="true" title="Hide action buttons">
         Hide v
       </button>
       <div class="float-actions-main" id="float-actions-main">
-        <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
-          <span id="btn-music-label">Play music</span>
-        </button>
         <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
         <button type="button" class="btn-chip" id="btn-strike">Strike</button>
         <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
@@ -394,9 +401,9 @@
   <script type="module" src="bio.js?v=58"></script>
   <script type="module" src="daily-wisdom.js?v=58"></script>
   <script type="module" src="oracle.js?v=58"></script>
-  <script type="module" src="music.js?v=60"></script>
+  <script type="module" src="music.js?v=61"></script>
   <script type="module" src="personality.js?v=58"></script>
-  <script type="module" src="mjolnir.js?v=58"></script>
+  <script type="module" src="mjolnir.js?v=61"></script>
   <script>
     // Sheet "Play music here" opens the floating player
     document.getElementById("daily-open-bio")?.addEventListener("click", function () { window.TelephantimScenes?.setScene("bio"); });
