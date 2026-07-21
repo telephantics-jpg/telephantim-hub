@@ -209,6 +209,60 @@ function render(payload) {
     box.hidden = false;
     box.classList.add("ready");
   });
+
+  // Once per day-key so re-renders don't inflate counts
+  try {
+    const stamp = `daily_word_${dateStr}`;
+    if (sessionStorage.getItem(stamp) !== "1") {
+      sessionStorage.setItem(stamp, "1");
+      window.TelephantimAnalytics?.track?.("daily_word_view", {
+        event_category: "content",
+        content_type: "daily_word",
+        content_id: dateStr,
+        source: payload.source || "vault",
+        title: (payload.title || "").slice(0, 80),
+      });
+    }
+  } catch (_) {}
+}
+
+const MIN_KEY = "telephantim-daily-word-collapsed";
+
+function setStageCollapsed(collapsed) {
+  const stage = document.getElementById("daily-word-stage");
+  const btn = document.getElementById("daily-word-min");
+  if (!stage) return;
+  stage.classList.toggle("collapsed", !!collapsed);
+  if (btn) {
+    btn.textContent = collapsed ? "Open" : "Min";
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    btn.title = collapsed ? "Expand Daily Word" : "Minimize Daily Word";
+  }
+  try {
+    localStorage.setItem(MIN_KEY, collapsed ? "1" : "0");
+  } catch (_) {}
+}
+
+function wireMinimize() {
+  const stage = document.getElementById("daily-word-stage");
+  const btn = document.getElementById("daily-word-min");
+  if (!stage || !btn || btn.dataset.wired) return;
+  btn.dataset.wired = "1";
+
+  // Default minimized so relics stay visible; remember last choice
+  let collapsed = true;
+  try {
+    const saved = localStorage.getItem(MIN_KEY);
+    if (saved === "0") collapsed = false;
+    if (saved === "1") collapsed = true;
+  } catch (_) {}
+  setStageCollapsed(collapsed);
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setStageCollapsed(!stage.classList.contains("collapsed"));
+  });
 }
 
 async function fetchRemote(key) {
@@ -271,6 +325,7 @@ export async function loadDailyWord() {
 }
 
 function wire() {
+  wireMinimize();
   loadDailyWord();
 }
 
@@ -280,4 +335,10 @@ if (document.readyState === "loading") {
   wire();
 }
 
-window.TelephantimDaily = { loadDailyWord, fromBank, dayKey, BANK };
+window.TelephantimDaily = {
+  loadDailyWord,
+  fromBank,
+  dayKey,
+  BANK,
+  setStageCollapsed,
+};
