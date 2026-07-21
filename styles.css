@@ -117,14 +117,17 @@ body.scene-external .stage {
   visibility: hidden;
   pointer-events: none;
 }
-body.scene-external .float-actions {
-  display: none;
-}
-/* Keep hub world bar over Luna / Bio */
+/* Keep hub world bar + bottom menu over Luna / Bio */
 body.scene-external .world-switch,
 body.scene-bio .world-switch {
   display: flex;
   z-index: 120;
+}
+body.scene-external .sheet,
+body.scene-bio .sheet {
+  display: flex !important;
+  pointer-events: auto !important;
+  z-index: 50;
 }
 
 /* ===== BEACONS-STYLE BIO (video/image bg + scroll content) ===== */
