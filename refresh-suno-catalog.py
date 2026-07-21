@@ -32,6 +32,13 @@ OUT = ROOT / "suno-catalog.json"
 HANDLE = "telephantix"
 PLAYLIST_ID = "eb4d09a6-f232-4b1a-8582-fcbf0d76a5f7"
 API_BASE = f"https://studio-api.prod.suno.com/api/playlist/{PLAYLIST_ID}/"
+# Never ship these to telephantim.com (id and/or normalized title)
+EXCLUDE_IDS = {
+    "b6cf5be4-57f8-48c9-980a-25e4b5163ea5",  # Green Sleeves
+}
+EXCLUDE_TITLES = {
+    "green sleeves",
+}
 
 
 def fetch_json(url: str) -> dict:
@@ -142,6 +149,9 @@ def dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
         nt = norm_title(title)
         audio = f"https://cdn1.suno.ai/{c['id']}.mp3"
 
+        if c["id"] in EXCLUDE_IDS or nt in EXCLUDE_TITLES:
+            skipped.append(f"excluded: {title}")
+            continue
         if audio in seen_audio:
             skipped.append(f"dup audio: {title}")
             continue
