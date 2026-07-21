@@ -117,8 +117,7 @@ body.scene-external .stage {
   visibility: hidden;
   pointer-events: none;
 }
-body.scene-external .float-actions,
-body.scene-external .music-dock {
+body.scene-external .float-actions {
   display: none;
 }
 /* Keep hub world bar over Luna / Bio */
@@ -514,11 +513,11 @@ body.scene-bio .daily-word-stage {
 body.scene-external .music-player {
   /* keep music available over camp if user opened it */
   z-index: 30;
+  /* sit above talk bar area so it doesn't cover who/talk controls */
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  left: 50%;
+  left: 0.5rem;
   right: auto;
   max-width: min(360px, calc(100vw - 1rem));
-  transform: translateX(-50%) translateY(0);
 }
 /* Minimized Pay sheet was covering Luna's talk menu — hide while camp is on screen */
 body.scene-external .sheet {
@@ -995,79 +994,42 @@ body.sheet-open .float-actions {
   box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
-/* Center-lower music controls (Play + Hide) */
-.music-dock {
-  position: absolute;
-  z-index: 15;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(var(--sheet-peek) + 18px + var(--safe-bottom));
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: center;
-  justify-content: center;
-  max-width: min(92vw, 28rem);
-  pointer-events: none;
-  transition: bottom 0.25s ease;
-}
-.music-dock > * {
-  pointer-events: auto;
-}
-body.sheet-open .music-dock {
-  bottom: calc(55vh + 14px + var(--safe-bottom));
-}
-body.scene-external .music-dock,
-body.scene-bio .music-dock {
-  display: none;
-}
-
 .btn-music,
 .btn-chip.btn-music {
   border-color: rgba(140, 100, 255, 0.55);
   color: #e8ddff;
   background: linear-gradient(135deg, rgba(100, 60, 200, 0.45), rgba(20, 12, 40, 0.9));
-  font-weight: 700;
-  min-width: 7.5rem;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 .btn-music.on {
   border-color: rgba(180, 140, 255, 0.9);
   box-shadow: 0 0 16px rgba(140, 100, 255, 0.35);
 }
-.btn-music-hide {
-  border-color: rgba(138, 155, 176, 0.55) !important;
-  color: #dce6f5 !important;
-  background: rgba(12, 18, 32, 0.92) !important;
-  font-weight: 700;
-  min-width: 4.5rem;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+/* Soft pulse while minimized but still playing */
+.btn-music.playing-bg {
+  border-color: rgba(180, 140, 255, 0.75);
+  box-shadow: 0 0 12px rgba(140, 100, 255, 0.28);
 }
 
-/* ===== MUSIC PLAYER PANEL ===== */
+/* ===== MUSIC PLAYER DOCK ===== */
 .music-player {
   position: absolute;
   z-index: 14;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%) translateY(12px);
-  bottom: calc(var(--sheet-peek) + 72px + var(--safe-bottom));
-  width: min(420px, calc(100% - 1.3rem));
+  left: 0.65rem;
+  right: 0.65rem;
+  bottom: calc(var(--sheet-peek) + 64px + var(--safe-bottom));
   max-width: min(420px, 100%);
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease, bottom 0.25s ease;
+  transform: translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .music-player.open {
   pointer-events: auto;
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 .music-player:not(.open) { display: none; }
 .music-player.open { display: block; }
-body.sheet-open .music-player {
-  bottom: calc(55vh + 68px + var(--safe-bottom));
-}
 
 .music-player-inner {
   border-radius: 16px;
@@ -1222,24 +1184,11 @@ body.sheet-open .music-player {
   font-weight: 800;
 }
 @media (min-width: 900px) {
-  .music-dock {
-    bottom: 1.1rem;
-  }
   .music-player {
-    left: 50%;
+    left: 0.85rem;
     right: auto;
-    width: min(400px, 42vw);
-    bottom: 4.75rem;
-    transform: translateX(-50%) translateY(12px);
-  }
-  .music-player.open {
-    transform: translateX(-50%) translateY(0);
-  }
-  body.sheet-open .music-dock {
-    bottom: calc(55vh + 14px + var(--safe-bottom));
-  }
-  body.sheet-open .music-player {
-    bottom: calc(55vh + 72px + var(--safe-bottom));
+    width: min(400px, 40vw);
+    bottom: 4.5rem;
   }
   .music-embed { height: 172px; }
 }
