@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=54" />
+  <link rel="stylesheet" href="styles.css?v=55" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -103,13 +103,18 @@
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
         <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v54 DUAL</div>
+        <div class="badge">LIVE v55 DUAL</div>
       </div>
     </div>
 
-    <div class="dedication" role="note" aria-label="Birthday dedication">
-      <p class="dedication-line">Happy Birthday Mother</p>
-      <p class="dedication-from">love Josh</p>
+    <!-- Living Pulse: time-of-day tag + rotating line (replaced birthday dedication) -->
+    <div class="live-pulse" id="live-pulse" data-phase="day" role="status" aria-live="polite" aria-label="Living pulse">
+      <div class="live-pulse-row">
+        <span class="live-pulse-dot" aria-hidden="true"></span>
+        <span class="live-pulse-tag" id="pulse-tag">Pulse</span>
+        <span class="live-pulse-clock" id="pulse-clock"></span>
+      </div>
+      <p class="live-pulse-line" id="pulse-line">The relics are listening.</p>
     </div>
 
     <!-- Compact Daily Word on Relics (full text on Bio) -->
@@ -362,8 +367,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=54"></script>
-  <script src="analytics.js?v=54"></script>
+  <script src="api-config.js?v=55"></script>
+  <script src="analytics.js?v=55"></script>
   <script type="importmap">
   {
     "imports": {
@@ -372,12 +377,13 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=54"></script>
-  <script type="module" src="bio.js?v=54"></script>
-  <script type="module" src="daily-wisdom.js?v=54"></script>
-  <script type="module" src="music.js?v=54"></script>
-  <script type="module" src="personality.js?v=54"></script>
-  <script type="module" src="mjolnir.js?v=54"></script>
+  <script type="module" src="scenes.js?v=55"></script>
+  <script type="module" src="bio.js?v=55"></script>
+  <script type="module" src="daily-wisdom.js?v=55"></script>
+  <script type="module" src="oracle.js?v=55"></script>
+  <script type="module" src="music.js?v=55"></script>
+  <script type="module" src="personality.js?v=55"></script>
+  <script type="module" src="mjolnir.js?v=55"></script>
   <script>
     // Sheet "Play music here" opens the floating player
     document.getElementById("daily-open-bio")?.addEventListener("click", function () { window.TelephantimScenes?.setScene("bio"); });

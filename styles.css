@@ -541,8 +541,8 @@ body.scene-external .scene-frame {
   gap: 0.3rem;
 }
 
-/* Birthday dedication */
-.dedication {
+/* Living Pulse (dynamic — replaces birthday dedication) */
+.live-pulse {
   position: absolute;
   z-index: 6;
   left: 50%;
@@ -550,34 +550,98 @@ body.scene-external .scene-frame {
   transform: translateX(-50%);
   text-align: center;
   pointer-events: none;
-  padding: 0.45rem 0.95rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(8, 12, 22, 0.72);
-  border: 1px solid rgba(201, 162, 39, 0.45);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 20px rgba(201, 162, 39, 0.12);
-  max-width: min(92vw, 340px);
+  padding: 0.5rem 1rem 0.55rem;
+  border-radius: 16px;
+  background: rgba(8, 12, 22, 0.78);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 24px rgba(126, 200, 255, 0.08);
+  max-width: min(94vw, 380px);
+  min-width: min(88vw, 260px);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
 }
-.dedication-line {
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.live-pulse-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.28rem;
+}
+.live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #67e8f9;
+  box-shadow: 0 0 10px #67e8f9;
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.live-pulse[data-phase="dawn"] {
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 22px rgba(251, 191, 36, 0.18);
+}
+.live-pulse[data-phase="dawn"] .live-pulse-dot {
+  background: #fbbf24;
+  box-shadow: 0 0 10px #fbbf24;
+}
+.live-pulse[data-phase="day"] .live-pulse-dot {
+  background: #f0d060;
+  box-shadow: 0 0 10px #f0d060;
+}
+.live-pulse[data-phase="dusk"] {
+  border-color: rgba(244, 114, 182, 0.45);
+}
+.live-pulse[data-phase="dusk"] .live-pulse-dot {
+  background: #f472b6;
+  box-shadow: 0 0 10px #f472b6;
+}
+.live-pulse[data-phase="night"] {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+.live-pulse[data-phase="night"] .live-pulse-dot {
+  background: #818cf8;
+  box-shadow: 0 0 12px #818cf8;
+}
+.live-pulse-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--gold-bright);
-  line-height: 1.25;
 }
-.dedication-from {
-  margin-top: 0.15rem;
-  font-size: 0.72rem;
-  font-style: italic;
-  color: #d4dcec;
-  letter-spacing: 0.03em;
+.live-pulse-clock {
+  font-size: 0.62rem;
+  color: #8b97ad;
+  font-variant-numeric: tabular-nums;
+}
+.live-pulse-line {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #e8eef8;
+  letter-spacing: 0.01em;
+  transition: opacity 0.2s ease;
+}
+.live-pulse-line.fading {
+  opacity: 0.25;
+}
+.live-pulse.pulse-flash {
+  animation: pulse-border 0.55s ease;
+}
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.7; }
+}
+@keyframes pulse-border {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(1.15); }
+  100% { filter: brightness(1); }
 }
 @media (max-width: 520px) {
-  .dedication {
+  .live-pulse {
     top: 3.35rem;
-    padding: 0.38rem 0.75rem 0.42rem;
+    padding: 0.42rem 0.8rem 0.48rem;
   }
-  .dedication-line { font-size: 0.8rem; }
-  .dedication-from { font-size: 0.68rem; }
+  .live-pulse-line { font-size: 0.78rem; }
 }
 
 .badge {
