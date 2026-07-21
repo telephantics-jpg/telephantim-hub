@@ -743,7 +743,7 @@ function projectOntoDragPlane(event, target, worldPos) {
 
 function isUiTarget(event) {
   return !!event.target.closest?.(
-    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .music-dock, .dbox, .dialogue-layer, .world-switch, .scene-frame, .scene-fallback, .music-player"
+    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .dbox, .dialogue-layer, .world-switch, .scene-frame, .scene-fallback, .music-player"
   );
 }
 

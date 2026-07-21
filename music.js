@@ -310,34 +310,67 @@ function loadTrack(autoPlayHint) {
   }
 
   renderList();
-  const label = $("btn-music-label");
-  if (label) label.textContent = open ? "Playing…" : "Play music";
+  updateMusicButtonLabel();
 }
 
+function isAudioPlaying() {
+  const audio = $("music-audio");
+  return !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
+}
+
+function updateMusicButtonLabel() {
+  const label = $("btn-music-label");
+  const btn = $("btn-music");
+  if (!label) return;
+  if (open) {
+    label.textContent = "Hide music";
+  } else if (isAudioPlaying()) {
+    // Minimized but still playing in background
+    label.textContent = "Show music";
+  } else {
+    label.textContent = "Play music";
+  }
+  if (btn) {
+    btn.classList.toggle("on", open);
+    btn.classList.toggle("playing-bg", !open && isAudioPlaying());
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    btn.title = open
+      ? "Hide player (music keeps playing)"
+      : isAudioPlaying()
+        ? "Show music player — still playing"
+        : "Play Telephantix music";
+  }
+}
+
+/**
+ * Show / hide the player panel.
+ * Hiding does NOT stop audio — minimize and keep listening.
+ */
 function setOpen(v) {
   open = !!v;
   const panel = $("music-player");
-  const btn = $("btn-music");
-  const hideBtn = $("btn-music-hide");
   if (panel) {
     panel.hidden = !open;
     panel.classList.toggle("open", open);
   }
-  if (btn) {
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-    btn.classList.toggle("on", open);
-  }
-  if (hideBtn) {
-    hideBtn.hidden = !open;
-  }
-  const label = $("btn-music-label");
-  // Keep Play label stable; Hide is its own chip beside it
-  if (label) label.textContent = open ? "Playing…" : "Play music";
-  if (open) loadTrack(true);
-  else {
+  updateMusicButtonLabel();
+  if (open) {
+    // Don't restart mid-song if already playing this track in the background
     const audio = $("music-audio");
-    if (audio) audio.pause();
+    const cur = current();
+    const already =
+      !!(
+        audio &&
+        cur &&
+        isSunoTrack(cur) &&
+        !audio.paused &&
+        audio.src &&
+        (audio.src === cur.url ||
+          (cur.songId && audio.src.includes(cur.songId)))
+      );
+    loadTrack(!already);
   }
+  // When closing: leave audio running (minimize + keep play)
 }
 
 function next() {
@@ -383,9 +416,8 @@ function onAudioEnded() {
 }
 
 function wire() {
-  // Play opens; if already open, keep playing (use Hide to close)
-  $("btn-music")?.addEventListener("click", () => setOpen(true));
-  $("btn-music-hide")?.addEventListener("click", () => setOpen(false));
+  // Toggle panel open/closed; hide = minimize, audio keeps going
+  $("btn-music")?.addEventListener("click", () => setOpen(!open));
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
@@ -395,6 +427,8 @@ function wire() {
   const audio = $("music-audio");
   if (audio) {
     audio.addEventListener("ended", onAudioEnded);
+    audio.addEventListener("play", updateMusicButtonLabel);
+    audio.addEventListener("pause", updateMusicButtonLabel);
     // When one Suno file errors, skip to next so the whole queue still works
     audio.addEventListener("error", () => {
       if (isSunoTrack(current()) && PLAYLIST.length > 1) {
