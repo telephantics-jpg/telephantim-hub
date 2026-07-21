@@ -71,6 +71,45 @@ export function setActivePersona(id) {
   document.getElementById("box-caduceus")?.classList.toggle("active-speaker", activePersona === "caduceus");
 }
 
+function dboxMinKey(id) {
+  return `telephantim-dbox-collapsed-${id}`;
+}
+
+function setDboxCollapsed(id, collapsed) {
+  const b = boxes[id];
+  if (!b?.root) return;
+  b.root.classList.toggle("collapsed", !!collapsed);
+  const btn = b.root.querySelector("[data-dbox-min]");
+  if (btn) {
+    btn.textContent = collapsed ? "+" : "−";
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    btn.title = collapsed ? "Expand bubble" : "Minimize bubble";
+  }
+  try {
+    localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
+  } catch (_) {}
+}
+
+function wireDboxMinimize() {
+  document.querySelectorAll("[data-dbox-min]").forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = "1";
+    const id = btn.getAttribute("data-dbox-min") === "caduceus" ? "caduceus" : "mjolnir";
+    let collapsed = false;
+    try {
+      if (localStorage.getItem(dboxMinKey(id)) === "1") collapsed = true;
+    } catch (_) {}
+    setDboxCollapsed(id, collapsed);
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const root = boxes[id]?.root;
+      if (!root) return;
+      setDboxCollapsed(id, !root.classList.contains("collapsed"));
+    });
+  });
+}
+
 export function showInBox(persona, text, meta, power) {
   const id = persona === "caduceus" ? "caduceus" : "mjolnir";
   const b = boxes[id];
@@ -79,6 +118,10 @@ export function showInBox(persona, text, meta, power) {
   if (b.meta) b.meta.textContent = meta || "word of power";
   if (b.power && power != null) b.power.textContent = `PWR ${power}`;
   b.root.classList.add("show", "pulse");
+  // Soft ping when minimized so user knows new speech arrived
+  if (b.root.classList.contains("collapsed")) {
+    b.root.classList.add("pulse");
+  }
   setTimeout(() => b.root.classList.remove("pulse"), 400);
   clearTimeout(hideTimers[id]);
   hideTimers[id] = setTimeout(() => {
@@ -249,6 +292,7 @@ function scheduleAutoTalk() {
 
 banterBtn?.addEventListener("click", () => banter("friendly talk between hammer and staff", 4));
 
+wireDboxMinimize();
 boxes.mjolnir.root?.classList.add("show");
 boxes.caduceus.root?.classList.add("show");
 refreshBrainPill().then((s) => {

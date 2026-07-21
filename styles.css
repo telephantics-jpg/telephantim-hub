@@ -742,6 +742,7 @@ body.scene-external .scene-frame {
 .dbox.show {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto; /* so minimize buttons work */
 }
 .dbox.active-speaker {
   opacity: 1;
@@ -770,6 +771,23 @@ body.scene-external .scene-frame {
   border-right: 1px solid rgba(138, 155, 176, 0.3);
   border-bottom: 1px solid rgba(138, 155, 176, 0.3);
 }
+/* Minimized: thin chip, speech hidden */
+.dbox.collapsed {
+  width: auto !important;
+  max-width: none;
+  min-width: 0;
+  padding: 0.32rem 0.4rem 0.32rem 0.5rem;
+}
+.dbox.collapsed .dbox-body {
+  display: none !important;
+}
+.dbox.collapsed .dbox-head {
+  margin-bottom: 0;
+  gap: 0.25rem;
+}
+.dbox.collapsed::after {
+  display: none;
+}
 .dbox-mjolnir {
   border-color: rgba(240, 200, 80, 0.55);
 }
@@ -786,10 +804,12 @@ body.scene-external .scene-frame {
 }
 .dbox-head {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 0.3rem;
   margin-bottom: 0.22rem;
+  position: relative;
+  padding-right: 0.1rem;
 }
 .dbox-title {
   font-size: 0.65rem;
@@ -797,6 +817,8 @@ body.scene-external .scene-frame {
   text-transform: uppercase;
   font-weight: 700;
   color: var(--gold-bright);
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .dbox-caduceus .dbox-title { color: #8ef0c8; }
 .dbox-power {
@@ -806,6 +828,41 @@ body.scene-external .scene-frame {
   background: rgba(255,255,255,0.08);
   border-radius: 999px;
   padding: 0.1rem 0.35rem;
+  flex: 0 0 auto;
+}
+/* Top-right minimize */
+.dbox-min {
+  appearance: none;
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.35);
+  color: #e8eef8;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  z-index: 2;
+}
+.dbox-min:hover {
+  border-color: rgba(201, 162, 39, 0.65);
+  color: var(--gold-bright);
+}
+.dbox-min:active {
+  transform: scale(0.94);
+}
+.dbox.collapsed .dbox-min {
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.72rem;
 }
 .dbox-text {
   font-size: 0.76rem;
@@ -829,6 +886,9 @@ body.scene-external .scene-frame {
     max-width: 210px;
     padding: 0.4rem 0.48rem 0.38rem;
   }
+  .dbox.collapsed {
+    width: auto !important;
+  }
   .dbox-text {
     font-size: 0.68rem;
     max-height: 9.5em;
@@ -839,6 +899,9 @@ body.scene-external .scene-frame {
   .dbox {
     width: min(300px, 32vw);
     max-width: 300px;
+  }
+  .dbox.collapsed {
+    width: auto !important;
   }
   .dbox-text { font-size: 0.84rem; max-height: 12em; }
 }
