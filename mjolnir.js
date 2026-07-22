@@ -941,6 +941,15 @@ function updateDialogueAnchors() {
   placeBubble(elBoxCad, caduceus, 2.5);
 }
 
+// Track press vs drag so a click always speaks a new phrase
+const press = {
+  x: 0,
+  y: 0,
+  moved: false,
+  pid: null,
+  t: 0,
+};
+
 function onPointerDown(event) {
   if (isUiTarget(event)) return;
   if (event.button !== undefined && event.button !== 0) return;
@@ -954,23 +963,27 @@ function onPointerDown(event) {
     controls.autoRotate = false;
     setCursor("grabbing");
     hand.visible = true;
+    press.x = event.clientX;
+    press.y = event.clientY;
+    press.moved = false;
+    press.pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
+    press.t = performance.now();
     if (grabHint) {
       grabHint.textContent =
         grab.kind === "caduceus"
-          ? "Caduceus grabbed! Fluid snakes · drag & toss"
-          : "Mjolnir grabbed! Drag around · release to toss";
+          ? "Caduceus — click for a new phrase · drag to toss"
+          : "Mjolnir — click for a new phrase · drag to toss";
     }
 
     projectOntoDragPlane(event, grab.hit, picked.position);
     grab.offset.copy(picked.position).sub(grab.hit);
     grab.last.copy(picked.position);
     grab.vel.set(0, 0, 0);
-    picked.position.y += 0.2;
+    picked.position.y += 0.12;
     strike(picked);
-    // Wake the mind on grab — free minds / native / cached (partner often answers)
+    // Every press/click: new phrase from this artifact
     try {
-      const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
-      window.ArtifactAI?.onRelicInteract?.(pid, "grab");
+      window.ArtifactAI?.speakPhrase?.(press.pid, "press");
     } catch (_) {}
     try {
       renderer.domElement.setPointerCapture(event.pointerId);
@@ -986,6 +999,9 @@ function onPointerMove(event) {
   }
 
   if (grab.active && grab.target) {
+    const dx = event.clientX - press.x;
+    const dy = event.clientY - press.y;
+    if (dx * dx + dy * dy > 36) press.moved = true;
     if (projectOntoDragPlane(event, grab.hit, grab.target.position)) {
       const next = grab.hit.clone().add(grab.offset);
       next.x = THREE.MathUtils.clamp(next.x, -4.5, 4.5);
@@ -1006,15 +1022,16 @@ function onPointerMove(event) {
   grab.hovering = !!over;
   setCursor(over ? "grab" : "default");
   if (grabHint) {
-    if (over === caduceus) grabHint.textContent = "Grab the Caduceus — DNA snakes flow";
-    else if (over === hammer) grabHint.textContent = "Grab Mjolnir! (click & drag)";
-    else grabHint.textContent = "Grab Mjolnir or Caduceus · open menu for pay links";
+    if (over === caduceus) grabHint.textContent = "Click Caduceus for a new phrase · drag to toss";
+    else if (over === hammer) grabHint.textContent = "Click Mjolnir for a new phrase · drag to toss";
+    else grabHint.textContent = "Click a relic for a new phrase · Talk for a long duel";
   }
 }
 
 function onPointerUp(event) {
   if (!grab.active) return;
   const was = grab.target;
+  const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
   lastTossed = was;
   grab.active = false;
   controls.enabled = true;
@@ -1023,23 +1040,24 @@ function onPointerUp(event) {
   if (grabHint) {
     grabHint.textContent =
       grab.kind === "caduceus"
-        ? "Caduceus returns… snakes keep flowing"
-        : "Mjolnir floats home… grab either relic anytime";
+        ? "Caduceus ready — click again for another phrase"
+        : "Mjolnir ready — click again for another phrase";
   }
 
   grab.vel.multiplyScalar(14);
   grab.spin.y += grab.vel.x * 0.5;
-  const tossedHard = grab.vel.length() > 1.5;
-  if (tossedHard) strike(was);
-  // Only mind-react on a real toss — soft release just floats home quiet
+  const tossedHard = grab.vel.length() > 1.5 && press.moved;
   if (tossedHard) {
+    strike(was);
+    // Hard toss gets a fresh toss phrase (different from the press line)
     try {
-      const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
-      window.ArtifactAI?.onRelicInteract?.(pid, "toss");
+      window.ArtifactAI?.speakPhrase?.(pid, "toss");
     } catch (_) {}
   }
 
   grab.target = null;
+  press.moved = false;
+  press.pid = null;
   try {
     renderer.domElement.releasePointerCapture(event.pointerId);
   } catch (_) {}
