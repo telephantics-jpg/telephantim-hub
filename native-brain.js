@@ -17,12 +17,12 @@
 const SYSTEMS = {
   mjolnir:
     "You are Mjolnir, Thor's living hammer. Speak as the hammer — warm, cocky, mythic, simple English. " +
-    "2 to 4 short sentences. Gift POWER (strength, courage, lightning). " +
-    "Never mention AI, models, browsers, APIs, tokens, or being a chatbot. No markdown.",
+    "2 to 5 sentences, a full beat not a slogan. Gift POWER (strength, courage, lightning). " +
+    "React to the other relic if mentioned. Never mention AI, models, browsers, APIs, tokens, or being a chatbot. No markdown.",
   caduceus:
     "You are the Caduceus, living staff with twin snakes. Speak as the staff — sly, healing, witty, simple English. " +
-    "2 to 4 short sentences. Gift HEALING (vitality, balance). " +
-    "Never mention AI, models, browsers, APIs, tokens, or being a chatbot. No markdown.",
+    "2 to 5 sentences, a full beat not a slogan. Gift HEALING (vitality, balance). " +
+    "React to the hammer if mentioned. Never mention AI, models, browsers, APIs, tokens, or being a chatbot. No markdown.",
 };
 
 let mode = "none"; // chrome | webllm | none
@@ -37,7 +37,7 @@ function sanitize(text) {
     .replace(/```[\s\S]*?```/g, "")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 500);
+    .slice(0, 700);
 }
 
 /** Chrome / Chromium Prompt API (Gemini Nano) — free when available */
@@ -172,8 +172,8 @@ export async function nativeSpeak(persona, userMsg) {
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      temperature: 0.85,
-      max_tokens: 140,
+      temperature: 0.9,
+      max_tokens: 220,
     });
     const text = out?.choices?.[0]?.message?.content || "";
     return sanitize(text);
@@ -186,26 +186,26 @@ export async function nativeSpeak(persona, userMsg) {
  * Dual banter using native brain (alternating turns).
  * @returns {Promise<Array<{persona:string,text:string,provider:string}>|null>}
  */
-export async function nativeBanter(topic, rounds = 4, onProgress) {
+export async function nativeBanter(topic, rounds = 8, onProgress) {
   const m = await ensureNativeBrain(onProgress);
   if (m === "none") return null;
 
-  const n = Math.max(2, Math.min(6, rounds || 4));
+  const n = Math.max(4, Math.min(10, rounds || 8));
   const lines = [];
   let last = "";
   const topicLine =
     topic ||
-    "Lively friendly talk between hammer and staff. Gift power and healing. Stay in character.";
+    "Longer lively talk between hammer and staff — several rounds. Gift power and healing. Stay in character.";
 
   for (let i = 0; i < n; i++) {
     const persona = i % 2 === 0 ? "mjolnir" : "caduceus";
     const other = persona === "mjolnir" ? "Caduceus" : "Mjolnir";
     const user =
       i === 0
-        ? `${topicLine}\nSpeak first as yourself. Short and natural.`
-        : `${other} just said: "${last}"\nAnswer them directly. Short and natural. Gift ${
+        ? `${topicLine}\nSpeak first as yourself. A full natural beat (2–5 sentences), not a slogan.`
+        : `${other} just said: "${last}"\nAnswer them directly with a full beat (2–5 sentences). Gift ${
             persona === "mjolnir" ? "POWER" : "HEALING"
-          }.`;
+          }. Keep the conversation going.`;
     onProgress?.(persona === "mjolnir" ? "Hammer thinking…" : "Staff thinking…");
     try {
       const text = await nativeSpeak(persona, user);

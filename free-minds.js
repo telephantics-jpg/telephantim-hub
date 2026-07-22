@@ -38,9 +38,9 @@ function trimSpeech(text) {
  * Dual banter via Luna Camp free minds (Grok when available, aether offline native templates otherwise).
  * @returns {Promise<{ok:true, brains:boolean, provider:string, lines:Array}|null>}
  */
-export async function freeMindsBanter(topic, rounds = 3) {
+export async function freeMindsBanter(topic, rounds = 4) {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 45000);
+  const timer = setTimeout(() => ctrl.abort(), 55000);
   try {
     const res = await fetch(`${CAMP_API}/api/firmament/camp/banter`, {
       method: "POST",
@@ -48,10 +48,10 @@ export async function freeMindsBanter(topic, rounds = 3) {
       body: JSON.stringify({
         agent_a: "thor",
         agent_b: "caduceus",
-        rounds: Math.max(1, Math.min(4, rounds || 3)),
+        rounds: Math.max(2, Math.min(4, rounds || 4)),
         topic:
           topic ||
-          "Telephantim relics — Mjolnir and Caduceus, power and healing, short witty mythic banter for the wielder",
+          "Telephantim relics — Mjolnir and Caduceus, longer multi-round mythic banter: power and healing, witty, natural, for the wielder",
         visitor_name: "Wielder",
       }),
       signal: ctrl.signal,
