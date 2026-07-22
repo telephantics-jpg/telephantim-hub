@@ -887,12 +887,33 @@ const elBoxCad = document.getElementById("box-caduceus");
 
 function placeBubble(el, object3d, headY) {
   if (!el || !wrap || !object3d) return;
-  object3d.getWorldPosition(_labelProj);
-  _labelProj.y += headY;
-  _labelProj.project(camera);
 
   const w = wrap.clientWidth || window.innerWidth;
   const h = wrap.clientHeight || window.innerHeight;
+  const isCad = el.id === "box-caduceus";
+
+  // Minimized minds dock to corners — clear of the 3D relics mid-stage
+  if (el.classList.contains("collapsed") || el.classList.contains("docked")) {
+    const padX = isMobile() ? 10 : 14;
+    const padY = isMobile() ? 118 : 100; // above Talk / sheet
+    if (isCad) {
+      el.style.left = `${w - padX}px`;
+      el.style.top = `${h - padY}px`;
+      el.style.transform = "translate(-100%, -100%)";
+    } else {
+      el.style.left = `${padX}px`;
+      el.style.top = `${h - padY}px`;
+      el.style.transform = "translate(0, -100%)";
+    }
+    el.style.visibility = el.classList.contains("show") ? "visible" : "hidden";
+    return;
+  }
+
+  // Expanded: sit above the 3D speaker head
+  el.style.transform = "translate(-50%, -100%)";
+  object3d.getWorldPosition(_labelProj);
+  _labelProj.y += headY;
+  _labelProj.project(camera);
 
   // Behind camera / clipped
   if (_labelProj.z > 1 || _labelProj.z < -1) {
@@ -903,7 +924,6 @@ function placeBubble(el, object3d, headY) {
   let x = (_labelProj.x * 0.5 + 0.5) * w;
   let y = (-_labelProj.y * 0.5 + 0.5) * h;
 
-  // Keep fully on-screen (half-width approx — wider bubbles for longer chats)
   const halfW = isMobile() ? 105 : 145;
   const padTop = isMobile() ? 52 : 60;
   const padBot = isMobile() ? 130 : 110;
