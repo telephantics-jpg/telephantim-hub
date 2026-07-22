@@ -150,74 +150,9 @@ body.scene-bio .stage {
   visibility: hidden;
   pointer-events: none;
 }
-/* Pay · Music · Socials menu stays available on Bio (and all modes) */
-/* Keep float-actions shell so #btn-music can surface; hide relic-only chips */
+/* Bio: hide relic-only action chips (music chrome is global now) */
 body.scene-bio .float-actions {
-  display: flex !important;
-  visibility: visible !important;
-  pointer-events: none;
-  z-index: 40;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--sheet-peek) + 10px + var(--safe-bottom));
-  justify-content: center;
-}
-body.scene-bio .float-actions #btn-actions-toggle,
-body.scene-bio .float-actions #btn-banter,
-body.scene-bio .float-actions #btn-strike,
-body.scene-bio .float-actions #btn-reset {
   display: none !important;
-}
-body.scene-bio .float-actions-main {
-  display: flex !important;
-  max-height: none !important;
-  opacity: 1 !important;
-  overflow: visible !important;
-  pointer-events: none;
-  margin: 0 !important;
-}
-/* Parent stage is visibility:hidden — children must re-assert visible */
-body.scene-bio #btn-music {
-  display: inline-flex !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  position: fixed !important;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
-  z-index: 55;
-  min-width: 8.5rem;
-  font-weight: 700;
-  padding: 0.65rem 1.1rem;
-  font-size: 0.82rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-}
-/* While panel open or still playing: park left (same as Relics desktop) */
-body.scene-bio.music-open #btn-music,
-body.scene-bio #btn-music.playing-bg {
-  left: 0.85rem;
-  transform: none;
-}
-body.scene-bio #music-player {
-  display: block;
-  visibility: visible !important;
-  pointer-events: none;
-  position: fixed !important;
-  z-index: 54;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%) translateY(12px);
-  bottom: calc(var(--sheet-peek) + 68px + var(--safe-bottom));
-  width: min(420px, calc(100vw - 1.3rem));
-  max-width: min(420px, 100%);
-}
-body.scene-bio #music-player.open {
-  pointer-events: auto !important;
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-body.scene-bio #music-player:not(.open) {
-  display: none;
 }
 .bio-page[hidden] {
   display: none !important;
@@ -578,66 +513,9 @@ body.scene-bio .daily-word-stage {
     bottom: 0.85rem;
   }
 }
-/* 2D / 3D: same Play music + menu chrome as Relics / Bio */
+/* 2D / 3D: relic action tray off; music chrome is global */
 body.scene-external .float-actions {
-  display: flex !important;
-  visibility: visible !important;
-  pointer-events: none;
-  z-index: 40;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--sheet-peek) + 10px + var(--safe-bottom));
-  justify-content: center;
-}
-body.scene-external .float-actions #btn-actions-toggle,
-body.scene-external .float-actions #btn-banter,
-body.scene-external .float-actions #btn-strike,
-body.scene-external .float-actions #btn-reset {
   display: none !important;
-}
-body.scene-external .float-actions-main {
-  display: flex !important;
-  max-height: none !important;
-  opacity: 1 !important;
-  overflow: visible !important;
-  pointer-events: none;
-  margin: 0 !important;
-}
-body.scene-external #btn-music {
-  display: inline-flex !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  position: fixed !important;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
-  z-index: 55;
-  min-width: 8.5rem;
-  font-weight: 700;
-  padding: 0.65rem 1.1rem;
-  font-size: 0.82rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-}
-body.scene-external.music-open #btn-music,
-body.scene-external #btn-music.playing-bg {
-  left: 0.85rem;
-  transform: none;
-}
-body.scene-external .music-player {
-  position: fixed !important;
-  z-index: 54;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%) translateY(12px);
-  bottom: calc(var(--sheet-peek) + 68px + var(--safe-bottom));
-  width: min(420px, calc(100vw - 1.3rem));
-  max-width: min(420px, 100%);
-  pointer-events: none;
-}
-body.scene-external .music-player.open {
-  pointer-events: auto !important;
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
 }
 body.scene-external .scene-fallback {
   bottom: calc(var(--sheet-peek) + 56px + var(--safe-bottom));
@@ -1108,6 +986,147 @@ body.sheet-open .float-actions {
   box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
+/*
+ * ===== GLOBAL MUSIC CHROME (all 4 modes · PC + mobile) =====
+ * Lives outside .stage so Bio / 2D / 3D never bury it.
+ */
+.music-chrome {
+  position: fixed;
+  z-index: 56;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.music-chrome #btn-music {
+  pointer-events: auto;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--sheet-peek) + 12px + var(--safe-bottom));
+  z-index: 57;
+  min-width: 8.25rem;
+  min-height: 44px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 0.65rem 1.15rem;
+  border-color: rgba(140, 100, 255, 0.65);
+  color: #e8ddff;
+  background: linear-gradient(135deg, rgba(100, 60, 200, 0.55), rgba(20, 12, 40, 0.94));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transition: left 0.25s ease, transform 0.25s ease, bottom 0.25s ease, box-shadow 0.2s ease;
+}
+.music-chrome #btn-music.on {
+  border-color: rgba(180, 140, 255, 0.95);
+  box-shadow: 0 0 18px rgba(140, 100, 255, 0.4);
+}
+.music-chrome #btn-music.playing-bg {
+  border-color: rgba(180, 140, 255, 0.8);
+  box-shadow: 0 0 14px rgba(140, 100, 255, 0.3);
+}
+/* When player is expanded or sheet is open, park button left so it doesn’t cover UI */
+body.music-open .music-chrome #btn-music,
+body.music-minimized .music-chrome #btn-music {
+  left: 0.65rem;
+  transform: none;
+}
+body.sheet-open .music-chrome #btn-music {
+  bottom: calc(55vh + 12px + var(--safe-bottom));
+}
+body.music-open.sheet-open .music-chrome #btn-music,
+body.music-minimized.sheet-open .music-chrome #btn-music {
+  bottom: calc(55vh + 12px + var(--safe-bottom));
+}
+
+.music-player {
+  pointer-events: none;
+  position: fixed;
+  z-index: 56;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%) translateY(10px);
+  bottom: calc(var(--sheet-peek) + 62px + var(--safe-bottom));
+  width: min(420px, calc(100vw - 1rem));
+  max-width: min(420px, 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease, bottom 0.25s ease;
+}
+.music-player.open {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.music-player:not(.open) {
+  display: none !important;
+}
+.music-player.open {
+  display: block !important;
+}
+body.sheet-open .music-player {
+  bottom: calc(55vh + 62px + var(--safe-bottom));
+}
+/* Minimized: compact bar, still clickable for + */
+.music-player.is-minimized {
+  width: min(280px, calc(100vw - 1rem));
+}
+.music-player.is-minimized .music-player-inner {
+  padding: 0.5rem 0.65rem;
+}
+.music-player.is-minimized .music-head {
+  margin-bottom: 0;
+}
+
+.music-player-inner {
+  border-radius: 16px;
+  border: 1px solid rgba(140, 100, 255, 0.45);
+  background: rgba(10, 10, 22, 0.96);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  padding: 0.75rem 0.8rem 0.7rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.music-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 0.55rem;
+}
+.music-head-text {
+  min-width: 0;
+  flex: 1;
+}
+.music-head-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  align-items: center;
+}
+.music-icon-btn {
+  appearance: none;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(180, 160, 255, 0.4);
+  background: rgba(20, 16, 40, 0.9);
+  color: #e8ddff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.music-icon-btn:active {
+  transform: scale(0.95);
+}
+.music-icon-btn.music-x {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+}
 .btn-music,
 .btn-chip.btn-music {
   border-color: rgba(140, 100, 255, 0.55);
@@ -1118,124 +1137,30 @@ body.sheet-open .float-actions {
   border-color: rgba(180, 140, 255, 0.9);
   box-shadow: 0 0 16px rgba(140, 100, 255, 0.35);
 }
-/* Soft pulse while minimized but still playing */
 .btn-music.playing-bg {
   border-color: rgba(180, 140, 255, 0.75);
   box-shadow: 0 0 12px rgba(140, 100, 255, 0.28);
 }
 
-/*
- * Desktop only: Play music sits center-lower for discovery.
- * When open (or still playing in background), it returns to the left
- * action tray next to Hide / Relic duel. Mobile keeps the tray layout always.
- */
 @media (min-width: 900px) {
-  #btn-music {
-    position: fixed;
-    left: 50%;
-    bottom: calc(var(--sheet-peek) + 18px + var(--safe-bottom));
-    transform: translateX(-50%);
-    z-index: 16;
-    min-width: 8.5rem;
-    font-weight: 700;
-    padding: 0.65rem 1.1rem;
-    font-size: 0.82rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-    transition:
-      left 0.28s ease,
-      transform 0.28s ease,
-      bottom 0.25s ease,
-      box-shadow 0.2s ease,
-      padding 0.2s ease;
+  .music-chrome #btn-music {
+    bottom: calc(var(--sheet-peek) + 16px + var(--safe-bottom));
   }
-  body.sheet-open #btn-music {
-    bottom: calc(55vh + 16px + var(--safe-bottom));
-  }
-  /* Open player or background play: rejoin left tray */
-  body.music-open #btn-music,
-  body:not(.music-open) #btn-music.playing-bg {
-    position: static;
-    left: auto;
-    bottom: auto;
-    transform: none;
-    min-width: 0;
-    padding: 0.55rem 0.65rem;
-    font-size: 0.75rem;
-    box-shadow: none;
-  }
-  /* Bio + external: fixed Play music (overrides tray-rejoin static) */
-  body.scene-bio #btn-music,
-  body.scene-bio.music-open #btn-music,
-  body.scene-bio #btn-music.playing-bg,
-  body.scene-external #btn-music,
-  body.scene-external.music-open #btn-music,
-  body.scene-external #btn-music.playing-bg {
-    display: inline-flex !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    position: fixed !important;
-    z-index: 55;
-  }
-  body.scene-bio #btn-music,
-  body.scene-external #btn-music {
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 8.5rem;
-    font-weight: 700;
-    padding: 0.65rem 1.1rem;
-    font-size: 0.82rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  }
-  body.scene-bio #btn-music {
-    bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
-  }
-  body.scene-external #btn-music {
-    bottom: calc(var(--sheet-peek) + 14px + var(--safe-bottom));
-  }
-  body.scene-bio.music-open #btn-music,
-  body.scene-bio #btn-music.playing-bg,
-  body.scene-external.music-open #btn-music,
-  body.scene-external #btn-music.playing-bg {
+  body.music-open .music-chrome #btn-music,
+  body.music-minimized .music-chrome #btn-music {
     left: 0.85rem;
-    transform: none;
   }
-}
-
-/* ===== MUSIC PLAYER DOCK ===== */
-.music-player {
-  position: absolute;
-  z-index: 14;
-  left: 0.65rem;
-  right: 0.65rem;
-  bottom: calc(var(--sheet-peek) + 64px + var(--safe-bottom));
-  max-width: min(420px, 100%);
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.music-player.open {
-  pointer-events: auto;
-  opacity: 1;
-  transform: translateY(0);
-}
-.music-player:not(.open) { display: none; }
-.music-player.open { display: block; }
-
-.music-player-inner {
-  border-radius: 16px;
-  border: 1px solid rgba(140, 100, 255, 0.4);
-  background: rgba(10, 10, 22, 0.94);
-  box-shadow: 0 12px 36px rgba(0,0,0,0.5);
-  padding: 0.75rem 0.8rem 0.7rem;
-  backdrop-filter: blur(12px);
-}
-.music-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  align-items: flex-start;
-  margin-bottom: 0.55rem;
+  .music-player {
+    left: 0.85rem;
+    transform: translateY(10px);
+    width: min(400px, 42vw);
+  }
+  .music-player.open {
+    transform: translateY(0);
+  }
+  body.sheet-open .music-player {
+    bottom: calc(55vh + 62px + var(--safe-bottom));
+  }
 }
 .music-brand {
   display: block;
@@ -1375,12 +1300,6 @@ body.sheet-open .float-actions {
   font-weight: 800;
 }
 @media (min-width: 900px) {
-  .music-player {
-    left: 0.85rem;
-    right: auto;
-    width: min(400px, 40vw);
-    bottom: 4.5rem;
-  }
   .music-embed { height: 172px; }
 }
 
