@@ -118,33 +118,25 @@ const stormLight = new THREE.PointLight(0xaaddff, 0, 18, 2);
 stormLight.position.set(0, 1.4, 0);
 scene.add(stormLight);
 
+// Soft pad under relics only — keep video bg open (no big dark disc)
 const ground = new THREE.Mesh(
-  new THREE.CircleGeometry(18, 64),
-  new THREE.MeshStandardMaterial({ color: 0x0a0e16, metalness: 0.7, roughness: 0.45 })
+  new THREE.CircleGeometry(3.2, 48),
+  new THREE.MeshStandardMaterial({
+    color: 0x0a0e16,
+    metalness: 0.55,
+    roughness: 0.55,
+    transparent: true,
+    opacity: 0.35,
+  })
 );
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.02;
 ground.receiveShadow = true;
 scene.add(ground);
 
-const ring = new THREE.Mesh(
-  new THREE.RingGeometry(1.35, 1.55, 64),
-  new THREE.MeshBasicMaterial({ color: 0xc9a227, transparent: true, opacity: 0.22, side: THREE.DoubleSide })
-);
-ring.rotation.x = -Math.PI / 2;
-ring.position.y = 0.01;
-scene.add(ring);
-
-const runeGroup = new THREE.Group();
-const runeMat = new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.35 });
-for (let i = 0; i < 8; i++) {
-  const a = (i / 8) * Math.PI * 2;
-  const rune = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.22), runeMat);
-  rune.position.set(Math.cos(a) * 1.9, 0.02, Math.sin(a) * 1.9);
-  rune.rotation.y = -a;
-  runeGroup.add(rune);
-}
-scene.add(runeGroup);
+// Floor ring + rune orbit removed — stage was too busy over the video bg
+const ring = null;
+const runeGroup = null;
 
 const metalHead = new THREE.MeshStandardMaterial({ color: 0x6e7888, metalness: 0.95, roughness: 0.28 });
 const metalDark = new THREE.MeshStandardMaterial({ color: 0x3a404c, metalness: 0.92, roughness: 0.4 });
@@ -1202,10 +1194,6 @@ function animate() {
   }
 
   updateDialogueAnchors();
-
-  runeGroup.rotation.y = t * 0.25;
-  runeMat.opacity = 0.2 + Math.sin(t * 2) * 0.12;
-  ring.material.opacity = 0.15 + Math.sin(t * 1.5) * 0.08;
 
   auraTimer += dt;
   if (auraEnabled && auraTimer > 0.12) {

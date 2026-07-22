@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=61" />
+  <link rel="stylesheet" href="styles.css?v=62" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -112,61 +112,36 @@
     <div class="topbar">
       <div class="brand">
         <h1>Telephantim</h1>
-        <p id="grab-hint">Mjolnir + Caduceus · zoomed out · grab either</p>
+        <p id="grab-hint">Grab a relic · Talk when you want words</p>
       </div>
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
-        <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v61</div>
+        <div class="badge" id="bond-pill" hidden>Bond 1</div>
       </div>
     </div>
 
-    <!-- Living Pulse: time-of-day tag + rotating line (replaced birthday dedication) -->
-    <div class="live-pulse" id="live-pulse" data-phase="day" role="status" aria-live="polite" aria-label="Living pulse">
-      <div class="live-pulse-row">
-        <span class="live-pulse-dot" aria-hidden="true"></span>
-        <span class="live-pulse-tag" id="pulse-tag">Pulse</span>
-        <span class="live-pulse-clock" id="pulse-clock"></span>
-      </div>
-      <p class="live-pulse-line" id="pulse-line">The relics are listening.</p>
-    </div>
-
-    <!-- Compact Daily Word on Relics (minimizable — full text on Bio) -->
-    <article class="daily-word daily-word-stage collapsed" id="daily-word-stage" aria-label="Daily Word" hidden>
-      <header class="daily-word-head">
-        <span class="daily-word-kicker">Daily Word</span>
-        <span class="daily-word-meta" data-daily-meta></span>
-        <button type="button" class="daily-word-min" id="daily-word-min" aria-expanded="false" title="Expand Daily Word">+</button>
-      </header>
-      <div class="daily-word-expand">
-        <h2 class="daily-word-title" data-daily-title></h2>
-        <p class="daily-word-body" data-daily-body></p>
-        <button type="button" class="daily-word-open-bio" id="daily-open-bio">Read on Bio</button>
-      </div>
-    </article>
-
-    <!-- Bubbles track each 3D speaker (positions set in mjolnir.js) -->
+    <!-- Speech bubbles: hidden until Talk / grab (keeps stage clear) -->
     <div class="dialogue-layer" aria-live="polite">
-      <div class="dbox dbox-mjolnir show" id="box-mjolnir">
+      <div class="dbox dbox-mjolnir" id="box-mjolnir">
         <div class="dbox-head">
           <span class="dbox-title">Mjolnir</span>
           <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
           <button type="button" class="dbox-min" data-dbox-min="mjolnir" aria-expanded="true" title="Minimize bubble">−</button>
         </div>
         <div class="dbox-body">
-          <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
-          <div class="dbox-meta" id="box-mjolnir-meta">power · courage · lightning</div>
+          <div class="dbox-text" id="box-mjolnir-text"></div>
+          <div class="dbox-meta" id="box-mjolnir-meta">power · courage</div>
         </div>
       </div>
-      <div class="dbox dbox-caduceus show" id="box-caduceus">
+      <div class="dbox dbox-caduceus" id="box-caduceus">
         <div class="dbox-head">
           <span class="dbox-title">Caduceus</span>
           <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
           <button type="button" class="dbox-min" data-dbox-min="caduceus" aria-expanded="true" title="Minimize bubble">−</button>
         </div>
         <div class="dbox-body">
-          <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING - scroll the bubble if it runs tall.</div>
-          <div class="dbox-meta" id="box-caduceus-meta">healing · vitality · balance</div>
+          <div class="dbox-text" id="box-caduceus-text"></div>
+          <div class="dbox-meta" id="box-caduceus-meta">healing · balance</div>
         </div>
       </div>
     </div>
@@ -369,8 +344,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=61"></script>
-  <script src="analytics.js?v=61"></script>
+  <script src="api-config.js?v=62"></script>
+  <script src="analytics.js?v=62"></script>
   <script type="importmap">
   {
     "imports": {
@@ -379,17 +354,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=61"></script>
-  <script type="module" src="bio.js?v=61"></script>
-  <script type="module" src="daily-wisdom.js?v=61"></script>
-  <script type="module" src="oracle.js?v=61"></script>
-  <script type="module" src="music.js?v=61"></script>
-  <script type="module" src="personality.js?v=61"></script>
-  <script type="module" src="mjolnir.js?v=61"></script>
-  <script>
-    document.getElementById("daily-open-bio")?.addEventListener("click", function () {
-      window.TelephantimScenes?.setScene("bio");
-    });
-  </script>
+  <script type="module" src="scenes.js?v=62"></script>
+  <script type="module" src="bio.js?v=62"></script>
+  <script type="module" src="daily-wisdom.js?v=62"></script>
+  <script type="module" src="music.js?v=62"></script>
+  <script type="module" src="personality.js?v=62"></script>
+  <script type="module" src="mjolnir.js?v=62"></script>
 </body>
 </html>
