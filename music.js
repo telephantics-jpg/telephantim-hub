@@ -47,7 +47,10 @@ let orderedSunoTracks = [];
 /** "all" = suno then albums; "suno" = only published Suno songs */
 let mode = "all";
 let index = 0;
+/** Panel shell visible (even if body minimized) */
 let open = false;
+/** true = panel body collapsed; audio can keep playing */
+let minimized = false;
 let sunoCount = 0;
 let catalogLoaded = false;
 /** Fisher–Yates shuffle of the current queue; Next/Prev follow shuffled order. */
@@ -318,46 +321,59 @@ function isAudioPlaying() {
   return !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
 }
 
-function updateMusicButtonLabel() {
+function updateMusicChrome() {
   const label = $("btn-music-label");
   const btn = $("btn-music");
-  if (!label) return;
-  if (open) {
-    label.textContent = "Hide music";
-  } else if (isAudioPlaying()) {
-    // Minimized but still playing in background
-    label.textContent = "Show music";
-  } else {
-    label.textContent = "Play music";
+  const panel = $("music-player");
+  const body = $("music-panel-body");
+  const minBtn = $("music-min");
+  const maxBtn = $("music-max");
+  const playing = isAudioPlaying();
+
+  if (label) {
+    if (!open && !playing) label.textContent = "Play music";
+    else if (open && !minimized) label.textContent = "Hide music";
+    else if (open && minimized) label.textContent = "Expand music";
+    else label.textContent = "Show music"; // closed shell but still playing
   }
   if (btn) {
-    btn.classList.toggle("on", open);
-    btn.classList.toggle("playing-bg", !open && isAudioPlaying());
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-    btn.title = open
-      ? "Hide player (music keeps playing)"
-      : isAudioPlaying()
-        ? "Show music player — still playing"
-        : "Play Telephantix music";
+    btn.classList.toggle("on", open && !minimized);
+    btn.classList.toggle("playing-bg", playing && (minimized || !open));
+    btn.setAttribute("aria-expanded", open && !minimized ? "true" : "false");
+    btn.title =
+      open && !minimized
+        ? "Hide player (music keeps playing)"
+        : playing
+          ? "Show / expand music player"
+          : "Play Telephantix music";
   }
-}
-
-/**
- * Show / hide the player panel.
- * Hiding does NOT stop audio — minimize and keep listening.
- */
-function setOpen(v) {
-  open = !!v;
-  const panel = $("music-player");
   if (panel) {
     panel.hidden = !open;
     panel.classList.toggle("open", open);
+    panel.classList.toggle("is-minimized", open && minimized);
   }
-  // Desktop CSS: center Play music when closed, slide left when open
-  document.body.classList.toggle("music-open", open);
-  updateMusicButtonLabel();
+  if (body) body.hidden = !!(open && minimized);
+  if (minBtn) minBtn.hidden = !!(open && minimized);
+  if (maxBtn) maxBtn.hidden = !(open && minimized);
+
+  document.body.classList.toggle("music-open", open && !minimized);
+  document.body.classList.toggle("music-minimized", open && minimized);
+  document.body.classList.toggle("music-playing", playing);
+}
+
+function updateMusicButtonLabel() {
+  updateMusicChrome();
+}
+
+/**
+ * Show / hide the player shell.
+ * Closing does NOT stop audio — keeps listening in the background.
+ */
+function setOpen(v) {
+  open = !!v;
+  if (open) minimized = false;
+  updateMusicChrome();
   if (open) {
-    // Don't restart mid-song if already playing this track in the background
     const audio = $("music-audio");
     const cur = current();
     const already =
@@ -372,7 +388,25 @@ function setOpen(v) {
       );
     loadTrack(!already);
   }
-  // When closing: leave audio running (minimize + keep play)
+}
+
+/** Collapse panel body; audio keeps playing. */
+function setMinimized(v) {
+  if (!open && v) {
+    // Opening already minimized (chip expand path uses setOpen first)
+    open = true;
+  }
+  minimized = !!v;
+  if (!open) minimized = false;
+  updateMusicChrome();
+}
+
+function toggleMinimize() {
+  if (!open) {
+    setOpen(true);
+    return;
+  }
+  setMinimized(!minimized);
 }
 
 function next() {
@@ -418,8 +452,30 @@ function onAudioEnded() {
 }
 
 function wire() {
-  // Toggle panel open/closed; hide = minimize, audio keeps going
-  $("btn-music")?.addEventListener("click", () => setOpen(!open));
+  // Play / Show / Expand / Hide cycle
+  $("btn-music")?.addEventListener("click", () => {
+    if (!open) {
+      setOpen(true);
+      return;
+    }
+    if (minimized) {
+      setMinimized(false);
+      return;
+    }
+    // Fully open → hide shell (audio keeps going)
+    setOpen(false);
+  });
+  $("music-min")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMinimized(true);
+  });
+  $("music-max")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMinimized(false);
+  });
+  // Close = same as hide shell (keep playing)
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
@@ -429,9 +485,8 @@ function wire() {
   const audio = $("music-audio");
   if (audio) {
     audio.addEventListener("ended", onAudioEnded);
-    audio.addEventListener("play", updateMusicButtonLabel);
-    audio.addEventListener("pause", updateMusicButtonLabel);
-    // When one Suno file errors, skip to next so the whole queue still works
+    audio.addEventListener("play", updateMusicChrome);
+    audio.addEventListener("pause", updateMusicChrome);
     audio.addEventListener("error", () => {
       if (isSunoTrack(current()) && PLAYLIST.length > 1) {
         setTimeout(next, 400);
@@ -442,6 +497,7 @@ function wire() {
   renderList();
   loadTrack(false);
   loadSunoCatalog();
+  updateMusicChrome();
 }
 
 if (document.readyState === "loading") {
@@ -455,6 +511,8 @@ window.TelephantimMusic = {
     return PLAYLIST;
   },
   setOpen,
+  setMinimized,
+  toggleMinimize,
   next,
   prev,
   loadTrack,
@@ -466,5 +524,11 @@ window.TelephantimMusic = {
   },
   get sunoCount() {
     return sunoCount;
+  },
+  get open() {
+    return open;
+  },
+  get minimized() {
+    return minimized;
   },
 };

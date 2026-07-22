@@ -9,7 +9,7 @@
   <meta property="og:title" content="Telephantim" />
   <meta property="og:url" content="https://telephantim.com/" />
   <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=68" />
+  <link rel="stylesheet" href="styles.css?v=70" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -165,47 +165,58 @@
         Hide v
       </button>
       <div class="float-actions-main" id="float-actions-main">
-        <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
-          <span id="btn-music-label">Play music</span>
-        </button>
         <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
         <button type="button" class="btn-chip" id="btn-strike">Strike</button>
         <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
       </div>
     </div>
+  </section>
 
-    <!-- Floating music player (Suno profile + Spotify / YouTube playable embeds) -->
+  <!--
+    Global music chrome — OUTSIDE stage so Bio / 2D / 3D / Relics all see it
+    (PC + mobile). Minimize keeps audio; maximize restores the panel.
+  -->
+  <div class="music-chrome" id="music-chrome" aria-label="Telephantix music">
+    <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
+      <span id="btn-music-label">Play music</span>
+    </button>
     <div class="music-player" id="music-player" aria-label="Music player" hidden>
       <div class="music-player-inner">
         <div class="music-head">
-          <div>
+          <div class="music-head-text">
             <strong class="music-brand">Telephantix Radio</strong>
             <p class="music-now"><span id="music-now-title">Ready</span><br /><span id="music-now-sub" class="music-sub"></span></p>
           </div>
-          <button type="button" class="music-x" id="music-close" aria-label="Close player">Ã—</button>
+          <div class="music-head-actions">
+            <button type="button" class="music-icon-btn" id="music-min" aria-label="Minimize player" title="Minimize (keep playing)">−</button>
+            <button type="button" class="music-icon-btn" id="music-max" aria-label="Maximize player" title="Maximize" hidden>+</button>
+            <button type="button" class="music-icon-btn music-x" id="music-close" aria-label="Close player" title="Close panel (keep playing)">×</button>
+          </div>
         </div>
-        <div class="music-controls">
-          <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
-          <button type="button" class="btn-chip ghost" id="music-next">Next</button>
-          <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle the full Suno queue (no duplicates)">Shuffle</button>
-          <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Play all published Suno songs from @telephantix">Play all Suno</a>
+        <div class="music-panel-body" id="music-panel-body">
+          <div class="music-controls">
+            <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
+            <button type="button" class="btn-chip ghost" id="music-next">Next</button>
+            <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle the full Suno queue">Shuffle</button>
+            <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Play all published Suno songs">Play all Suno</a>
+          </div>
+          <div class="music-stage">
+            <iframe
+              id="music-embed"
+              class="music-embed"
+              title="Music player"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+            ></iframe>
+            <audio id="music-audio" class="music-audio" controls preload="metadata" hidden></audio>
+          </div>
+          <div class="music-track-list" id="music-track-list"></div>
+          <p class="music-hint">Full All I Got playlist · minimize keeps playing · all modes (Relics · Bio · 2D · 3D)</p>
         </div>
-        <div class="music-stage">
-          <iframe
-            id="music-embed"
-            class="music-embed"
-            title="Music player"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-            referrerpolicy="strict-origin-when-cross-origin"
-          ></iframe>
-          <audio id="music-audio" class="music-audio" controls preload="metadata" hidden></audio>
-        </div>
-        <div class="music-track-list" id="music-track-list"></div>
-        <p class="music-hint">Full All I Got playlist · no duplicates · Shuffle randomizes the queue · auto-next. Profile: suno.com/@telephantix</p>
       </div>
     </div>
-  </section>
+  </div>
 
   <!-- Bottom menu: tap bar to open/close; scroll INSIDE for PayPal etc. -->
   <aside class="sheet" id="link-sheet" aria-label="Links menu">
@@ -394,7 +405,7 @@
   <script type="module" src="bio.js?v=58"></script>
   <script type="module" src="daily-wisdom.js?v=58"></script>
   <script type="module" src="oracle.js?v=58"></script>
-  <script type="module" src="music.js?v=66"></script>
+  <script type="module" src="music.js?v=70"></script>
   <script type="module" src="personality.js?v=65"></script>
   <script type="module" src="mjolnir.js?v=62"></script>
   <script>
