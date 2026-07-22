@@ -390,17 +390,39 @@ export function pickWord(id, event) {
 }
 
 /** Prefer event line, avoid immediate repeats via short session memory */
-const _lastInteract = { mjolnir: "", caduceus: "" };
-export function pickInteractLine(id, event) {
-  const who = id === "caduceus" ? "caduceus" : "mjolnir";
-  const ev = String(event || "grab").toLowerCase();
-  const bag = [...(INTERACT[ev]?.[who] || []), ...WORDS[who]];
-  let line = pick(bag);
-  let guard = 0;
-  while (line === _lastInteract[who] && bag.length > 1 && guard++ < 8) {
-    line = pick(bag);
+const _recentPhrases = { mjolnir: [], caduceus: [] };
+const RECENT_PHRASE_N = 10;
+
+function phrasePool(who, event) {
+  const ev = String(event || "press").toLowerCase();
+  const pool = [];
+  if (INTERACT[ev]?.[who]) pool.push(...INTERACT[ev][who]);
+  // Click/press draws from all interaction banks so each tap feels new
+  if (ev === "press" || ev === "click" || ev === "grab") {
+    for (const key of ["grab", "toss", "bonk", "react"]) {
+      if (INTERACT[key]?.[who]) pool.push(...INTERACT[key][who]);
+    }
   }
-  _lastInteract[who] = line;
+  pool.push(...WORDS[who]);
+  // unique
+  return [...new Set(pool)];
+}
+
+export function pickInteractLine(id, event) {
+  return pickFreshPhrase(id, event);
+}
+
+/** Always try to return a phrase not used in the last N presses */
+export function pickFreshPhrase(id, event = "press") {
+  const who = id === "caduceus" ? "caduceus" : "mjolnir";
+  const bag = phrasePool(who, event);
+  const recent = _recentPhrases[who] || [];
+  const fresh = bag.filter((line) => !recent.includes(line));
+  const use = fresh.length ? fresh : bag;
+  const line = pick(use);
+  recent.push(line);
+  while (recent.length > RECENT_PHRASE_N) recent.shift();
+  _recentPhrases[who] = recent;
   return line;
 }
 

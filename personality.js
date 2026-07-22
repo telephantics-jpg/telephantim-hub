@@ -11,6 +11,7 @@ import { freeMindsBanter, freeMindsSpeak, freeMindsHealth } from "./free-minds.j
 import {
   pickWord as pickCachedWord,
   pickInteractLine,
+  pickFreshPhrase,
   buildOfflineBanter,
   warmSayingsCache,
 } from "./relic-sayings.js";
@@ -439,29 +440,56 @@ export async function speak(persona, event, message, opts = {}) {
 }
 
 /**
- * Mindable relic interaction — grab / toss / bonk wakes the mind (not a dead prop).
- * Often the other relic answers so it feels like a living pair.
+ * Click / press a relic → always speak a NEW phrase (instant cache + optional free-mind upgrade).
+ * Not blocked by Talk banter; each press cycles a fresh line.
+ */
+const _phraseCooldown = { mjolnir: 0, caduceus: 0 };
+
+export function speakPhrase(persona, event = "press") {
+  const id = persona === "caduceus" ? "caduceus" : "mjolnir";
+  const now = Date.now();
+  // Allow rapid multi-click; only ignore true double-fire in same frame
+  if (now - (_phraseCooldown[id] || 0) < 80) return null;
+  _phraseCooldown[id] = now;
+
+  const ev = event === "toss" || event === "bonk" || event === "grab" ? event : "press";
+  const meta =
+    ev === "bonk"
+      ? "playful"
+      : id === "mjolnir"
+        ? "power · courage"
+        : "healing · balance";
+
+  const text = pickFreshPhrase(id, ev);
+  setActivePersona(id);
+  showInBox(id, text, meta, null);
+
+  // Soft upgrade from free minds when available (won't spam partner)
+  const prompt = interactPrompt(id, ev === "press" ? "grab" : ev, null);
+  freeMindsSpeak(id, prompt)
+    .then((fm) => {
+      if (!fm?.text) return;
+      // Only replace if this relic is still the active speaker vibe
+      setBrainPill("free", "Free minds");
+      showInBox(id, fm.text, meta, null);
+    })
+    .catch(() => {});
+
+  return { text, provider: "phrase", persona: id };
+}
+
+/**
+ * Richer dual interaction (Talk path / bonks) — partner may answer.
  */
 export async function onRelicInteract(persona, event = "grab") {
   const id = persona === "caduceus" ? "caduceus" : "mjolnir";
-  const other = id === "mjolnir" ? "caduceus" : "mjolnir";
-  const ev = event || "grab";
+  // Click-style: new phrase first
+  const first = speakPhrase(id, event) || { text: pickFreshPhrase(id, event) };
 
-  const first = await speak(id, ev, null, { quiet: false });
-
-  // Partner almost always answers on grab — dual mind presence
-  const partnerChance = ev === "grab" ? 0.8 : ev === "bonk" ? 0.9 : 0.55;
-  if (Math.random() < partnerChance) {
-    await wait(900 + Math.random() * 700);
-    const otherName = id === "mjolnir" ? "Mjolnir" : "Caduceus";
-    const snippet = (first?.text || "").slice(0, 180);
-    const reactPrompt = snippet
-      ? `Reply ONLY as the partner relic. ${otherName} just told the Wielder: "${snippet}". ` +
-        `Answer them and the Wielder in 2–4 vivid sentences. Gift your virtue. No tech/camp meta.`
-      : null;
-    await speak(other, "react", reactPrompt, { quiet: true });
+  if (event === "bonk" || event === "spar") {
+    await wait(700);
+    speakPhrase(id === "mjolnir" ? "caduceus" : "mjolnir", "bonk");
   }
-
   return first;
 }
 
@@ -647,6 +675,7 @@ scheduleAutoTalk();
 
 window.ArtifactAI = {
   speak,
+  speakPhrase,
   banter,
   battleQuip,
   onRelicInteract,
