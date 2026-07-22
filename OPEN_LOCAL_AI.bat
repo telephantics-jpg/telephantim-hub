@@ -1,5 +1,5 @@
 @echo off
-title Telephantim Dual Brains (Ollama)
+title Telephantim Dual Brains (Ollama + optional Grok)
 cd /d "%~dp0"
 
 echo.
@@ -9,13 +9,14 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr :8765 ^| findstr LISTENING') 
 )
 
 echo  Starting dual-mind AI server...
-echo  Mjolnir + Caduceus keep memory and talk for real.
+echo  Mjolnir = llama3.2   Caduceus = hermes3  (Ollama on this PC)
 echo  Site: http://127.0.0.1:8765/
+echo  (Loads XAI key from ..\GrokAvatar\.env or .env if present)
 echo.
 
-start "" "http://127.0.0.1:8765/?v=28"
+start "" "http://127.0.0.1:8765/?v=59"
 python server.py
 if errorlevel 1 (
-  echo Python failed.
+  echo Python failed — is Python installed and Ollama running?
   pause
 )

@@ -1,0 +1,41 @@
+WHY RELIC DUEL SAYS OFFLINE / "tokens" / no real chat
+======================================================
+
+What we found (2026-07-22)
+--------------------------
+1. Local Ollama WORKS: llama3.2 + hermes3 + (optional) Grok key from GrokAvatar\.env
+2. Local server WORKS:  http://127.0.0.1:8765/api/health  → brains:true
+3. Public API DEAD:     https://telephantim-ai.onrender.com  → 404
+   telephantim.com still points there (api-config.js), so Relic duel on the LIVE site
+   cannot reach a cloud brain until Render is recreated.
+
+"15 tokens" messages
+--------------------
+Usually means a free/cloud quota (Ollama cloud model, Groq, or xAI) hit a tiny limit —
+not that the 3D scene is broken. Local llama3.2/hermes3 avoid that.
+
+USE REAL DUAL BRAINS RIGHT NOW (your PC on)
+-------------------------------------------
+  Double-click:  OPEN_RELICS_3D_BRAINS.bat
+  Or:            OPEN_LOCAL_AI.bat
+  Then:          Relic duel on http://127.0.0.1:8765/
+
+FIX LIVE telephantim.com (any visitor, PC off)
+----------------------------------------------
+  1. https://console.groq.com  → free API key
+  2. https://dashboard.render.com → New Web Service
+     Repo: telephantics-jpg/telephantim-hub
+     Branch: master
+     Build: pip install -r requirements.txt
+     Start: python server.py
+     Name:  telephantim-ai   (URL must be telephantim-ai.onrender.com)
+  3. Env:
+       PREFER_CLOUD=1
+       GROQ_API_KEY=your_key
+       (optional) XAI_API_KEY=your_xai_key
+  4. Deploy → test https://telephantim-ai.onrender.com/api/health
+     Should show "brains": true
+  5. Hard-refresh telephantim.com → Relic duel
+
+Until Render is live again, the public site still animates relics and runs an
+offline multi-round duel script (no real LLM). Local URL has the real minds.

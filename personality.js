@@ -366,19 +366,67 @@ export async function banter(topic, rounds, opts) {
     }
     return data;
   } catch {
-    // Offline: still feel alive — occasional pulse riff, else longer word-of-power
-    if (usePulse && headline) {
-      showInBox("mjolnir", offlinePulseRiff("mjolnir", headline), "power · pulse", null);
-      await wait(2200);
-      showInBox("caduceus", offlinePulseRiff("caduceus", headline), "healing · pulse", null);
-    } else {
-      showInBox("mjolnir", pickWord("mjolnir"), "power · courage", null);
-      await wait(1600);
-      showInBox("caduceus", pickWord("caduceus"), "healing · balance", null);
+    // Cloud API down (e.g. Render 404 / token limit) — still run a full dual duel offline
+    brainsOnline = false;
+    if (brainPill) {
+      brainPill.textContent = "Relics ready";
+      brainPill.dataset.mode = "offline";
     }
+    await offlineBanterShow(usePulse ? headline : null, rounds || 4);
     return null;
   } finally {
     busy = false;
+  }
+}
+
+/** Multi-round offline duel so Relic page stays alive without cloud tokens */
+async function offlineBanterShow(headline, rounds) {
+  const n = Math.max(2, Math.min(6, rounds || 4));
+  const scripts = [
+    [
+      { id: "mjolnir", t: "Ha! Map's awake and so am I. Caduceus — coils up. Wielder's watching; let's gift POWER and a clean laugh." },
+      { id: "caduceus", t: "Easy, thunder. I'm already humming. HEALING first, bragging rights second — though I admit your boom has style." },
+      { id: "mjolnir", t: "Style? That's lightning with manners. Hold firm, wielder — courage is free; doubt pays rent outside the forge." },
+      { id: "caduceus", t: "And when the spark settles, I'll braid calm into the blood. Bond climbs either way. We're a pair, not a quarrel." },
+      { id: "mjolnir", t: "Fair. I'll shake the sky; you keep the heart on the map. Ready when you are, twin-snake." },
+      { id: "caduceus", t: "Always. Swing true — I'll catch what cracks. Life first. Then we can tease each other until the stars blink." },
+    ],
+    [
+      { id: "caduceus", t: "Staff on duty. Hammer, try not to vaporize the scenery — some of us mend for a living." },
+      { id: "mjolnir", t: "Scenery's fine. POWER doesn't whisper, Caduceus. It announces. Want a quieter storm? Ask nicer." },
+      { id: "caduceus", t: "I'll ask in twin-tongues: balance, vitality, a second chance. You bring the edge; I bring the aftercare." },
+      { id: "mjolnir", t: "Deal struck in gold and green. Wielder — grip us both. Courage now, healing after. That's the whole joke of this map." },
+    ],
+  ];
+  let lines = scripts[Math.floor(Math.random() * scripts.length)].slice(0, n);
+  if (headline) {
+    lines = [
+      { id: "mjolnir", t: offlinePulseRiff("mjolnir", headline) },
+      { id: "caduceus", t: offlinePulseRiff("caduceus", headline) },
+      ...lines.slice(0, Math.max(0, n - 2)),
+    ].slice(0, n);
+  }
+  let pMj = 1;
+  let pCad = 1;
+  let bond = 1;
+  for (const line of lines) {
+    if (line.id === "mjolnir") pMj = Math.min(99, pMj + 1);
+    else pCad = Math.min(99, pCad + 1);
+    bond = Math.min(99, bond + 1);
+    const meta =
+      headline && line === lines[0]
+        ? line.id === "mjolnir"
+          ? "power · pulse"
+          : "healing · pulse"
+        : line.id === "mjolnir"
+          ? "power · courage"
+          : "healing · balance";
+    setActivePersona(line.id);
+    showInBox(line.id, line.t, meta, line.id === "mjolnir" ? pMj : pCad);
+    if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
+    if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
+    if (bondPill) bondPill.textContent = `Bond ${bond}`;
+    await wait(Math.min(7500, 2200 + line.t.length * 28));
   }
 }
 
