@@ -87,24 +87,11 @@ async function playBanterLines(lines, metaPulse) {
     if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
     if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
     if (bondPill) bondPill.textContent = `Bond ${bond}`;
-    // Longer hold so multi-turn talks are readable (faster if both minds minimized)
-    const bothMin = bothMindsCollapsed();
-    const hold = bothMin
-      ? Math.min(4200, 1200 + String(text).length * 18)
-      : Math.min(12000, 2800 + String(text).length * 36);
-    await wait(hold);
+    await wait(Math.min(12000, 2800 + String(text).length * 36));
   }
-  // Soft clear after the exchange (chips linger briefly if minimized)
-  await wait(bothMindsCollapsed() ? 5000 : 2500);
+  await wait(2500);
   for (const id of ["mjolnir", "caduceus"]) {
-    const root = boxes[id]?.root;
-    if (!root) continue;
-    root.classList.remove("active-speaker", "has-new");
-    if (!root.classList.contains("collapsed")) root.classList.remove("show");
-    else {
-      // docked chip fades after a moment so stage is fully open
-      setTimeout(() => root.classList.remove("show", "has-new"), 6000);
-    }
+    boxes[id]?.root?.classList.remove("active-speaker", "has-new", "show");
   }
 }
 
@@ -189,18 +176,11 @@ export function setActivePersona(id) {
   document.getElementById("box-caduceus")?.classList.toggle("active-speaker", activePersona === "caduceus");
 }
 
-const MINDS_GLOBAL_KEY = "telephantim-minds-collapsed";
-const mindsMinBtn = document.getElementById("btn-minds-min");
-
 function dboxMinKey(id) {
   return `telephantim-dbox-collapsed-${id}`;
 }
 
-function isDboxCollapsed(id) {
-  return !!boxes[id]?.root?.classList.contains("collapsed");
-}
-
-function setDboxCollapsed(id, collapsed, { persist = true } = {}) {
+function setDboxCollapsed(id, collapsed) {
   const b = boxes[id];
   if (!b?.root) return;
   b.root.classList.toggle("collapsed", !!collapsed);
@@ -209,40 +189,12 @@ function setDboxCollapsed(id, collapsed, { persist = true } = {}) {
   if (btn) {
     btn.textContent = collapsed ? "+" : "−";
     btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-    btn.title = collapsed ? "Expand mind" : "Minimize mind";
+    btn.title = collapsed ? "Expand bubble" : "Minimize bubble";
   }
   if (!collapsed) b.root.classList.remove("has-new");
-  if (persist) {
-    try {
-      localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
-    } catch (_) {}
-  }
-  syncMindsMinButton();
-}
-
-/** Both relic minds: mini chips docked off the stage so 3D stays clear */
-export function setAllMindsCollapsed(collapsed) {
-  setDboxCollapsed("mjolnir", collapsed);
-  setDboxCollapsed("caduceus", collapsed);
   try {
-    localStorage.setItem(MINDS_GLOBAL_KEY, collapsed ? "1" : "0");
+    localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
   } catch (_) {}
-  syncMindsMinButton();
-}
-
-function bothMindsCollapsed() {
-  return isDboxCollapsed("mjolnir") && isDboxCollapsed("caduceus");
-}
-
-function syncMindsMinButton() {
-  if (!mindsMinBtn) return;
-  const allMin = bothMindsCollapsed();
-  mindsMinBtn.setAttribute("aria-pressed", allMin ? "true" : "false");
-  mindsMinBtn.textContent = allMin ? "Show minds" : "Hide minds";
-  mindsMinBtn.title = allMin
-    ? "Expand both relic speech bubbles"
-    : "Minimize both minds (talk keeps going as chips)";
-  mindsMinBtn.classList.toggle("on", allMin);
 }
 
 function wireDboxMinimize() {
@@ -252,13 +204,9 @@ function wireDboxMinimize() {
     const id = btn.getAttribute("data-dbox-min") === "caduceus" ? "caduceus" : "mjolnir";
     let collapsed = false;
     try {
-      // Global preference wins when set
-      const g = localStorage.getItem(MINDS_GLOBAL_KEY);
-      if (g === "1") collapsed = true;
-      else if (g === "0") collapsed = false;
-      else if (localStorage.getItem(dboxMinKey(id)) === "1") collapsed = true;
+      if (localStorage.getItem(dboxMinKey(id)) === "1") collapsed = true;
     } catch (_) {}
-    setDboxCollapsed(id, collapsed, { persist: false });
+    setDboxCollapsed(id, collapsed);
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -267,26 +215,6 @@ function wireDboxMinimize() {
       setDboxCollapsed(id, !root.classList.contains("collapsed"));
     });
   });
-
-  // Tap a minimized chip (not the + button) to expand that mind
-  ["mjolnir", "caduceus"].forEach((id) => {
-    const root = boxes[id]?.root;
-    if (!root || root.dataset.chipWired) return;
-    root.dataset.chipWired = "1";
-    root.addEventListener("click", (e) => {
-      if (!root.classList.contains("collapsed")) return;
-      if (e.target.closest?.("[data-dbox-min]")) return;
-      e.preventDefault();
-      setDboxCollapsed(id, false);
-    });
-  });
-
-  mindsMinBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    setAllMindsCollapsed(!bothMindsCollapsed());
-  });
-
-  syncMindsMinButton();
 }
 
 export function showInBox(persona, text, meta, power) {
@@ -375,35 +303,87 @@ async function refreshPower() {
   } catch (_) {}
 }
 
-/** Soft one-liners on rare bonks — no meta talk, no full duel spam */
-export async function battleQuip(attackerKind) {
-  const atk = attackerKind === "caduceus" ? "caduceus" : "mjolnir";
-  const def = atk === "mjolnir" ? "caduceus" : "mjolnir";
-  setActivePersona(atk);
-  showInBox(atk, pickWord(atk), "playful", null);
-  setTimeout(() => {
-    setActivePersona(def);
-    showInBox(def, pickWord(def), "playful", null);
-  }, 900);
-  return { attacker: atk, defender: def };
+function interactPrompt(id, event, extra) {
+  const name = id === "caduceus" ? "Caduceus the living staff" : "Mjolnir the living hammer";
+  const gift = id === "caduceus" ? "HEALING, vitality, balance" : "POWER, courage, lightning";
+  const ev = String(event || "touch");
+  if (ev === "grab") {
+    return (
+      extra ||
+      `You are ${name}. The wielder just grabbed you in the Telephantim map. ` +
+        `Speak in character — warm, mythic, 2–5 sentences. Gift ${gift}. ` +
+        `React to being held. Never mention AI, servers, or tech.`
+    );
+  }
+  if (ev === "toss" || ev === "fling") {
+    return (
+      extra ||
+      `You are ${name}. The wielder just tossed you across the map. ` +
+        `React playfully in character, 2–5 sentences. Gift ${gift}. No tech talk.`
+    );
+  }
+  if (ev === "bonk" || ev === "spar") {
+    return (
+      extra ||
+      `You are ${name}. A playful bonk just happened with the other relic. ` +
+        `Quip in character, 2–4 sentences. Gift ${gift}. No tech talk.`
+    );
+  }
+  if (ev === "react") {
+    return (
+      extra ||
+      `You are ${name}. The other relic just spoke to the wielder. ` +
+        `Answer them and the wielder, 2–4 sentences. Gift ${gift}. No tech talk.`
+    );
+  }
+  return (
+    extra ||
+    `You are ${name}. Speak to the wielder, 2–5 lively sentences. Gift ${gift}. No tech talk.`
+  );
 }
 
-export async function speak(persona, event, message) {
-  if (busy) return null;
-  busy = true;
+/**
+ * Single mind line — free minds → API → native → cached sayings.
+ * @param {{quiet?: boolean, skipBusy?: boolean}} opts
+ *   quiet = no "…" thinking bubble; skipBusy = run even if banter is mid-flight
+ */
+export async function speak(persona, event, message, opts = {}) {
   const id = persona === "caduceus" ? "caduceus" : "mjolnir";
-  setActivePersona(id);
-  showInBox(id, "…", "thinking");
+  const meta =
+    event === "bonk" || event === "spar"
+      ? "playful"
+      : id === "mjolnir"
+        ? "power · courage"
+        : "healing · balance";
+  const prompt = interactPrompt(id, event, message);
 
-  const meta = id === "mjolnir" ? "power · courage" : "healing · balance";
-  const prompt =
-    message ||
-    (event === "grab"
-      ? "The wielder just grabbed you. Speak a short gift line."
-      : "Speak a short lively line to the wielder.");
+  // Full dual banter owns the stage — still fire a cached mind beat so grab feels alive
+  if (busy && !opts.skipBusy) {
+    showInBox(id, pickWord(id), meta, null);
+    // Background mind try (don't await full chain if banter locked)
+    freeMindsSpeak(id, prompt)
+      .then((fm) => {
+        if (fm?.text && !busy) {
+          setBrainPill("free", "Free minds");
+          showInBox(id, fm.text, meta, null);
+        }
+      })
+      .catch(() => {});
+    return { text: null, deferred: true };
+  }
+
+  if (!opts.quiet) {
+    setActivePersona(id);
+    showInBox(id, "…", "thinking");
+  } else {
+    setActivePersona(id);
+  }
+
+  const lock = !opts.skipBusy;
+  if (lock) busy = true;
 
   try {
-    // 1) Free minds (same as 2D Luna Camp)
+    // 1) Free minds (same as 2D Luna Camp) — primary for public site
     try {
       const fm = await freeMindsSpeak(id, prompt);
       if (fm?.text) {
@@ -420,7 +400,7 @@ export async function speak(persona, event, message) {
         body: JSON.stringify({
           persona: id,
           event: event || "chat",
-          message: message || "",
+          message: message || prompt,
         }),
       });
       showInBox(id, data.text || pickWord(id), meta, data.power);
@@ -440,8 +420,10 @@ export async function speak(persona, event, message) {
 
     // 3) Browser-native free mind
     try {
-      setBrainPill("native", "Waking mind…");
-      const m = await ensureNativeBrain((msg) => setBrainPill("native", msg.slice(0, 22)));
+      if (!opts.quiet) setBrainPill("native", "Waking mind…");
+      const m = await ensureNativeBrain((msg) => {
+        if (!opts.quiet) setBrainPill("native", String(msg || "").slice(0, 22));
+      });
       if (m !== "none") {
         const text = await nativeSpeak(id, prompt);
         if (text) {
@@ -452,12 +434,51 @@ export async function speak(persona, event, message) {
       }
     } catch (_) {}
 
+    // 4) Cached native sayings
     setBrainPill("script", "Relics ready");
     showInBox(id, pickWord(id), meta, null);
-    return null;
+    return { text: pickWord(id), provider: "cache" };
   } finally {
-    busy = false;
+    if (lock) busy = false;
   }
+}
+
+/**
+ * Mindable relic interaction — grab / toss / bonk wakes the mind (not a dead prop).
+ * Often the other relic answers so it feels like a living pair.
+ */
+export async function onRelicInteract(persona, event = "grab") {
+  const id = persona === "caduceus" ? "caduceus" : "mjolnir";
+  const other = id === "mjolnir" ? "caduceus" : "mjolnir";
+  const ev = event || "grab";
+
+  const first = await speak(id, ev, null, { quiet: false });
+
+  // Partner mind replies ~65% — dual presence without full Talk duel
+  if (Math.random() < 0.65) {
+    await wait(1100 + Math.random() * 900);
+    const otherName = id === "mjolnir" ? "Mjolnir" : "Caduceus";
+    const snippet = (first?.text || "").slice(0, 160);
+    const reactPrompt =
+      snippet
+        ? `${otherName} just said to the wielder: "${snippet}". You are the other living relic. React, riff, gift your virtue. 2–4 sentences. No tech talk.`
+        : `The wielder just ${ev === "toss" ? "tossed" : ev === "bonk" ? "sparked a playful bonk with" : "grabbed"} ${otherName}. React as their partner relic. 2–4 sentences. No tech talk.`;
+    await speak(other, "react", reactPrompt, { quiet: true, skipBusy: false });
+  }
+
+  return first;
+}
+
+/** Soft dual quips on rare bonks — still mindable when free minds answer */
+export async function battleQuip(attackerKind) {
+  const atk = attackerKind === "caduceus" ? "caduceus" : "mjolnir";
+  // Fire-and-forget so duel animation never waits on network
+  onRelicInteract(atk, "bonk").catch(() => {
+    showInBox(atk, pickWord(atk), "playful", null);
+    const def = atk === "mjolnir" ? "caduceus" : "mjolnir";
+    setTimeout(() => showInBox(def, pickWord(def), "playful", null), 900);
+  });
+  return { attacker: atk, defender: atk === "mjolnir" ? "caduceus" : "mjolnir" };
 }
 
 /** Full dual conversation with memory on the server (when API up) */
@@ -632,9 +653,9 @@ window.ArtifactAI = {
   speak,
   banter,
   battleQuip,
+  onRelicInteract,
   showInBox,
   setActivePersona,
-  setAllMindsCollapsed,
   refreshBrainPill,
   refreshPower,
   get apiBase() {

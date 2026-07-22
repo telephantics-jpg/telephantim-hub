@@ -105,8 +105,8 @@ export async function freeMindsSpeak(persona, message) {
         message:
           message ||
           (agent_id === "thor"
-            ? "Speak as living Mjolnir — short gift of POWER to the wielder."
-            : "Speak as living Caduceus — short gift of HEALING to the wielder."),
+            ? "Speak as living Mjolnir — 2–5 sentences, gift POWER to the wielder. Mythic, warm, no tech talk."
+            : "Speak as living Caduceus — 2–5 sentences, gift HEALING to the wielder. Mythic, witty, no tech talk."),
         visitor_name: "Wielder",
       }),
       signal: ctrl.signal,
