@@ -239,9 +239,11 @@ export function showInBox(persona, text, meta, power) {
   }
   setTimeout(() => b.root.classList.remove("pulse"), 400);
   clearTimeout(hideTimers[id]);
+  // Auto-clear bubble so stage stays open after the line lands
+  const hold = Math.min(14000, 3200 + String(text || "").length * 40);
   hideTimers[id] = setTimeout(() => {
-    b.root.classList.remove("active-speaker");
-  }, 32000);
+    b.root.classList.remove("active-speaker", "show");
+  }, hold);
 }
 
 async function api(path, opts) {
@@ -528,94 +530,41 @@ async function offlineBanterShow(headline, rounds) {
   }
 }
 
-/** Occasional calm chat — not constant; sometimes glances at world pulse */
+/** Rare calm chat only — stage stays clear most of the time */
 let autoTalkTimer = null;
 function scheduleAutoTalk() {
   clearTimeout(autoTalkTimer);
   autoTalkTimer = setTimeout(async () => {
     try {
-      await refreshBrainPill();
-      if (!busy) {
-        // ~40% of auto chats glance at the pulse (life-like, not every time)
-        const pulsey = Math.random() < 0.4;
-        if (brainsOnline) {
-          await banter(
-            pulsey
-              ? "quiet lively talk — one of you may half-notice the world-pulse, riff once, don't paste headlines, then keep bonding"
-              : "quiet lively talk between relics — natural, a tad longer, gift power and healing, no fighting",
-            pulsey ? 3 : 2,
-            { pulse: pulsey }
-          );
-        } else if (pulsey) {
-          // Offline pulse theater still feels alive
-          await fetchWorldPulse();
-          const pick = pickPulseHeadline();
-          if (pick?.text) {
-            showInBox(
-              "mjolnir",
-              offlinePulseRiff("mjolnir", pick.text),
-              "power · pulse",
-              null
-            );
-            await wait(2000);
-            showInBox(
-              "caduceus",
-              offlinePulseRiff("caduceus", pick.text),
-              "healing · pulse",
-              null
-            );
-          }
-        }
+      if (!busy && brainsOnline && document.visibilityState === "visible") {
+        await banter(
+          "one short friendly exchange — gift power and healing, keep it brief",
+          2,
+          { pulse: false }
+        );
       }
     } catch (_) {}
     scheduleAutoTalk();
-  }, 75000 + Math.random() * 55000); // ~1.25–2.2 min
+  }, 4 * 60 * 1000 + Math.random() * 3 * 60 * 1000); // ~4–7 min
 }
 
 banterBtn?.addEventListener("click", () =>
   banter(
-    "lively friendly duel-talk between hammer and staff — longer lines, gift power and healing; if the pulse sparks, riff don't copy",
-    5,
-    { pulse: Math.random() < 0.55 }
+    "lively friendly duel-talk between hammer and staff — short clear lines, gift power and healing",
+    3,
+    { pulse: false }
   )
 );
 
 wireDboxMinimize();
-boxes.mjolnir.root?.classList.add("show");
-boxes.caduceus.root?.classList.add("show");
-refreshBrainPill().then((s) => {
-  if (s?.brains || s?.ollama || s?.xai) {
-    setTimeout(
-      () =>
-        banter(
-          "greet the wielder warmly, then chat with each other — lively, a tad longer",
-          3,
-          { pulse: false }
-        ),
-      2500
-    );
-  }
-});
-// Warm pulse cache quietly
-fetchWorldPulse().catch(() => {});
+// Stage starts clean — bubbles only appear on Talk / grab
+refreshBrainPill();
 refreshPower();
-setInterval(refreshBrainPill, 12000);
-setInterval(refreshPower, 16000);
-setInterval(() => fetchWorldPulse().catch(() => {}), 10 * 60 * 1000);
+setInterval(refreshBrainPill, 20000);
+setInterval(refreshPower, 30000);
+// Quiet ambient chat is rare so the 3D stage stays open
+// (was every ~1–2 min + auto-greet on load — too noisy on screen)
 scheduleAutoTalk();
-
-// Warm native brain in background on capable devices (doesn't block first paint)
-if (typeof window !== "undefined" && navigator.gpu) {
-  setTimeout(() => {
-    ensureNativeBrain((msg) => {
-      if (brainMode === "script" && brainPill && /%|loading|download/i.test(msg || "")) {
-        brainPill.textContent = String(msg).slice(0, 22);
-      }
-    }).then((m) => {
-      if (m !== "none" && brainMode === "script") setBrainPill("native", "Local mind");
-    });
-  }, 4000);
-}
 
 window.ArtifactAI = {
   speak,

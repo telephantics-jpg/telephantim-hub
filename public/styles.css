@@ -607,23 +607,9 @@ body.scene-external .scene-frame {
   gap: 0.3rem;
 }
 
-/* Living Pulse (dynamic — replaces birthday dedication) */
+/* Living Pulse removed from Relics stage (kept CSS inert if re-added later) */
 .live-pulse {
-  position: absolute;
-  z-index: 6;
-  left: 50%;
-  top: 3.55rem;
-  transform: translateX(-50%);
-  text-align: center;
-  pointer-events: none;
-  padding: 0.5rem 1rem 0.55rem;
-  border-radius: 16px;
-  background: rgba(8, 12, 22, 0.78);
-  border: 1px solid rgba(201, 162, 39, 0.4);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 24px rgba(126, 200, 255, 0.08);
-  max-width: min(94vw, 380px);
-  min-width: min(88vw, 260px);
-  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  display: none !important;
 }
 .live-pulse-row {
   display: flex;
