@@ -55,6 +55,11 @@ let sunoCount = 0;
 let catalogLoaded = false;
 /** Fisher–Yates shuffle of the current queue; Next/Prev follow shuffled order. */
 let shuffleOn = false;
+/**
+ * Music stays silent until the user hits the bottom "Play music" chip (or a track).
+ * Never autoplay on page load / catalog hydrate / scene change.
+ */
+let userStarted = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -128,8 +133,8 @@ function updateShuffleChip() {
 function toggleShuffle() {
   shuffleOn = !shuffleOn;
   applyShuffle(true);
-  // If shuffle just turned on and we are already open, stay on same song
-  loadTrack(false);
+  // Stay on same song; only refresh media if user already started playback
+  if (userStarted) loadTrack(false);
 }
 
 function sunoFromCatalog(rows) {
@@ -176,7 +181,11 @@ async function loadSunoCatalog() {
     if (allSunoTracks.length && !isSunoTrack(current())) {
       index = 0;
     }
-    loadTrack(false);
+    // Do NOT start audio here — only refresh UI / media if user already hit Play
+    if (userStarted) loadTrack(false);
+    else if (sub && allSunoTracks.length) {
+      sub.textContent = `${allSunoTracks.length} songs ready · tap Play music`;
+    }
     return allSunoTracks.length;
   } catch (err) {
     console.warn("Suno catalog load failed", err);
@@ -191,13 +200,17 @@ function current() {
   return PLAYLIST[index] || null;
 }
 
-function embedSrc(track) {
+function embedSrc(track, wantPlay) {
   if (!track) return "";
   if (track.type === "spotify") {
+    // No autoplay flags — only load when user asked for sound
     return `https://open.spotify.com/embed/${track.embedId}?utm_source=generator&theme=0`;
   }
   if (track.type === "youtube") {
-    return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(track.listId)}&rel=0`;
+    const ap = wantPlay ? "1" : "0";
+    return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(
+      track.listId
+    )}&rel=0&autoplay=${ap}`;
   }
   if (track.type === "suno" && track.songId) {
     return `https://suno.com/embed/${encodeURIComponent(track.songId)}`;
@@ -270,6 +283,23 @@ function renderList() {
   updateHint();
 }
 
+function stopAllMedia() {
+  const audio = $("music-audio");
+  const frame = $("music-embed");
+  if (audio) {
+    try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load?.();
+    } catch (_) {}
+    audio.hidden = true;
+  }
+  if (frame) {
+    frame.removeAttribute("src");
+    frame.hidden = true;
+  }
+}
+
 function loadTrack(autoPlayHint) {
   const t = current();
   const frame = $("music-embed");
@@ -277,6 +307,8 @@ function loadTrack(autoPlayHint) {
   const title = $("music-now-title");
   const sub = $("music-now-sub");
   const sunoLink = $("music-suno-link");
+
+  if (autoPlayHint) userStarted = true;
 
   if (title) title.textContent = t ? t.title : "No tracks";
   if (sub) {
@@ -292,6 +324,19 @@ function loadTrack(autoPlayHint) {
   if (sunoLink) sunoLink.href = SUNO_OPEN;
   updateSunoChip();
 
+  // Silent until the user has actually started music (no hidden embed/audio noise)
+  if (!userStarted) {
+    if (title && t) title.textContent = t.title;
+    if (sub && !sub.textContent && t) {
+      sub.textContent = sunoCount
+        ? `${sunoCount} songs ready · tap Play music`
+        : "Tap Play music when you want sound";
+    }
+    renderList();
+    updateMusicButtonLabel();
+    return;
+  }
+
   if (!t) return;
 
   if (t.type === "audio" && audio && frame) {
@@ -303,13 +348,21 @@ function loadTrack(autoPlayHint) {
     }
     if (autoPlayHint) {
       audio.play().catch(() => {});
+    } else {
+      // Catalog/shuffle refresh — keep paused if user already paused
+      // (do not force-play)
     }
   } else if (frame && audio) {
     audio.pause();
     audio.hidden = true;
     audio.removeAttribute("src");
     frame.hidden = false;
-    frame.src = embedSrc(t);
+    // Only attach embed when user wants sound (avoids Spotify/YT auto-start)
+    if (autoPlayHint || !frame.getAttribute("src")) {
+      frame.src = embedSrc(t, !!autoPlayHint);
+    } else {
+      frame.src = embedSrc(t, false);
+    }
   }
 
   renderList();
@@ -367,13 +420,15 @@ function updateMusicButtonLabel() {
 
 /**
  * Show / hide the player shell.
- * Closing does NOT stop audio — keeps listening in the background.
+ * First open from "Play music" starts playback; later open only shows the panel.
+ * Closing does NOT stop audio once the user has started it.
  */
-function setOpen(v) {
+function setOpen(v, opts) {
   open = !!v;
   if (open) minimized = false;
   updateMusicChrome();
   if (open) {
+    const wantPlay = opts?.play !== false;
     const audio = $("music-audio");
     const cur = current();
     const already =
@@ -386,7 +441,11 @@ function setOpen(v) {
         (audio.src === cur.url ||
           (cur.songId && audio.src.includes(cur.songId)))
       );
-    loadTrack(!already);
+    // First time user opens the chip → start sound. Re-open while already
+    // playing → just show UI. Never autoplay without this path.
+    if (wantPlay && !already) loadTrack(true);
+    else if (userStarted) loadTrack(false);
+    else if (wantPlay) loadTrack(true);
   }
 }
 
@@ -446,23 +505,24 @@ function playAllSuno(e) {
 }
 
 function onAudioEnded() {
-  // Continuous play through the queue
-  if (!PLAYLIST.length) return;
+  // Continuous play through the queue — only after user started
+  if (!userStarted || !PLAYLIST.length) return;
   next();
 }
 
 function wire() {
-  // Play / Show / Expand / Hide cycle
+  // Single bottom "Play music" chip — only control that starts sound by default
   $("btn-music")?.addEventListener("click", () => {
     if (!open) {
-      setOpen(true);
+      // First tap: open panel AND start music (explicit user gesture)
+      setOpen(true, { play: true });
       return;
     }
     if (minimized) {
       setMinimized(false);
       return;
     }
-    // Fully open → hide shell (audio keeps going)
+    // Fully open → hide shell (audio keeps going if already started)
     setOpen(false);
   });
   $("music-min")?.addEventListener("click", (e) => {
@@ -475,7 +535,7 @@ function wire() {
     e.stopPropagation();
     setMinimized(false);
   });
-  // Close = same as hide shell (keep playing)
+  // Close = hide shell (keep playing only if user already started)
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
@@ -488,14 +548,18 @@ function wire() {
     audio.addEventListener("play", updateMusicChrome);
     audio.addEventListener("pause", updateMusicChrome);
     audio.addEventListener("error", () => {
-      if (isSunoTrack(current()) && PLAYLIST.length > 1) {
+      if (userStarted && isSunoTrack(current()) && PLAYLIST.length > 1) {
         setTimeout(next, 400);
       }
     });
   }
 
+  // Cold start: silent, no embed/audio attached
+  stopAllMedia();
+  userStarted = false;
+  open = false;
+  minimized = false;
   renderList();
-  loadTrack(false);
   loadSunoCatalog();
   updateMusicChrome();
 }

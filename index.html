@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=62" />
+  <link rel="stylesheet" href="styles.css?v=63" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -185,11 +185,12 @@
               id="music-embed"
               class="music-embed"
               title="Music player"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              allow="clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
               referrerpolicy="strict-origin-when-cross-origin"
             ></iframe>
-            <audio id="music-audio" class="music-audio" controls preload="metadata" hidden></audio>
+            <!-- No autoplay — only starts after bottom "Play music" is tapped -->
+            <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
           <p class="music-hint">Full All I Got playlist · minimize keeps playing · all modes (Relics · Bio · 2D · 3D)</p>
@@ -344,8 +345,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=62"></script>
-  <script src="analytics.js?v=62"></script>
+  <script src="api-config.js?v=63"></script>
+  <script src="analytics.js?v=63"></script>
   <script type="importmap">
   {
     "imports": {
@@ -354,11 +355,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=62"></script>
-  <script type="module" src="bio.js?v=62"></script>
-  <script type="module" src="daily-wisdom.js?v=62"></script>
-  <script type="module" src="music.js?v=62"></script>
-  <script type="module" src="personality.js?v=62"></script>
-  <script type="module" src="mjolnir.js?v=62"></script>
+  <script type="module" src="scenes.js?v=63"></script>
+  <script type="module" src="bio.js?v=63"></script>
+  <script type="module" src="daily-wisdom.js?v=63"></script>
+  <script type="module" src="music.js?v=63"></script>
+  <script type="module" src="personality.js?v=63"></script>
+  <script type="module" src="mjolnir.js?v=63"></script>
 </body>
 </html>
