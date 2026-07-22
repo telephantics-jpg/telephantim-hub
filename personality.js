@@ -1,11 +1,13 @@
 /**
- * Dual relic speech — closed minds in the browser with fallbacks:
- *   1) Cloud/local API (Render / server.py + Ollama or Groq/Grok) when credits work
- *   2) Native browser brain (Chrome Prompt API or free WebLLM) when API dead / out of tokens
- *   3) Scripted dual duel (always works)
+ * Dual relic speech — same free-mind pattern as Luna Camp 2D:
+ *   1) telephanti.com free_minds (Grok when available + aether native offline) — no visitor keys
+ *   2) Local/cloud telephantim API when present
+ *   3) Browser WebLLM / Chrome AI
+ *   4) Scripted dual duel
  * Characters never mention tech.
  */
 import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from "./native-brain.js";
+import { freeMindsBanter, freeMindsSpeak, freeMindsHealth } from "./free-minds.js";
 
 function resolveApiBase() {
   if (typeof window !== "undefined" && window.TELEPHANTIM_API) {
@@ -44,16 +46,42 @@ const bondPill = document.getElementById("bond-pill");
 let activePersona = "mjolnir";
 let busy = false;
 let brainsOnline = false;
-/** "cloud" | "native" | "script" */
+/** "free" | "cloud" | "native" | "script" */
 let brainMode = "script";
 const hideTimers = { mjolnir: null, caduceus: null };
 
 function setBrainPill(mode, label) {
   brainMode = mode || "script";
-  brainsOnline = mode === "cloud" || mode === "native";
+  brainsOnline = mode === "free" || mode === "cloud" || mode === "native";
   if (!brainPill) return;
-  brainPill.textContent = label || (mode === "cloud" ? "Relics awake" : mode === "native" ? "Local mind" : "Relics ready");
+  const defaults = {
+    free: "Free minds",
+    cloud: "Relics awake",
+    native: "Local mind",
+    script: "Relics ready",
+  };
+  brainPill.textContent = label || defaults[mode] || "Relics ready";
   brainPill.dataset.mode = mode;
+}
+
+async function playBanterLines(lines, metaPulse) {
+  let pMj = 1;
+  let pCad = 1;
+  let bond = 1;
+  for (const line of lines) {
+    const pid = line.persona === "caduceus" ? "caduceus" : "mjolnir";
+    if (pid === "mjolnir") pMj = Math.min(99, pMj + 1);
+    else pCad = Math.min(99, pCad + 1);
+    bond = Math.min(99, bond + 1);
+    let meta = pid === "mjolnir" ? "power · courage" : "healing · balance";
+    if (metaPulse) meta = pid === "mjolnir" ? "power · pulse" : "healing · pulse";
+    setActivePersona(pid);
+    showInBox(pid, line.text, meta, line.power != null ? line.power : pid === "mjolnir" ? pMj : pCad);
+    if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
+    if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
+    if (bondPill) bondPill.textContent = `Bond ${bond}`;
+    await wait(Math.min(9000, 2400 + String(line.text || "").length * 32));
+  }
 }
 
 /** Character-only lines (never mention tech / servers / Ollama) — lively, a tad longer */
@@ -231,6 +259,16 @@ function wait(ms) {
 }
 
 export async function refreshBrainPill() {
+  // 1) Same free minds as 2D Luna Camp (telephanti.com)
+  try {
+    const fm = await freeMindsHealth();
+    if (fm.ok && fm.free_minds !== false) {
+      setBrainPill("free", "Free minds");
+      return { ok: true, free_minds: true, backend: fm.backend };
+    }
+  } catch (_) {}
+
+  // 2) Optional telephantim-ai / local server
   try {
     const s = await api("/api/status");
     const ok = s && s.server === "telephantim-ai";
@@ -239,9 +277,7 @@ export async function refreshBrainPill() {
       setBrainPill("cloud", "Relics awake");
       return s;
     }
-  } catch (_) {
-    /* cloud unreachable — try native below */
-  }
+  } catch (_) {}
 
   const st = getNativeStatus();
   if (st.ready) {
@@ -282,51 +318,65 @@ export async function speak(persona, event, message) {
   setActivePersona(id);
   showInBox(id, "…", "thinking");
 
+  const meta = id === "mjolnir" ? "power · courage" : "healing · balance";
+  const prompt =
+    message ||
+    (event === "grab"
+      ? "The wielder just grabbed you. Speak a short gift line."
+      : "Speak a short lively line to the wielder.");
+
   try {
-    const data = await api("/api/chat", {
-      method: "POST",
-      body: JSON.stringify({
-        persona: id,
-        event: event || "chat",
-        message: message || "",
-      }),
-    });
-    // Don't surface model names (ollama etc.) in the bubble
-    const meta = id === "mjolnir" ? "power · courage" : "healing · balance";
-    showInBox(id, data.text || pickWord(id), meta, data.power);
-    if (data.power_all) {
-      if (boxes.mjolnir.power && data.power_all.mjolnir != null)
-        boxes.mjolnir.power.textContent = `PWR ${data.power_all.mjolnir}`;
-      if (boxes.caduceus.power && data.power_all.caduceus != null)
-        boxes.caduceus.power.textContent = `PWR ${data.power_all.caduceus}`;
-      if (bondPill && data.power_all.bond != null) bondPill.textContent = `Bond ${data.power_all.bond}`;
-    } else {
-      await refreshPower();
-    }
-    if (data.provider && data.provider !== "offline") setBrainPill("cloud", "Relics awake");
-    return data;
-  } catch {
-    // Out of credits / API down → closed browser mind
+    // 1) Free minds (same as 2D Luna Camp)
+    try {
+      const fm = await freeMindsSpeak(id, prompt);
+      if (fm?.text) {
+        setBrainPill("free", "Free minds");
+        showInBox(id, fm.text, meta, null);
+        return fm;
+      }
+    } catch (_) {}
+
+    // 2) Local/optional telephantim API
+    try {
+      const data = await api("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          persona: id,
+          event: event || "chat",
+          message: message || "",
+        }),
+      });
+      showInBox(id, data.text || pickWord(id), meta, data.power);
+      if (data.power_all) {
+        if (boxes.mjolnir.power && data.power_all.mjolnir != null)
+          boxes.mjolnir.power.textContent = `PWR ${data.power_all.mjolnir}`;
+        if (boxes.caduceus.power && data.power_all.caduceus != null)
+          boxes.caduceus.power.textContent = `PWR ${data.power_all.caduceus}`;
+        if (bondPill && data.power_all.bond != null)
+          bondPill.textContent = `Bond ${data.power_all.bond}`;
+      } else {
+        await refreshPower();
+      }
+      if (data.provider && data.provider !== "offline") setBrainPill("cloud", "Relics awake");
+      return data;
+    } catch (_) {}
+
+    // 3) Browser-native free mind
     try {
       setBrainPill("native", "Waking mind…");
       const m = await ensureNativeBrain((msg) => setBrainPill("native", msg.slice(0, 22)));
       if (m !== "none") {
-        const text = await nativeSpeak(
-          id,
-          message ||
-            (event === "grab"
-              ? "The wielder just grabbed you. Speak a short gift line."
-              : "Speak a short lively line.")
-        );
+        const text = await nativeSpeak(id, prompt);
         if (text) {
           setBrainPill("native", "Local mind");
-          showInBox(id, text, id === "mjolnir" ? "power · courage" : "healing · balance", null);
+          showInBox(id, text, meta, null);
           return { text, provider: m };
         }
       }
     } catch (_) {}
+
     setBrainPill("script", "Relics ready");
-    showInBox(id, pickWord(id), id === "mjolnir" ? "power · courage" : "healing · balance", null);
+    showInBox(id, pickWord(id), meta, null);
     return null;
   } finally {
     busy = false;
@@ -356,84 +406,69 @@ export async function banter(topic, rounds, opts) {
     } catch (_) {}
   }
 
+  const topicLine =
+    topic ||
+    "lively friendly talk between hammer and staff — natural speech, gift power and healing";
+
   try {
-    const body = {
-      topic:
-        topic ||
-        "lively friendly talk between hammer and staff — natural speech, a tad longer, gift power and healing",
-      rounds: rounds || 4,
-    };
-    if (usePulse) body.pulse = true;
-    if (headline) {
-      body.headline = headline;
-      body.pulse_source = pulseSource || "pulse";
-    }
-
-    const data = await api("/api/banter", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-
-    const lines = data.lines || [];
-    brainsOnline = !!(data.brains || lines.some((l) => l.provider && l.provider !== "offline"));
-    for (const line of lines) {
-      const id = line.persona === "caduceus" ? "caduceus" : "mjolnir";
-      let meta = id === "mjolnir" ? "power · courage" : "healing · balance";
-      if (data.pulse?.text && Math.random() < 0.35) {
-        meta = id === "mjolnir" ? "power · pulse" : "healing · pulse";
+    // 1) Same free minds as Luna Camp 2D (secure public API, no visitor keys)
+    try {
+      setBrainPill("free", "Free minds…");
+      const fmTopic = headline
+        ? `${topicLine} (half-notice world pulse: ${String(headline).slice(0, 120)})`
+        : topicLine;
+      const fm = await freeMindsBanter(fmTopic, rounds || 3);
+      if (fm?.lines?.length) {
+        setBrainPill("free", "Free minds");
+        await playBanterLines(fm.lines, !!headline);
+        return fm;
       }
-      setActivePersona(id);
-      showInBox(id, line.text, meta, line.power);
-      // Longer lines need more dwell time
-      const pause = Math.min(
-        9000,
-        2400 + String(line.text || "").length * 32
-      );
-      await wait(pause);
-    }
+    } catch (_) {}
 
-    if (data.power) {
-      if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${data.power.mjolnir}`;
-      if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${data.power.caduceus}`;
-      if (bondPill) bondPill.textContent = `Bond ${data.power.bond}`;
-    }
-    return data;
-  } catch {
-    // Cloud dead / out of credits → free closed mind in the browser
+    // 2) Optional telephantim-ai / local Ollama server
+    try {
+      const body = {
+        topic: topicLine,
+        rounds: rounds || 4,
+      };
+      if (usePulse) body.pulse = true;
+      if (headline) {
+        body.headline = headline;
+        body.pulse_source = pulseSource || "pulse";
+      }
+      const data = await api("/api/banter", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      const lines = data.lines || [];
+      if (lines.length) {
+        setBrainPill("cloud", "Relics awake");
+        await playBanterLines(lines, !!(data.pulse?.text));
+        if (data.power) {
+          if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${data.power.mjolnir}`;
+          if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${data.power.caduceus}`;
+          if (bondPill) bondPill.textContent = `Bond ${data.power.bond}`;
+        }
+        return data;
+      }
+    } catch (_) {}
+
+    // 3) Browser-native free mind (WebLLM / Chrome AI)
     try {
       setBrainPill("native", "Waking mind…");
       const nativeLines = await nativeBanter(
-        topic ||
-          "lively friendly talk between hammer and staff — gift power and healing",
+        topicLine,
         rounds || 4,
         (msg) => setBrainPill("native", String(msg || "Local mind").slice(0, 22))
       );
       if (nativeLines?.length) {
         setBrainPill("native", "Local mind");
-        let pMj = 1;
-        let pCad = 1;
-        let bond = 1;
-        for (const line of nativeLines) {
-          const pid = line.persona === "caduceus" ? "caduceus" : "mjolnir";
-          if (pid === "mjolnir") pMj = Math.min(99, pMj + 1);
-          else pCad = Math.min(99, pCad + 1);
-          bond = Math.min(99, bond + 1);
-          setActivePersona(pid);
-          showInBox(
-            pid,
-            line.text,
-            pid === "mjolnir" ? "power · courage" : "healing · balance",
-            pid === "mjolnir" ? pMj : pCad
-          );
-          if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
-          if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
-          if (bondPill) bondPill.textContent = `Bond ${bond}`;
-          await wait(Math.min(9000, 2400 + String(line.text || "").length * 32));
-        }
+        await playBanterLines(nativeLines, false);
         return { ok: true, brains: true, provider: "native", lines: nativeLines };
       }
     } catch (_) {}
 
+    // 4) Always-on scripted duel (aether-style)
     setBrainPill("script", "Relics ready");
     await offlineBanterShow(usePulse ? headline : null, rounds || 4);
     return null;

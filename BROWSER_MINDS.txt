@@ -1,42 +1,51 @@
-CLOSED AI MIND IN THE BROWSER (free software)
-=============================================
+FREE + NATIVE + SECURE MINDS (same as Luna Camp 2D)
+=====================================================
 
-You asked for a mind that lives closed in the page, and only leans on
-"native"/free local software when cloud is missing or out of credits.
+v61 wires Relics dual talk to the SAME free_minds path as 2D camp.
 
-What we wired (v60)
--------------------
-Order for Relic duel / chat bubbles:
+Order for Talk (Relic duel) / grab chat bubbles:
 
-  1. Cloud API   — telephantim-ai / local server.py (Groq, Grok, Ollama)
-  2. Browser mind — free closed inference in the visitor's browser:
-       a) Chrome/Edge Built-in AI (Prompt API / Gemini Nano) when available
+  1. Free minds — telephanti.com camp API
+       POST /api/firmament/camp/banter   (thor ↔ caduceus)
+       POST /api/firmament/agent/chat
+       • No visitor API keys
+       • CORS open, credentials omit
+       • Grok when camp has it; aether offline templates otherwise
+       • Pill: "Free minds"
+
+  2. Optional telephantim API — local server.py or Render telephantim-ai
+       Ollama / Groq / Grok when present
+       • Pill: "Relics awake"
+
+  3. Browser-native closed mind — free software in the visitor's browser
+       a) Chrome/Edge Built-in AI (Prompt API) when available
        b) WebLLM (MLC AI) — open source WebGPU LLM
           https://webllm.mlc.ai
-          https://github.com/mlc-ai/web-llm
-  3. Scripted dual duel — always works offline
+       • Pill: "Local mind" / "Waking mind…"
 
-Also researched (not required):
-  - Transformers.js (Hugging Face) — great multi-modal; heavier for chat
-  - wllama / llama.cpp WASM — another free local path
+  4. Scripted dual duel — always works offline
+       • Pill: "Relics ready"
 
-First WebLLM visit
-------------------
-Downloads a small instruct model (~0.5–1GB) then caches it.
-Pill may say "Mind loading 42%" then "Local mind".
-Needs a GPU browser with WebGPU (Chrome/Edge best).
+Secure by design
+----------------
+- Visitors never paste keys into the page
+- Free minds call only public camp endpoints (no auth cookies)
+- Browser WebLLM runs fully client-side after one model cache
+- Characters never mention Ollama / servers / tokens in speech
 
-Chrome free built-in AI
------------------------
-If Prompt API / LanguageModel is enabled, that is used first (no download).
-Docs: https://developer.chrome.com/docs/ai/built-in
+Code
+----
+  free-minds.js     — camp bridge (thor→Mjolnir, caduceus→Caduceus)
+  native-brain.js   — Chrome AI + WebLLM
+  personality.js    — priority chain above
 
-Local PC with Ollama (strongest "native")
------------------------------------------
+Local PC (strongest private mind)
+---------------------------------
   OPEN_RELICS_3D_BRAINS.bat  →  http://127.0.0.1:8765/
   Uses llama3.2 + hermes3 on your machine (no token bill).
 
-Cloud (optional)
+UI (v61 cleanup)
 ----------------
-Recreate Render telephantim-ai + GROQ_API_KEY (see SETUP_RENDER_BRAINS.txt).
-When credits die, the page falls back to browser mind automatically.
+  Float chips: Talk · Reset only (Strike / Hide tray removed)
+  Music stays on global Play music chip (all worlds)
+  Sheet: Pay · Socials (no duplicate Play music row)
