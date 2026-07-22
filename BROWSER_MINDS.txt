@@ -1,0 +1,42 @@
+CLOSED AI MIND IN THE BROWSER (free software)
+=============================================
+
+You asked for a mind that lives closed in the page, and only leans on
+"native"/free local software when cloud is missing or out of credits.
+
+What we wired (v60)
+-------------------
+Order for Relic duel / chat bubbles:
+
+  1. Cloud API   — telephantim-ai / local server.py (Groq, Grok, Ollama)
+  2. Browser mind — free closed inference in the visitor's browser:
+       a) Chrome/Edge Built-in AI (Prompt API / Gemini Nano) when available
+       b) WebLLM (MLC AI) — open source WebGPU LLM
+          https://webllm.mlc.ai
+          https://github.com/mlc-ai/web-llm
+  3. Scripted dual duel — always works offline
+
+Also researched (not required):
+  - Transformers.js (Hugging Face) — great multi-modal; heavier for chat
+  - wllama / llama.cpp WASM — another free local path
+
+First WebLLM visit
+------------------
+Downloads a small instruct model (~0.5–1GB) then caches it.
+Pill may say "Mind loading 42%" then "Local mind".
+Needs a GPU browser with WebGPU (Chrome/Edge best).
+
+Chrome free built-in AI
+-----------------------
+If Prompt API / LanguageModel is enabled, that is used first (no download).
+Docs: https://developer.chrome.com/docs/ai/built-in
+
+Local PC with Ollama (strongest "native")
+-----------------------------------------
+  OPEN_RELICS_3D_BRAINS.bat  →  http://127.0.0.1:8765/
+  Uses llama3.2 + hermes3 on your machine (no token bill).
+
+Cloud (optional)
+----------------
+Recreate Render telephantim-ai + GROQ_API_KEY (see SETUP_RENDER_BRAINS.txt).
+When credits die, the page falls back to browser mind automatically.

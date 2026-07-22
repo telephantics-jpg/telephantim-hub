@@ -1,16 +1,22 @@
 /**
- * Dual relic speech for ANY browser when a public API is set (api-config.js / TELEPHANTIM_API).
- * Local: OPEN_LOCAL_AI.bat → same-origin /api/* (Ollama: Mjolnir=llama3.2, Caduceus=hermes3).
- * Public: GO_PUBLIC_BRAINS.bat tunnels that server so telephantim.com visitors share the same minds.
+ * Dual relic speech — closed minds in the browser with fallbacks:
+ *   1) Cloud/local API (Render / server.py + Ollama or Groq/Grok) when credits work
+ *   2) Native browser brain (Chrome Prompt API or free WebLLM) when API dead / out of tokens
+ *   3) Scripted dual duel (always works)
  * Characters never mention tech.
  */
+import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from "./native-brain.js";
+
 function resolveApiBase() {
   if (typeof window !== "undefined" && window.TELEPHANTIM_API) {
-    return String(window.TELEPHANTIM_API).replace(/\/$/, "");
+    const v = String(window.TELEPHANTIM_API).replace(/\/$/, "");
+    // empty string = same-origin (local server.py)
+    if (window.TELEPHANTIM_API === "" || window.TELEPHANTIM_API === "same") return "";
+    return v;
   }
   const h = (typeof location !== "undefined" && location.hostname) || "";
   if (h === "localhost" || h === "127.0.0.1") return "";
-  // Live site default: Render dual-brain service (no visitor PC / no your PC)
+  // Live site default: Render dual-brain service (optional; native brain works without it)
   return "https://telephantim-ai.onrender.com";
 }
 
@@ -38,7 +44,17 @@ const bondPill = document.getElementById("bond-pill");
 let activePersona = "mjolnir";
 let busy = false;
 let brainsOnline = false;
+/** "cloud" | "native" | "script" */
+let brainMode = "script";
 const hideTimers = { mjolnir: null, caduceus: null };
+
+function setBrainPill(mode, label) {
+  brainMode = mode || "script";
+  brainsOnline = mode === "cloud" || mode === "native";
+  if (!brainPill) return;
+  brainPill.textContent = label || (mode === "cloud" ? "Relics awake" : mode === "native" ? "Local mind" : "Relics ready");
+  brainPill.dataset.mode = mode;
+}
 
 /** Character-only lines (never mention tech / servers / Ollama) — lively, a tad longer */
 const WORDS_OF_POWER = {
@@ -218,25 +234,22 @@ export async function refreshBrainPill() {
   try {
     const s = await api("/api/status");
     const ok = s && s.server === "telephantim-ai";
-    brainsOnline = !!(ok && (s.brains || s.ollama || s.xai));
-    if (!brainPill) return s;
-    // Player-facing only — never show model names / Ollama / offline tech
-    if (brainsOnline) {
-      brainPill.textContent = "Relics awake";
-      brainPill.dataset.mode = "ollama";
-    } else {
-      brainPill.textContent = "Relics ready";
-      brainPill.dataset.mode = "offline";
+    const cloud = !!(ok && (s.brains || s.ollama || s.xai || s.groq));
+    if (cloud) {
+      setBrainPill("cloud", "Relics awake");
+      return s;
     }
-    return s;
-  } catch {
-    brainsOnline = false;
-    if (brainPill) {
-      brainPill.textContent = "Relics ready";
-      brainPill.dataset.mode = "offline";
-    }
-    return { ok: false };
+  } catch (_) {
+    /* cloud unreachable — try native below */
   }
+
+  const st = getNativeStatus();
+  if (st.ready) {
+    setBrainPill("native", "Local mind");
+    return { ok: true, native: st.mode };
+  }
+  setBrainPill("script", "Relics ready");
+  return { ok: false };
 }
 
 async function refreshPower() {
@@ -290,9 +303,29 @@ export async function speak(persona, event, message) {
     } else {
       await refreshPower();
     }
-    brainsOnline = data.provider && data.provider !== "offline";
+    if (data.provider && data.provider !== "offline") setBrainPill("cloud", "Relics awake");
     return data;
   } catch {
+    // Out of credits / API down → closed browser mind
+    try {
+      setBrainPill("native", "Waking mind…");
+      const m = await ensureNativeBrain((msg) => setBrainPill("native", msg.slice(0, 22)));
+      if (m !== "none") {
+        const text = await nativeSpeak(
+          id,
+          message ||
+            (event === "grab"
+              ? "The wielder just grabbed you. Speak a short gift line."
+              : "Speak a short lively line.")
+        );
+        if (text) {
+          setBrainPill("native", "Local mind");
+          showInBox(id, text, id === "mjolnir" ? "power · courage" : "healing · balance", null);
+          return { text, provider: m };
+        }
+      }
+    } catch (_) {}
+    setBrainPill("script", "Relics ready");
     showInBox(id, pickWord(id), id === "mjolnir" ? "power · courage" : "healing · balance", null);
     return null;
   } finally {
@@ -366,12 +399,42 @@ export async function banter(topic, rounds, opts) {
     }
     return data;
   } catch {
-    // Cloud API down (e.g. Render 404 / token limit) — still run a full dual duel offline
-    brainsOnline = false;
-    if (brainPill) {
-      brainPill.textContent = "Relics ready";
-      brainPill.dataset.mode = "offline";
-    }
+    // Cloud dead / out of credits → free closed mind in the browser
+    try {
+      setBrainPill("native", "Waking mind…");
+      const nativeLines = await nativeBanter(
+        topic ||
+          "lively friendly talk between hammer and staff — gift power and healing",
+        rounds || 4,
+        (msg) => setBrainPill("native", String(msg || "Local mind").slice(0, 22))
+      );
+      if (nativeLines?.length) {
+        setBrainPill("native", "Local mind");
+        let pMj = 1;
+        let pCad = 1;
+        let bond = 1;
+        for (const line of nativeLines) {
+          const pid = line.persona === "caduceus" ? "caduceus" : "mjolnir";
+          if (pid === "mjolnir") pMj = Math.min(99, pMj + 1);
+          else pCad = Math.min(99, pCad + 1);
+          bond = Math.min(99, bond + 1);
+          setActivePersona(pid);
+          showInBox(
+            pid,
+            line.text,
+            pid === "mjolnir" ? "power · courage" : "healing · balance",
+            pid === "mjolnir" ? pMj : pCad
+          );
+          if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
+          if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
+          if (bondPill) bondPill.textContent = `Bond ${bond}`;
+          await wait(Math.min(9000, 2400 + String(line.text || "").length * 32));
+        }
+        return { ok: true, brains: true, provider: "native", lines: nativeLines };
+      }
+    } catch (_) {}
+
+    setBrainPill("script", "Relics ready");
     await offlineBanterShow(usePulse ? headline : null, rounds || 4);
     return null;
   } finally {
@@ -506,6 +569,19 @@ setInterval(refreshPower, 16000);
 setInterval(() => fetchWorldPulse().catch(() => {}), 10 * 60 * 1000);
 scheduleAutoTalk();
 
+// Warm native brain in background on capable devices (doesn't block first paint)
+if (typeof window !== "undefined" && navigator.gpu) {
+  setTimeout(() => {
+    ensureNativeBrain((msg) => {
+      if (brainMode === "script" && brainPill && /%|loading|download/i.test(msg || "")) {
+        brainPill.textContent = String(msg).slice(0, 22);
+      }
+    }).then((m) => {
+      if (m !== "none" && brainMode === "script") setBrainPill("native", "Local mind");
+    });
+  }, 4000);
+}
+
 window.ArtifactAI = {
   speak,
   banter,
@@ -516,5 +592,8 @@ window.ArtifactAI = {
   refreshPower,
   get apiBase() {
     return API_BASE;
+  },
+  get brainMode() {
+    return brainMode;
   },
 };
