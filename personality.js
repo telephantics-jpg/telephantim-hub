@@ -8,6 +8,11 @@
  */
 import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from "./native-brain.js";
 import { freeMindsBanter, freeMindsSpeak, freeMindsHealth } from "./free-minds.js";
+import {
+  pickWord as pickCachedWord,
+  buildOfflineBanter,
+  warmSayingsCache,
+} from "./relic-sayings.js";
 
 function resolveApiBase() {
   if (typeof window !== "undefined" && window.TELEPHANTIM_API) {
@@ -69,42 +74,25 @@ async function playBanterLines(lines, metaPulse) {
   let pCad = 1;
   let bond = 1;
   for (const line of lines) {
-    const pid = line.persona === "caduceus" ? "caduceus" : "mjolnir";
+    const pid =
+      line.persona === "caduceus" || line.id === "caduceus" ? "caduceus" : "mjolnir";
+    const text = line.text || line.t || "";
     if (pid === "mjolnir") pMj = Math.min(99, pMj + 1);
     else pCad = Math.min(99, pCad + 1);
     bond = Math.min(99, bond + 1);
     let meta = pid === "mjolnir" ? "power · courage" : "healing · balance";
     if (metaPulse) meta = pid === "mjolnir" ? "power · pulse" : "healing · pulse";
     setActivePersona(pid);
-    showInBox(pid, line.text, meta, line.power != null ? line.power : pid === "mjolnir" ? pMj : pCad);
+    showInBox(pid, text, meta, line.power != null ? line.power : pid === "mjolnir" ? pMj : pCad);
     if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
     if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
     if (bondPill) bondPill.textContent = `Bond ${bond}`;
-    await wait(Math.min(9000, 2400 + String(line.text || "").length * 32));
+    // Longer hold so multi-turn talks are readable
+    await wait(Math.min(12000, 2800 + String(text).length * 36));
   }
 }
 
-/** Character-only lines (never mention tech / servers / Ollama) — lively, a tad longer */
-const WORDS_OF_POWER = {
-  mjolnir: [
-    "Ha! Good grip. Courage first — then thunder follows, loud enough to make the sky honest.",
-    "I lend you strength and a clean lightning edge. Don't waste it on doubt; swing true and smile at the boom.",
-    "Caduceus can patch later. Right now we gift POWER — steady hands, bright nerves, no apology for the spark.",
-    "Speak up. Storm-strength for the bold, silence for the timid. I'm listening, and the bond climbs with every spark.",
-    "Bond climbs with every spark. Hold firm. I'll boom; the staff can lecture volume after you're charged.",
-    "Power for the wielder: courage you can feel in the bones, and a lightning edge that doesn't flinch.",
-    "The map feels awake. Grab me when you want raw POWER — thunder still outranks recycled panic.",
-  ],
-  caduceus: [
-    "Easy. Live coils. Vitality first, drama second — healing lands better when the boom takes a breath.",
-    "I'll mend what thunder cracks. Balance is the real flex, and the twins gift recovery without the lecture first.",
-    "Hammer, volume down a notch. Healing works better when you listen — calm blood, clear head, stubborn life.",
-    "Breathe. The twins gift recovery and a second chance. You boom; I balance. Fair trade for anyone worth holding us.",
-    "Life-force for the wielder — not a slogan, a steadying. Let the staff braid balance into the next breath.",
-    "You boom; I balance. I'll patch pride and bruises while you keep the spark rights. Bond's humming.",
-    "A scrap of world-noise drifted past. Won't recite it. HEALING still wins if you let the coils steady your pulse.",
-  ],
-};
+/** Cached offline sayings live in relic-sayings.js (warmed into localStorage) */
 
 /** Client-side world pulse (HN) — occasional riff fuel, not dump-to-speech */
 let pulseCache = { items: [], at: 0 };
@@ -176,8 +164,7 @@ function offlinePulseRiff(id, headline) {
 }
 
 function pickWord(id) {
-  const bag = WORDS_OF_POWER[id] || WORDS_OF_POWER.mjolnir;
-  return bag[Math.floor(Math.random() * bag.length)];
+  return pickCachedWord(id === "caduceus" ? "caduceus" : "mjolnir");
 }
 
 export function setActivePersona(id) {
@@ -239,8 +226,8 @@ export function showInBox(persona, text, meta, power) {
   }
   setTimeout(() => b.root.classList.remove("pulse"), 400);
   clearTimeout(hideTimers[id]);
-  // Auto-clear bubble so stage stays open after the line lands
-  const hold = Math.min(14000, 3200 + String(text || "").length * 40);
+  // Keep longer talks readable; hide a beat after the line's natural hold
+  const hold = Math.min(16000, 4000 + String(text || "").length * 42);
   hideTimers[id] = setTimeout(() => {
     b.root.classList.remove("active-speaker", "show");
   }, hold);
@@ -410,7 +397,10 @@ export async function banter(topic, rounds, opts) {
 
   const topicLine =
     topic ||
-    "lively friendly talk between hammer and staff — natural speech, gift power and healing";
+    "lively multi-round talk between hammer and staff — longer natural exchange, gift power and healing, banter and bond";
+
+  // Default longer talks (8 lines) — free minds / native / cached offline
+  const nRounds = Math.max(4, Math.min(12, rounds || 8));
 
   try {
     // 1) Same free minds as Luna Camp 2D (secure public API, no visitor keys)
@@ -419,10 +409,23 @@ export async function banter(topic, rounds, opts) {
       const fmTopic = headline
         ? `${topicLine} (half-notice world pulse: ${String(headline).slice(0, 120)})`
         : topicLine;
-      const fm = await freeMindsBanter(fmTopic, rounds || 3);
+      const fm = await freeMindsBanter(fmTopic, Math.min(4, Math.ceil(nRounds / 2)));
       if (fm?.lines?.length) {
         setBrainPill("free", "Free minds");
-        await playBanterLines(fm.lines, !!headline);
+        // If free minds returned a short burst, extend with cached native beats
+        let lines = fm.lines;
+        if (lines.length < nRounds - 1) {
+          const extra = buildOfflineBanter(nRounds - lines.length, { headline: null });
+          lines = [
+            ...lines,
+            ...extra.map((l) => ({
+              persona: l.id,
+              text: l.t,
+              name: l.id === "mjolnir" ? "Mjolnir" : "Caduceus",
+            })),
+          ].slice(0, nRounds + 2);
+        }
+        await playBanterLines(lines, !!headline);
         return fm;
       }
     } catch (_) {}
@@ -431,7 +434,7 @@ export async function banter(topic, rounds, opts) {
     try {
       const body = {
         topic: topicLine,
-        rounds: rounds || 4,
+        rounds: nRounds,
       };
       if (usePulse) body.pulse = true;
       if (headline) {
@@ -460,74 +463,45 @@ export async function banter(topic, rounds, opts) {
       setBrainPill("native", "Waking mind…");
       const nativeLines = await nativeBanter(
         topicLine,
-        rounds || 4,
+        nRounds,
         (msg) => setBrainPill("native", String(msg || "Local mind").slice(0, 22))
       );
       if (nativeLines?.length) {
         setBrainPill("native", "Local mind");
-        await playBanterLines(nativeLines, false);
-        return { ok: true, brains: true, provider: "native", lines: nativeLines };
+        let lines = nativeLines;
+        if (lines.length < 4) {
+          const extra = buildOfflineBanter(nRounds, { headline: null });
+          lines = extra.map((l) => ({
+            persona: l.id,
+            text: l.t,
+            name: l.id === "mjolnir" ? "Mjolnir" : "Caduceus",
+          }));
+        }
+        await playBanterLines(lines, false);
+        return { ok: true, brains: true, provider: "native", lines };
       }
     } catch (_) {}
 
-    // 4) Always-on scripted duel (aether-style)
+    // 4) Cached native sayings — long dynamic multi-turn (always works offline)
     setBrainPill("script", "Relics ready");
-    await offlineBanterShow(usePulse ? headline : null, rounds || 4);
+    await offlineBanterShow(usePulse ? headline : null, nRounds);
     return null;
   } finally {
     busy = false;
   }
 }
 
-/** Multi-round offline duel so Relic page stays alive without cloud tokens */
+/** Multi-round offline duel from cached sayings bank (local, free, dynamic) */
 async function offlineBanterShow(headline, rounds) {
-  const n = Math.max(2, Math.min(6, rounds || 4));
-  const scripts = [
-    [
-      { id: "mjolnir", t: "Ha! Map's awake and so am I. Caduceus — coils up. Wielder's watching; let's gift POWER and a clean laugh." },
-      { id: "caduceus", t: "Easy, thunder. I'm already humming. HEALING first, bragging rights second — though I admit your boom has style." },
-      { id: "mjolnir", t: "Style? That's lightning with manners. Hold firm, wielder — courage is free; doubt pays rent outside the forge." },
-      { id: "caduceus", t: "And when the spark settles, I'll braid calm into the blood. Bond climbs either way. We're a pair, not a quarrel." },
-      { id: "mjolnir", t: "Fair. I'll shake the sky; you keep the heart on the map. Ready when you are, twin-snake." },
-      { id: "caduceus", t: "Always. Swing true — I'll catch what cracks. Life first. Then we can tease each other until the stars blink." },
-    ],
-    [
-      { id: "caduceus", t: "Staff on duty. Hammer, try not to vaporize the scenery — some of us mend for a living." },
-      { id: "mjolnir", t: "Scenery's fine. POWER doesn't whisper, Caduceus. It announces. Want a quieter storm? Ask nicer." },
-      { id: "caduceus", t: "I'll ask in twin-tongues: balance, vitality, a second chance. You bring the edge; I bring the aftercare." },
-      { id: "mjolnir", t: "Deal struck in gold and green. Wielder — grip us both. Courage now, healing after. That's the whole joke of this map." },
-    ],
-  ];
-  let lines = scripts[Math.floor(Math.random() * scripts.length)].slice(0, n);
-  if (headline) {
-    lines = [
-      { id: "mjolnir", t: offlinePulseRiff("mjolnir", headline) },
-      { id: "caduceus", t: offlinePulseRiff("caduceus", headline) },
-      ...lines.slice(0, Math.max(0, n - 2)),
-    ].slice(0, n);
-  }
-  let pMj = 1;
-  let pCad = 1;
-  let bond = 1;
-  for (const line of lines) {
-    if (line.id === "mjolnir") pMj = Math.min(99, pMj + 1);
-    else pCad = Math.min(99, pCad + 1);
-    bond = Math.min(99, bond + 1);
-    const meta =
-      headline && line === lines[0]
-        ? line.id === "mjolnir"
-          ? "power · pulse"
-          : "healing · pulse"
-        : line.id === "mjolnir"
-          ? "power · courage"
-          : "healing · balance";
-    setActivePersona(line.id);
-    showInBox(line.id, line.t, meta, line.id === "mjolnir" ? pMj : pCad);
-    if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
-    if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
-    if (bondPill) bondPill.textContent = `Bond ${bond}`;
-    await wait(Math.min(7500, 2200 + line.t.length * 28));
-  }
+  const lines = buildOfflineBanter(rounds || 8, { headline: headline || null });
+  await playBanterLines(
+    lines.map((l) => ({
+      persona: l.id,
+      text: l.t,
+      name: l.id === "mjolnir" ? "Mjolnir" : "Caduceus",
+    })),
+    !!headline
+  );
 }
 
 /** Rare calm chat only — stage stays clear most of the time */
@@ -550,20 +524,20 @@ function scheduleAutoTalk() {
 
 banterBtn?.addEventListener("click", () =>
   banter(
-    "lively friendly duel-talk between hammer and staff — short clear lines, gift power and healing",
-    3,
-    { pulse: false }
+    "longer lively talk between hammer and staff — several rounds, natural banter, gift power and healing, bond climbs",
+    8,
+    { pulse: Math.random() < 0.25 }
   )
 );
 
 wireDboxMinimize();
 // Stage starts clean — bubbles only appear on Talk / grab
+warmSayingsCache();
 refreshBrainPill();
 refreshPower();
 setInterval(refreshBrainPill, 20000);
 setInterval(refreshPower, 30000);
 // Quiet ambient chat is rare so the 3D stage stays open
-// (was every ~1–2 min + auto-greet on load — too noisy on screen)
 scheduleAutoTalk();
 
 window.ArtifactAI = {
