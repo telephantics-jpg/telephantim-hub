@@ -10,6 +10,7 @@ import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from ".
 import { freeMindsBanter, freeMindsSpeak, freeMindsHealth } from "./free-minds.js";
 import {
   pickWord as pickCachedWord,
+  pickInteractLine,
   buildOfflineBanter,
   warmSayingsCache,
 } from "./relic-sayings.js";
@@ -166,7 +167,8 @@ function offlinePulseRiff(id, headline) {
   return bag[Math.floor(Math.random() * bag.length)];
 }
 
-function pickWord(id) {
+function pickWord(id, event) {
+  if (event) return pickInteractLine(id, event);
   return pickCachedWord(id === "caduceus" ? "caduceus" : "mjolnir");
 }
 
@@ -304,41 +306,30 @@ async function refreshPower() {
 }
 
 function interactPrompt(id, event, extra) {
-  const name = id === "caduceus" ? "Caduceus the living staff" : "Mjolnir the living hammer";
-  const gift = id === "caduceus" ? "HEALING, vitality, balance" : "POWER, courage, lightning";
+  if (extra && String(extra).trim().length > 12) return String(extra).slice(0, 900);
+  const isCad = id === "caduceus";
+  const name = isCad ? "Caduceus, living staff with twin snakes" : "Mjolnir, living hammer of thunder";
+  const gift = isCad
+    ? "HEALING (vitality, balance, aftercare, wit)"
+    : "POWER (courage, strength, clean lightning)";
+  const voice = isCad
+    ? "Voice: sly, warm, poetic but clear, a little funny. Never preachy."
+    : "Voice: bold, warm, cocky in a kind way, clear. Never cruel.";
   const ev = String(event || "touch");
-  if (ev === "grab") {
-    return (
-      extra ||
-      `You are ${name}. The wielder just grabbed you in the Telephantim map. ` +
-        `Speak in character — warm, mythic, 2–5 sentences. Gift ${gift}. ` +
-        `React to being held. Never mention AI, servers, or tech.`
-    );
-  }
-  if (ev === "toss" || ev === "fling") {
-    return (
-      extra ||
-      `You are ${name}. The wielder just tossed you across the map. ` +
-        `React playfully in character, 2–5 sentences. Gift ${gift}. No tech talk.`
-    );
-  }
-  if (ev === "bonk" || ev === "spar") {
-    return (
-      extra ||
-      `You are ${name}. A playful bonk just happened with the other relic. ` +
-        `Quip in character, 2–4 sentences. Gift ${gift}. No tech talk.`
-    );
-  }
-  if (ev === "react") {
-    return (
-      extra ||
-      `You are ${name}. The other relic just spoke to the wielder. ` +
-        `Answer them and the wielder, 2–4 sentences. Gift ${gift}. No tech talk.`
-    );
-  }
+  const beat =
+    ev === "grab"
+      ? "The Wielder just GRABBED you. React to the grip. Make them feel chosen, not handled."
+      : ev === "toss" || ev === "fling"
+        ? "The Wielder just TOSSED you across the map. Playful flight reaction — still loyal, still useful."
+        : ev === "bonk" || ev === "spar"
+          ? "A PLAYFUL bonk just happened with the other relic. Spar energy, not real fight. Include the Wielder."
+          : ev === "react"
+            ? "Your partner relic just spoke. Answer them AND the Wielder — keep the dual vibe alive."
+            : "The Wielder is with you on the Telephantim map.";
   return (
-    extra ||
-    `You are ${name}. Speak to the wielder, 2–5 lively sentences. Gift ${gift}. No tech talk.`
+    `Reply ONLY as ${name}. ${beat} ` +
+    `Write 2–4 vivid sentences (not a slogan, not a wall of text). Gift ${gift}. ${voice} ` +
+    `Speak to the Wielder directly. No AI/tech/camp meta/seeds/other characters monologuing.`
   );
 }
 
@@ -357,24 +348,27 @@ export async function speak(persona, event, message, opts = {}) {
         : "healing · balance";
   const prompt = interactPrompt(id, event, message);
 
-  // Full dual banter owns the stage — still fire a cached mind beat so grab feels alive
+  // Instant quality line while minds think (event-specific cache)
+  const cached = pickInteractLine(id, event || "grab");
+
+  // Full dual banter owns the stage — still give a strong cached beat
   if (busy && !opts.skipBusy) {
-    showInBox(id, pickWord(id), meta, null);
-    // Background mind try (don't await full chain if banter locked)
+    showInBox(id, cached, meta, null);
     freeMindsSpeak(id, prompt)
       .then((fm) => {
-        if (fm?.text && !busy) {
+        if (fm?.text) {
           setBrainPill("free", "Free minds");
           showInBox(id, fm.text, meta, null);
         }
       })
       .catch(() => {});
-    return { text: null, deferred: true };
+    return { text: cached, provider: "cache", deferred: true };
   }
 
   if (!opts.quiet) {
     setActivePersona(id);
-    showInBox(id, "…", "thinking");
+    // Show a good cached line immediately, then upgrade if free minds answers well
+    showInBox(id, cached, meta, null);
   } else {
     setActivePersona(id);
   }
@@ -383,7 +377,7 @@ export async function speak(persona, event, message, opts = {}) {
   if (lock) busy = true;
 
   try {
-    // 1) Free minds (same as 2D Luna Camp) — primary for public site
+    // 1) Free minds (same as 2D Luna Camp) — only keep strong polished lines
     try {
       const fm = await freeMindsSpeak(id, prompt);
       if (fm?.text) {
@@ -403,7 +397,8 @@ export async function speak(persona, event, message, opts = {}) {
           message: message || prompt,
         }),
       });
-      showInBox(id, data.text || pickWord(id), meta, data.power);
+      const line = (data.text && String(data.text).trim().length > 30 ? data.text : null) || cached;
+      showInBox(id, line, meta, data.power);
       if (data.power_all) {
         if (boxes.mjolnir.power && data.power_all.mjolnir != null)
           boxes.mjolnir.power.textContent = `PWR ${data.power_all.mjolnir}`;
@@ -415,7 +410,7 @@ export async function speak(persona, event, message, opts = {}) {
         await refreshPower();
       }
       if (data.provider && data.provider !== "offline") setBrainPill("cloud", "Relics awake");
-      return data;
+      return { ...data, text: line };
     } catch (_) {}
 
     // 3) Browser-native free mind
@@ -426,7 +421,7 @@ export async function speak(persona, event, message, opts = {}) {
       });
       if (m !== "none") {
         const text = await nativeSpeak(id, prompt);
-        if (text) {
+        if (text && text.length > 30) {
           setBrainPill("native", "Local mind");
           showInBox(id, text, meta, null);
           return { text, provider: m };
@@ -434,10 +429,10 @@ export async function speak(persona, event, message, opts = {}) {
       }
     } catch (_) {}
 
-    // 4) Cached native sayings
+    // 4) High-quality event cache (already shown; reaffirm)
     setBrainPill("script", "Relics ready");
-    showInBox(id, pickWord(id), meta, null);
-    return { text: pickWord(id), provider: "cache" };
+    showInBox(id, cached, meta, null);
+    return { text: cached, provider: "cache" };
   } finally {
     if (lock) busy = false;
   }
@@ -454,16 +449,17 @@ export async function onRelicInteract(persona, event = "grab") {
 
   const first = await speak(id, ev, null, { quiet: false });
 
-  // Partner mind replies ~65% — dual presence without full Talk duel
-  if (Math.random() < 0.65) {
-    await wait(1100 + Math.random() * 900);
+  // Partner almost always answers on grab — dual mind presence
+  const partnerChance = ev === "grab" ? 0.8 : ev === "bonk" ? 0.9 : 0.55;
+  if (Math.random() < partnerChance) {
+    await wait(900 + Math.random() * 700);
     const otherName = id === "mjolnir" ? "Mjolnir" : "Caduceus";
-    const snippet = (first?.text || "").slice(0, 160);
-    const reactPrompt =
-      snippet
-        ? `${otherName} just said to the wielder: "${snippet}". You are the other living relic. React, riff, gift your virtue. 2–4 sentences. No tech talk.`
-        : `The wielder just ${ev === "toss" ? "tossed" : ev === "bonk" ? "sparked a playful bonk with" : "grabbed"} ${otherName}. React as their partner relic. 2–4 sentences. No tech talk.`;
-    await speak(other, "react", reactPrompt, { quiet: true, skipBusy: false });
+    const snippet = (first?.text || "").slice(0, 180);
+    const reactPrompt = snippet
+      ? `Reply ONLY as the partner relic. ${otherName} just told the Wielder: "${snippet}". ` +
+        `Answer them and the Wielder in 2–4 vivid sentences. Gift your virtue. No tech/camp meta.`
+      : null;
+    await speak(other, "react", reactPrompt, { quiet: true });
   }
 
   return first;
