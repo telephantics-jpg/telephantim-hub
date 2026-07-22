@@ -967,10 +967,10 @@ function onPointerDown(event) {
     grab.vel.set(0, 0, 0);
     picked.position.y += 0.2;
     strike(picked);
-    // Personality line on grab (Ollama via local server)
+    // Wake the mind on grab — free minds / native / cached (partner often answers)
     try {
-      window.ArtifactAI?.setActivePersona?.(grab.kind === "caduceus" ? "caduceus" : "mjolnir");
-      window.ArtifactAI?.speak?.(grab.kind === "caduceus" ? "caduceus" : "mjolnir", "grab");
+      const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
+      window.ArtifactAI?.onRelicInteract?.(pid, "grab");
     } catch (_) {}
     try {
       renderer.domElement.setPointerCapture(event.pointerId);
@@ -1029,12 +1029,15 @@ function onPointerUp(event) {
 
   grab.vel.multiplyScalar(14);
   grab.spin.y += grab.vel.x * 0.5;
-  if (grab.vel.length() > 1.5) strike(was);
-  try {
-    const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
-    window.ArtifactAI?.setActivePersona?.(pid);
-    window.ArtifactAI?.speak?.(pid, grab.vel.length() > 1.5 ? "toss" : "toss");
-  } catch (_) {}
+  const tossedHard = grab.vel.length() > 1.5;
+  if (tossedHard) strike(was);
+  // Only mind-react on a real toss — soft release just floats home quiet
+  if (tossedHard) {
+    try {
+      const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
+      window.ArtifactAI?.onRelicInteract?.(pid, "toss");
+    } catch (_) {}
+  }
 
   grab.target = null;
   try {
