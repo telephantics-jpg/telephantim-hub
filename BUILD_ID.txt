@@ -1,1 +1,1 @@
-v66-mindable-interactions
+v67-better-interact-lines

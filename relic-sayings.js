@@ -36,6 +36,63 @@ function saveRecent(ids) {
   } catch (_) {}
 }
 
+/**
+ * Event-specific lines for grab / toss / bonk / react — higher quality than generic.
+ * Used when free minds is weak/offline so interactions still feel sharp.
+ */
+export const INTERACT = {
+  grab: {
+    mjolnir: [
+      "There — solid grip. Good. POWER doesn't waste time on limp hands. Feel that charge in your wrist? That's courage lining up. Hold firm and the sky will answer when you need it.",
+      "Ha! You found the hammer. Not a souvenir — a deal. I gift strength and a clean lightning edge; you gift honesty in the swing. Ready when you are, wielder.",
+      "Lifted true. That already says more than a speech. I'll boom for the bold choice; Caduceus can soft-land whatever we crack. Power first. Breath second. Go.",
+      "Mmm. Weight's right in your palm. Doubt can wait outside. In here: spark, laugh, and the kind of POWER that makes small fears look silly.",
+      "Grabbed like you meant it. Perfect. I don't need perfection — I need willingness. You've got that. Thunder's on your side for the next hard minute.",
+    ],
+    caduceus: [
+      "Easy — coils warm, staff live. You don't have to white-knuckle healing. Breathe once with me. I gift vitality and balance while the boom takes a seat.",
+      "Held. Good. HEALING works better invited than forced. The twins are listening. Tell the truth of how you feel — even if the sentence is messy. I'll braid it into strength.",
+      "Ah. Contact. Soft doesn't mean weak, wielder. Soft is how hard days stop turning mean. I've got the aftercare; Mjolnir can handle the volume.",
+      "You're holding medicine and wit at once. Don't rush. One honest breath is already a pilgrimage. I'll keep the serpents kind and the rod steady.",
+      "Grip received. No lecture — a landing. Water, sunlight, one true sentence when you're ready. Until then, borrow my calm like a coat.",
+    ],
+  },
+  toss: {
+    mjolnir: [
+      "WHOA — flight time! Hah! Toss me like that again and I'll still come home humming. POWER likes a bold fling; just aim me at lies, not the flowers.",
+      "Airborne! That's spirit. Landing's my problem — courage is yours. When I settle, we swing cleaner. Nice arm, wielder.",
+      "Yeet the thunder, I respect it. Don't apologize for the toss. Apologize only if you stop picking me back up.",
+    ],
+    caduceus: [
+      "Flying staff — theatrical, but fine. I'll arc graceful and land without drama. HEALING can travel. Catch your breath; I'm already on the return path.",
+      "Tossed! The wings approve more than the snakes, but both vote: still your staff. Soft landing incoming. Bond unbroken.",
+      "Air time. Cute. Next time, throw your worries the same way — hard, clear, then let me land them gently.",
+    ],
+  },
+  bonk: {
+    mjolnir: [
+      "Bonk! Playful, not war. Caduceus, you felt that? Good. Spar keeps the map honest. Wielder — laugh with us; POWER can be a joke that still strengthens the spine.",
+      "Ha! Contact sport for relics. No blood, all bond. If the staff scolds me, I earned it. If you smiled, we won.",
+    ],
+    caduceus: [
+      "Ow — theatrical ow. That was a love-tap, hammer, and you know it. Wielder, ignore the volume; the medicine still works. Spar, then sip water.",
+      "Bonked and unbothered. Mostly. Mjolnir's love language is impact; mine is aftercare. You're watching a marriage of methods.",
+    ],
+  },
+  react: {
+    mjolnir: [
+      "Listen to the stick — half the time he's right, which is annoying. I'll still boom when lies need volume. You take both gifts: edge and ease.",
+      "Caduceus talks soft so I can talk loud without breaking you. Team sport. Hold us both when the day gets weird.",
+      "Yeah, what they said — minus the breathing seminar. Or fine, keep the breathing. POWER with a pulse check. Deal.",
+    ],
+    caduceus: [
+      "Thunder's doing volume again. Good. I'll translate boom into something your shoulders can carry. You're not alone between us.",
+      "Mjolnir means well at 11. I'll bring it down to a human 7 and add a laugh. Bond climbing either way.",
+      "He sparks; I soothe; you decide. That's the whole dual-relic religion in one sentence. Stay.",
+    ],
+  },
+};
+
 /** One-shot grab / speak lines (cached) */
 export const WORDS = {
   mjolnir: [
@@ -324,9 +381,27 @@ export function buildOfflineBanter(rounds = 8, opts = {}) {
   return lines;
 }
 
-export function pickWord(id) {
-  const bag = WORDS[id === "caduceus" ? "caduceus" : "mjolnir"];
-  return pick(bag);
+export function pickWord(id, event) {
+  const who = id === "caduceus" ? "caduceus" : "mjolnir";
+  const ev = String(event || "").toLowerCase();
+  const bank = INTERACT[ev]?.[who];
+  if (bank?.length) return pick(bank);
+  return pick(WORDS[who]);
+}
+
+/** Prefer event line, avoid immediate repeats via short session memory */
+const _lastInteract = { mjolnir: "", caduceus: "" };
+export function pickInteractLine(id, event) {
+  const who = id === "caduceus" ? "caduceus" : "mjolnir";
+  const ev = String(event || "grab").toLowerCase();
+  const bag = [...(INTERACT[ev]?.[who] || []), ...WORDS[who]];
+  let line = pick(bag);
+  let guard = 0;
+  while (line === _lastInteract[who] && bag.length > 1 && guard++ < 8) {
+    line = pick(bag);
+  }
+  _lastInteract[who] = line;
+  return line;
 }
 
 /** Warm localStorage cache so first Talk is instant after first visit */

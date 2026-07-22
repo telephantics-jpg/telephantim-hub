@@ -3,7 +3,7 @@
  *
  * Camp principle: brains stay on telephanti.com (free_minds + aether offline),
  * no visitor API keys, CORS open. When that fails, personality.js falls through
- * to browser WebLLM / scripted duel.
+ * to browser WebLLM / scripted duel / cached sayings.
  *
  * Mapping for Telephantim relics:
  *   Mjolnir  ↔ camp agent "thor"  (thunder / power)
@@ -19,19 +19,81 @@ function mapAgent(id) {
   return null;
 }
 
-function trimSpeech(text) {
+/**
+ * Clean camp / aether tails into a readable relic line.
+ * Free minds often append "camp air", seeds, and topic echoes — strip those.
+ */
+export function polishSpeech(text, { maxLen = 480 } = {}) {
   let t = String(text || "")
     .replace(/\r/g, "")
-    .replace(/\n{2,}/g, "\n")
+    .replace(/\u0000/g, "")
     .trim();
-  // Camp free minds sometimes append long "camp air" tails — keep the first beat
-  const cut = t.search(/\n\n(The corona|Camp is wide|Out here I'm also|Recent camp air|little camp marks)/i);
-  if (cut > 40) t = t.slice(0, cut).trim();
-  if (t.length > 420) {
-    const sp = t.lastIndexOf(" ", 417);
-    t = (sp > 200 ? t.slice(0, sp) : t.slice(0, 417)) + "…";
+
+  // Drop common camp boilerplate blocks
+  const cutPatterns = [
+    /\n\n(The corona|Camp is wide|Out here I'm also|Out here I.?m also|Recent camp air|little camp marks|Father Odin has one eye)/i,
+    /\n\n?\(little camp marks:[\s\S]*$/i,
+    /\nSomething familiar in the air:[\s\S]*$/i,
+    /\n- (Thor|Caduceus|Sentinel|Hermes) riffed on:[\s\S]*$/i,
+    /\nOkay\. At the fire with[\s\S]*$/i,
+    /\nI.?m not done with At the fire[\s\S]*$/i,
+    /\nTonight that bends toward[\s\S]*$/i,
+    /\nIf something stays true when the music[\s\S]*$/i,
+  ];
+  for (const re of cutPatterns) {
+    const m = t.search(re);
+    if (m > 48) t = t.slice(0, m).trim();
+  }
+
+  // Strip seed / pass / hex loot noise inline
+  t = t
+    .replace(/\(little camp marks:[^)]*\)/gi, "")
+    .replace(/\bSEED=[a-z0-9]+/gi, "")
+    .replace(/\bPASS:[a-z0-9-]+/gi, "")
+    .replace(/\b0x[0-9A-Fa-f]{6,}\b/g, "")
+    .replace(/\bAURORA:\/\/\S+/gi, "")
+    .replace(/\[glyph:[^\]]+\]/gi, "")
+    .replace(/\bTHO\.[a-z0-9]+\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  // Collapse repeated "At the fire with…" topic spam sentences
+  t = t
+    .replace(/(At the fire with[^.!?]*[.!?]\s*){2,}/gi, "")
+    .replace(/(Topic:\s*[^.!?]*[.!?]\s*)+/gi, "")
+    .trim();
+
+  // Prefer first 2–4 solid sentences if still a wall of text
+  const parts = t.split(/(?<=[.!?])\s+/).filter((s) => s && s.length > 8);
+  if (parts.length > 4) {
+    t = parts.slice(0, 4).join(" ");
+  }
+
+  if (t.length > maxLen) {
+    const sp = t.lastIndexOf(" ", maxLen - 1);
+    t = (sp > maxLen * 0.55 ? t.slice(0, sp) : t.slice(0, maxLen - 1)).trim() + "…";
   }
   return t;
+}
+
+function trimSpeech(text) {
+  return polishSpeech(text, { maxLen: 480 });
+}
+
+/** Reject camp garbage / empty lines so caller can fall through to cache */
+export function isStrongLine(text) {
+  const t = String(text || "").trim();
+  if (t.length < 36) return false;
+  if (/SEED=|little camp marks|Recent camp air|0x[0-9A-Fa-f]{6,}/i.test(t)) return false;
+  if ((t.match(/At the fire with/gi) || []).length >= 2) return false;
+  if ((t.match(/Topic:/gi) || []).length >= 2) return false;
+  // Too much repetition of the same 20-char chunk
+  if (t.length > 80) {
+    const chunk = t.slice(0, 24);
+    if (t.indexOf(chunk, 30) !== -1 && t.indexOf(chunk, 60) !== -1) return false;
+  }
+  return true;
 }
 
 /**
@@ -51,7 +113,7 @@ export async function freeMindsBanter(topic, rounds = 4) {
         rounds: Math.max(2, Math.min(4, rounds || 4)),
         topic:
           topic ||
-          "Telephantim relics — Mjolnir and Caduceus, longer multi-round mythic banter: power and healing, witty, natural, for the wielder",
+          "Telephantim dual relics for the Wielder: longer natural banter. Mjolnir gifts POWER, Caduceus gifts HEALING. Witty, warm, mythic. No camp meta, no seeds, no tech talk.",
         visitor_name: "Wielder",
       }),
       signal: ctrl.signal,
@@ -67,7 +129,7 @@ export async function freeMindsBanter(topic, rounds = 4) {
     for (const line of data.lines) {
       const persona = mapAgent(line.agent_id || line.id);
       const text = trimSpeech(line.text || line.reply || "");
-      if (!persona || !text) continue;
+      if (!persona || !text || !isStrongLine(text)) continue;
       lines.push({
         persona,
         name: persona === "mjolnir" ? "Mjolnir" : "Caduceus",
@@ -91,6 +153,24 @@ export async function freeMindsBanter(topic, rounds = 4) {
   }
 }
 
+/** Build a tight interaction prompt camp agents actually answer well */
+function buildSpeakMessage(persona, message) {
+  if (message && String(message).trim().length > 12) return String(message).slice(0, 900);
+  const isCad = persona === "caduceus";
+  if (isCad) {
+    return (
+      "Reply ONLY as Caduceus, living staff of Hermes (twin snakes, healing, balance). " +
+      "2 to 4 vivid sentences to the Wielder. Gift HEALING. Warm, witty, mythic. " +
+      "No camp meta, no seeds, no other characters' dialogue, no tech words."
+    );
+  }
+  return (
+    "Reply ONLY as Mjolnir, living hammer of Thor (thunder, courage, power). " +
+    "2 to 4 vivid sentences to the Wielder. Gift POWER. Warm, bold, mythic. " +
+    "No camp meta, no seeds, no other characters' dialogue, no tech words."
+  );
+}
+
 /** One-shot line via free agent chat (secure public endpoint, no keys). */
 export async function freeMindsSpeak(persona, message) {
   const agent_id = persona === "caduceus" ? "caduceus" : "thor";
@@ -102,11 +182,7 @@ export async function freeMindsSpeak(persona, message) {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
         agent_id,
-        message:
-          message ||
-          (agent_id === "thor"
-            ? "Speak as living Mjolnir — 2–5 sentences, gift POWER to the wielder. Mythic, warm, no tech talk."
-            : "Speak as living Caduceus — 2–5 sentences, gift HEALING to the wielder. Mythic, witty, no tech talk."),
+        message: buildSpeakMessage(persona, message),
         visitor_name: "Wielder",
       }),
       signal: ctrl.signal,
@@ -117,7 +193,7 @@ export async function freeMindsSpeak(persona, message) {
     if (!res.ok) return null;
     const data = await res.json();
     const text = trimSpeech(data.reply || data.text || "");
-    if (!text) return null;
+    if (!text || !isStrongLine(text)) return null;
     return {
       text,
       provider: data.backend || "free_minds",
@@ -150,4 +226,10 @@ export async function freeMindsHealth() {
   }
 }
 
-window.TelephantimFreeMinds = { freeMindsBanter, freeMindsSpeak, freeMindsHealth };
+window.TelephantimFreeMinds = {
+  freeMindsBanter,
+  freeMindsSpeak,
+  freeMindsHealth,
+  polishSpeech,
+  isStrongLine,
+};
