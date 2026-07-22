@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=64" />
+  <link rel="stylesheet" href="styles.css?v=65" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -120,13 +120,14 @@
       </div>
     </div>
 
-    <!-- Speech bubbles: hidden until Talk / grab (keeps stage clear) -->
+    <!-- Speech bubbles: minimizable during Talk / grab (chip docks off the relics) -->
     <div class="dialogue-layer" aria-live="polite">
       <div class="dbox dbox-mjolnir" id="box-mjolnir">
         <div class="dbox-head">
+          <span class="dbox-new" aria-hidden="true"></span>
           <span class="dbox-title">Mjolnir</span>
           <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
-          <button type="button" class="dbox-min" data-dbox-min="mjolnir" aria-expanded="true" title="Minimize bubble">−</button>
+          <button type="button" class="dbox-min" data-dbox-min="mjolnir" aria-expanded="true" title="Minimize mind">−</button>
         </div>
         <div class="dbox-body">
           <div class="dbox-text" id="box-mjolnir-text"></div>
@@ -135,9 +136,10 @@
       </div>
       <div class="dbox dbox-caduceus" id="box-caduceus">
         <div class="dbox-head">
+          <span class="dbox-new" aria-hidden="true"></span>
           <span class="dbox-title">Caduceus</span>
           <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
-          <button type="button" class="dbox-min" data-dbox-min="caduceus" aria-expanded="true" title="Minimize bubble">−</button>
+          <button type="button" class="dbox-min" data-dbox-min="caduceus" aria-expanded="true" title="Minimize mind">−</button>
         </div>
         <div class="dbox-body">
           <div class="dbox-text" id="box-caduceus-text"></div>
@@ -147,7 +149,8 @@
     </div>
 
     <div class="float-actions" id="float-actions">
-      <button type="button" class="btn-chip" id="btn-banter" title="Free minds duel — same system as Luna Camp 2D">Talk</button>
+      <button type="button" class="btn-chip" id="btn-banter" title="Long dual-mind talk">Talk</button>
+      <button type="button" class="btn-chip ghost" id="btn-minds-min" aria-pressed="false" title="Minimize both relic minds">Hide minds</button>
       <button type="button" class="btn-chip ghost" id="btn-reset" title="Reset camera">Reset</button>
     </div>
   </section>
@@ -345,8 +348,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=64"></script>
-  <script src="analytics.js?v=64"></script>
+  <script src="api-config.js?v=65"></script>
+  <script src="analytics.js?v=65"></script>
   <script type="importmap">
   {
     "imports": {
@@ -355,11 +358,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=64"></script>
-  <script type="module" src="bio.js?v=64"></script>
-  <script type="module" src="daily-wisdom.js?v=64"></script>
-  <script type="module" src="music.js?v=64"></script>
-  <script type="module" src="personality.js?v=64"></script>
-  <script type="module" src="mjolnir.js?v=64"></script>
+  <script type="module" src="scenes.js?v=65"></script>
+  <script type="module" src="bio.js?v=65"></script>
+  <script type="module" src="daily-wisdom.js?v=65"></script>
+  <script type="module" src="music.js?v=65"></script>
+  <script type="module" src="personality.js?v=65"></script>
+  <script type="module" src="mjolnir.js?v=65"></script>
 </body>
 </html>

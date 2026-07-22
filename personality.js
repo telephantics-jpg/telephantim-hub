@@ -87,8 +87,24 @@ async function playBanterLines(lines, metaPulse) {
     if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
     if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
     if (bondPill) bondPill.textContent = `Bond ${bond}`;
-    // Longer hold so multi-turn talks are readable
-    await wait(Math.min(12000, 2800 + String(text).length * 36));
+    // Longer hold so multi-turn talks are readable (faster if both minds minimized)
+    const bothMin = bothMindsCollapsed();
+    const hold = bothMin
+      ? Math.min(4200, 1200 + String(text).length * 18)
+      : Math.min(12000, 2800 + String(text).length * 36);
+    await wait(hold);
+  }
+  // Soft clear after the exchange (chips linger briefly if minimized)
+  await wait(bothMindsCollapsed() ? 5000 : 2500);
+  for (const id of ["mjolnir", "caduceus"]) {
+    const root = boxes[id]?.root;
+    if (!root) continue;
+    root.classList.remove("active-speaker", "has-new");
+    if (!root.classList.contains("collapsed")) root.classList.remove("show");
+    else {
+      // docked chip fades after a moment so stage is fully open
+      setTimeout(() => root.classList.remove("show", "has-new"), 6000);
+    }
   }
 }
 
@@ -173,23 +189,60 @@ export function setActivePersona(id) {
   document.getElementById("box-caduceus")?.classList.toggle("active-speaker", activePersona === "caduceus");
 }
 
+const MINDS_GLOBAL_KEY = "telephantim-minds-collapsed";
+const mindsMinBtn = document.getElementById("btn-minds-min");
+
 function dboxMinKey(id) {
   return `telephantim-dbox-collapsed-${id}`;
 }
 
-function setDboxCollapsed(id, collapsed) {
+function isDboxCollapsed(id) {
+  return !!boxes[id]?.root?.classList.contains("collapsed");
+}
+
+function setDboxCollapsed(id, collapsed, { persist = true } = {}) {
   const b = boxes[id];
   if (!b?.root) return;
   b.root.classList.toggle("collapsed", !!collapsed);
+  b.root.classList.toggle("docked", !!collapsed);
   const btn = b.root.querySelector("[data-dbox-min]");
   if (btn) {
     btn.textContent = collapsed ? "+" : "−";
     btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-    btn.title = collapsed ? "Expand bubble" : "Minimize bubble";
+    btn.title = collapsed ? "Expand mind" : "Minimize mind";
   }
+  if (!collapsed) b.root.classList.remove("has-new");
+  if (persist) {
+    try {
+      localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
+    } catch (_) {}
+  }
+  syncMindsMinButton();
+}
+
+/** Both relic minds: mini chips docked off the stage so 3D stays clear */
+export function setAllMindsCollapsed(collapsed) {
+  setDboxCollapsed("mjolnir", collapsed);
+  setDboxCollapsed("caduceus", collapsed);
   try {
-    localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
+    localStorage.setItem(MINDS_GLOBAL_KEY, collapsed ? "1" : "0");
   } catch (_) {}
+  syncMindsMinButton();
+}
+
+function bothMindsCollapsed() {
+  return isDboxCollapsed("mjolnir") && isDboxCollapsed("caduceus");
+}
+
+function syncMindsMinButton() {
+  if (!mindsMinBtn) return;
+  const allMin = bothMindsCollapsed();
+  mindsMinBtn.setAttribute("aria-pressed", allMin ? "true" : "false");
+  mindsMinBtn.textContent = allMin ? "Show minds" : "Hide minds";
+  mindsMinBtn.title = allMin
+    ? "Expand both relic speech bubbles"
+    : "Minimize both minds (talk keeps going as chips)";
+  mindsMinBtn.classList.toggle("on", allMin);
 }
 
 function wireDboxMinimize() {
@@ -199,9 +252,13 @@ function wireDboxMinimize() {
     const id = btn.getAttribute("data-dbox-min") === "caduceus" ? "caduceus" : "mjolnir";
     let collapsed = false;
     try {
-      if (localStorage.getItem(dboxMinKey(id)) === "1") collapsed = true;
+      // Global preference wins when set
+      const g = localStorage.getItem(MINDS_GLOBAL_KEY);
+      if (g === "1") collapsed = true;
+      else if (g === "0") collapsed = false;
+      else if (localStorage.getItem(dboxMinKey(id)) === "1") collapsed = true;
     } catch (_) {}
-    setDboxCollapsed(id, collapsed);
+    setDboxCollapsed(id, collapsed, { persist: false });
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -210,6 +267,26 @@ function wireDboxMinimize() {
       setDboxCollapsed(id, !root.classList.contains("collapsed"));
     });
   });
+
+  // Tap a minimized chip (not the + button) to expand that mind
+  ["mjolnir", "caduceus"].forEach((id) => {
+    const root = boxes[id]?.root;
+    if (!root || root.dataset.chipWired) return;
+    root.dataset.chipWired = "1";
+    root.addEventListener("click", (e) => {
+      if (!root.classList.contains("collapsed")) return;
+      if (e.target.closest?.("[data-dbox-min]")) return;
+      e.preventDefault();
+      setDboxCollapsed(id, false);
+    });
+  });
+
+  mindsMinBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    setAllMindsCollapsed(!bothMindsCollapsed());
+  });
+
+  syncMindsMinButton();
 }
 
 export function showInBox(persona, text, meta, power) {
@@ -220,13 +297,24 @@ export function showInBox(persona, text, meta, power) {
   if (b.meta) b.meta.textContent = meta || "word of power";
   if (b.power && power != null) b.power.textContent = `PWR ${power}`;
   b.root.classList.add("show", "pulse");
-  // Soft ping when minimized so user knows new speech arrived
-  if (b.root.classList.contains("collapsed")) {
-    b.root.classList.add("pulse");
+  const collapsed = b.root.classList.contains("collapsed");
+  // Soft ping when minimized — mind is still talking, stage stays clear
+  if (collapsed) {
+    b.root.classList.add("has-new", "pulse");
+  } else {
+    b.root.classList.remove("has-new");
   }
-  setTimeout(() => b.root.classList.remove("pulse"), 400);
+  setTimeout(() => b.root.classList.remove("pulse"), 450);
   clearTimeout(hideTimers[id]);
-  // Keep longer talks readable; hide a beat after the line's natural hold
+  // Collapsed chips stay while the mind is active (don't vanish mid-banter)
+  if (collapsed) {
+    hideTimers[id] = setTimeout(() => {
+      b.root.classList.remove("active-speaker");
+      // keep .show so the chip remains until banter ends / user hides
+    }, Math.min(16000, 4000 + String(text || "").length * 42));
+    return;
+  }
+  // Expanded: readable hold, then soft hide so stage reopens
   const hold = Math.min(16000, 4000 + String(text || "").length * 42);
   hideTimers[id] = setTimeout(() => {
     b.root.classList.remove("active-speaker", "show");
@@ -546,6 +634,7 @@ window.ArtifactAI = {
   battleQuip,
   showInBox,
   setActivePersona,
+  setAllMindsCollapsed,
   refreshBrainPill,
   refreshPower,
   get apiBase() {
