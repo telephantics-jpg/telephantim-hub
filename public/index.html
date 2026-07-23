@@ -3,13 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Telephantim</title>
-  <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-18" />
-  <meta name="description" content="Telephantim hub  -  Luna Camp, PayPal, Cash App, Venmo." />
-  <meta property="og:title" content="Telephantim" />
+  <title>Telephantim — Relics, Music &amp; Luna Camp</title>
+  <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-21" />
+  <meta name="description" content="Telephantim: Mjolnir &amp; Caduceus, Telephantix music, and Luna Camp. Power, healing, pay links, and living worlds." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Telephantim" />
+  <meta property="og:title" content="Telephantim — Relics, Music &amp; Luna Camp" />
+  <meta property="og:description" content="Dual relics, full Telephantix radio, and portals to Luna Camp 2D/3D. Power · healing · music." />
   <meta property="og:url" content="https://telephantim.com/" />
-  <link rel="icon" href="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591" />
-  <link rel="stylesheet" href="styles.css?v=61" />
+  <meta property="og:image" content="https://telephantim.com/media/share/og-banner.jpg" />
+  <meta property="og:image:width" content="1920" />
+  <meta property="og:image:height" content="1080" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Telephantim — Relics, Music &amp; Luna Camp" />
+  <meta name="twitter:description" content="Dual relics, Telephantix radio, Luna Camp. Power · healing · music." />
+  <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
+  <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
+  <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
+  <link rel="stylesheet" href="styles.css?v=68" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -74,17 +85,17 @@
     </div>
   </section>
 
-  <!-- Compact world picker â€” Relics Â· Bio Â· 2D Â· 3D -->
+  <!-- Compact world picker — Relics · Bio · 2D · 3D -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
-    <button type="button" class="world-tab active" data-scene="telephantim" title="Telephantim â€” Mjolnir + Caduceus">Relics</button>
-    <button type="button" class="world-tab" data-scene="bio" title="Bio â€” video or photo background (Beacons-style)">Bio</button>
+    <button type="button" class="world-tab active" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
+    <button type="button" class="world-tab" data-scene="bio" title="Bio — video or photo background (Beacons-style)">Bio</button>
     <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
     <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
   </nav>
 
   <!-- Full-screen 3D relics: Mjolnir + Caduceus (both always on stage) -->
   <section class="stage" id="stage-telephantim" aria-label="3D relics">
-    <!-- Your looping bg (also used as Three.js scene.background) â€” interactive relics stay on top -->
+    <!-- Your looping bg (also used as Three.js scene.background) — interactive relics stay on top -->
     <video
       id="stage-bg-video"
       class="stage-bg-video"
@@ -101,118 +112,94 @@
     <div class="topbar">
       <div class="brand">
         <h1>Telephantim</h1>
-        <p id="grab-hint">Mjolnir + Caduceus Â· zoomed out Â· grab either</p>
+        <p id="grab-hint">Click a relic for a new phrase · drag to toss · Talk for a duel</p>
       </div>
       <div class="badge-stack">
         <div class="badge" id="brain-pill">Relics ready</div>
-        <div class="badge" id="bond-pill">Bond 1</div>
-        <div class="badge">LIVE v58 DUAL</div>
+        <div class="badge" id="bond-pill" hidden>Bond 1</div>
       </div>
     </div>
 
-    <!-- Living Pulse: time-of-day tag + rotating line (replaced birthday dedication) -->
-    <div class="live-pulse" id="live-pulse" data-phase="day" role="status" aria-live="polite" aria-label="Living pulse">
-      <div class="live-pulse-row">
-        <span class="live-pulse-dot" aria-hidden="true"></span>
-        <span class="live-pulse-tag" id="pulse-tag">Pulse</span>
-        <span class="live-pulse-clock" id="pulse-clock"></span>
-      </div>
-      <p class="live-pulse-line" id="pulse-line">The relics are listening.</p>
-    </div>
-
-    <!-- Compact Daily Word on Relics (minimizable — full text on Bio) -->
-    <article class="daily-word daily-word-stage collapsed" id="daily-word-stage" aria-label="Daily Word" hidden>
-      <header class="daily-word-head">
-        <span class="daily-word-kicker">Daily Word</span>
-        <span class="daily-word-meta" data-daily-meta></span>
-        <button type="button" class="daily-word-min" id="daily-word-min" aria-expanded="false" title="Expand Daily Word">+</button>
-      </header>
-      <div class="daily-word-expand">
-        <h2 class="daily-word-title" data-daily-title></h2>
-        <p class="daily-word-body" data-daily-body></p>
-        <button type="button" class="daily-word-open-bio" id="daily-open-bio">Read on Bio</button>
-      </div>
-    </article>
-
-    <!-- Bubbles track each 3D speaker (positions set in mjolnir.js) -->
+    <!-- Speech bubbles: minimizable during Talk / grab (chip docks off the relics) -->
     <div class="dialogue-layer" aria-live="polite">
-      <div class="dbox dbox-mjolnir show" id="box-mjolnir">
+      <div class="dbox dbox-mjolnir" id="box-mjolnir">
         <div class="dbox-head">
+          <span class="dbox-new" aria-hidden="true"></span>
           <span class="dbox-title">Mjolnir</span>
           <span class="dbox-power" id="box-mjolnir-power">PWR 1</span>
-          <button type="button" class="dbox-min" data-dbox-min="mjolnir" aria-expanded="true" title="Minimize bubble">−</button>
+          <button type="button" class="dbox-min" data-dbox-min="mjolnir" aria-expanded="true" title="Minimize mind">−</button>
         </div>
         <div class="dbox-body">
-          <div class="dbox-text" id="box-mjolnir-text">Storm waits above the hammer. Grab me or hit Relic duel for a full word of POWER you can actually read.</div>
-          <div class="dbox-meta" id="box-mjolnir-meta">power · courage · lightning</div>
+          <div class="dbox-text" id="box-mjolnir-text"></div>
+          <div class="dbox-meta" id="box-mjolnir-meta">power · courage</div>
         </div>
       </div>
-      <div class="dbox dbox-caduceus show" id="box-caduceus">
+      <div class="dbox dbox-caduceus" id="box-caduceus">
         <div class="dbox-head">
+          <span class="dbox-new" aria-hidden="true"></span>
           <span class="dbox-title">Caduceus</span>
           <span class="dbox-power" id="box-caduceus-power">PWR 1</span>
-          <button type="button" class="dbox-min" data-dbox-min="caduceus" aria-expanded="true" title="Minimize bubble">−</button>
+          <button type="button" class="dbox-min" data-dbox-min="caduceus" aria-expanded="true" title="Minimize mind">−</button>
         </div>
         <div class="dbox-body">
-          <div class="dbox-text" id="box-caduceus-text">Words sit above the staff. We answer thunder with longer hymns of HEALING - scroll the bubble if it runs tall.</div>
-          <div class="dbox-meta" id="box-caduceus-meta">healing · vitality · balance</div>
+          <div class="dbox-text" id="box-caduceus-text"></div>
+          <div class="dbox-meta" id="box-caduceus-meta">healing · balance</div>
         </div>
       </div>
-    </div>
-
-    <!-- Music dock: center-lower — Play + Hide sit together -->
-    <div class="music-dock" id="music-dock" aria-label="Music controls">
-      <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
-        <span id="btn-music-label">Play music</span>
-      </button>
-      <button type="button" class="btn-chip btn-music-hide ghost" id="btn-music-hide" title="Hide music player" hidden>
-        Hide
-      </button>
     </div>
 
     <div class="float-actions" id="float-actions">
-      <button type="button" class="btn-chip btn-min" id="btn-actions-toggle" aria-expanded="true" title="Hide action buttons">
-        Hide v
-      </button>
-      <div class="float-actions-main" id="float-actions-main">
-        <button type="button" class="btn-chip" id="btn-banter">Relic duel</button>
-        <button type="button" class="btn-chip" id="btn-strike">Strike</button>
-        <button type="button" class="btn-chip ghost" id="btn-reset">Reset</button>
-      </div>
+      <button type="button" class="btn-chip" id="btn-banter" title="Long dual-mind talk">Talk</button>
+      <button type="button" class="btn-chip ghost" id="btn-reset" title="Reset camera">Reset</button>
     </div>
+  </section>
 
-    <!-- Floating music player (Suno profile + Spotify / YouTube playable embeds) -->
+  <!--
+    Global music chrome — OUTSIDE stage so Bio / 2D / 3D / Relics all see it
+    (PC + mobile). Minimize keeps audio; maximize restores the panel.
+  -->
+  <div class="music-chrome" id="music-chrome" aria-label="Telephantix music">
+    <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
+      <span id="btn-music-label">Play music</span>
+    </button>
     <div class="music-player" id="music-player" aria-label="Music player" hidden>
       <div class="music-player-inner">
         <div class="music-head">
-          <div>
+          <div class="music-head-text">
             <strong class="music-brand">Telephantix Radio</strong>
             <p class="music-now"><span id="music-now-title">Ready</span><br /><span id="music-now-sub" class="music-sub"></span></p>
           </div>
-          <button type="button" class="music-x" id="music-close" aria-label="Close player">Ã—</button>
+          <div class="music-head-actions">
+            <button type="button" class="music-icon-btn" id="music-min" aria-label="Minimize player" title="Minimize (keep playing)">−</button>
+            <button type="button" class="music-icon-btn" id="music-max" aria-label="Maximize player" title="Maximize" hidden>+</button>
+            <button type="button" class="music-icon-btn music-x" id="music-close" aria-label="Close player" title="Close panel (keep playing)">×</button>
+          </div>
         </div>
-        <div class="music-controls">
-          <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
-          <button type="button" class="btn-chip ghost" id="music-next">Next</button>
-          <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle the full Suno queue (no duplicates)">Shuffle</button>
-          <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Play all published Suno songs from @telephantix">Play all Suno</a>
+        <div class="music-panel-body" id="music-panel-body">
+          <div class="music-controls">
+            <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
+            <button type="button" class="btn-chip ghost" id="music-next">Next</button>
+            <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle the full Suno queue">Shuffle</button>
+            <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Play all published Suno songs">Play all Suno</a>
+          </div>
+          <div class="music-stage">
+            <iframe
+              id="music-embed"
+              class="music-embed"
+              title="Music player"
+              allow="clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+            ></iframe>
+            <!-- No autoplay — only starts after bottom "Play music" is tapped -->
+            <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
+          </div>
+          <div class="music-track-list" id="music-track-list"></div>
+          <p class="music-hint">Full All I Got playlist · minimize keeps playing · all modes (Relics · Bio · 2D · 3D)</p>
         </div>
-        <div class="music-stage">
-          <iframe
-            id="music-embed"
-            class="music-embed"
-            title="Music player"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy"
-            referrerpolicy="strict-origin-when-cross-origin"
-          ></iframe>
-          <audio id="music-audio" class="music-audio" controls preload="metadata" hidden></audio>
-        </div>
-        <div class="music-track-list" id="music-track-list"></div>
-        <p class="music-hint">Full All I Got playlist · no duplicates · Shuffle randomizes the queue · auto-next. Profile: suno.com/@telephantix</p>
       </div>
     </div>
-  </section>
+  </div>
 
   <!-- Bottom menu: tap bar to open/close; scroll INSIDE for PayPal etc. -->
   <aside class="sheet" id="link-sheet" aria-label="Links menu">
@@ -220,10 +207,10 @@
       <div class="sheet-handle-bar" aria-hidden="true"></div>
       <div class="sheet-handle-row">
         <div>
-          <strong>Pay  Â·  Music  Â·  Socials</strong>
+          <strong>Pay · Socials</strong>
           <span class="sub" id="sheet-hint">Tap to open or minimize</span>
         </div>
-        <span class="sheet-toggle" id="sheet-toggle-label">Open Ã¢â€“Â²</span>
+        <span class="sheet-toggle" id="sheet-toggle-label">Open</span>
       </div>
     </button>
 
@@ -235,7 +222,7 @@
         <div>
           <h2>Telephantix</h2>
           <p class="handle">@telephantix</p>
-          <p class="tag">Music  Â·  AI  Â·  Support</p>
+          <p class="tag">Music · AI · Support</p>
         </div>
       </div>
 
@@ -290,26 +277,14 @@
           </a>
           <a class="link" href="go-suno.html">
             <span class="ico ico-suno" aria-hidden="true">SU</span>
-            <span><strong>Suno</strong><small>@telephantix â€” AI songs</small></span>
+            <span><strong>Suno</strong><small>@telephantix — AI songs</small></span>
             <span class="arr" aria-hidden="true">&rarr;</span>
           </a>
-          <button type="button" class="link link-btn" id="btn-music-sheet">
-            <span class="ico ico-suno" aria-hidden="true">â–¶</span>
-            <span><strong>Play music here</strong><small>Spotify / YouTube / Suno player</small></span>
-            <span class="arr" aria-hidden="true">&rarr;</span>
-          </button>
         </div>
       </section>
 
       <section class="section">
         <h3>Socials</h3>
-        <div class="links">
-          <a class="link" href="go-instagram.html">
-            <span class="ico ico-ig" aria-hidden="true">IG</span>
-            <span><strong>Instagram</strong><small>@telephantix</small></span>
-            <span class="arr" aria-hidden="true">&rarr;</span>
-          </a>
-        </div>
         <div class="socials">
           <a class="social ico-ig" href="go-instagram.html" title="Instagram @telephantix">IG</a>
           <a class="social ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener" title="X">X</a>
@@ -320,7 +295,7 @@
       </section>
 
       <p class="foot">
-        <strong>telephantim.com</strong> Â· use <strong>Relics Â· 2D Â· 3D</strong> tabs to switch worlds
+        <strong>telephantim.com</strong> · Relics · Bio · 2D · 3D
       </p>
     </div>
   </aside>
@@ -332,15 +307,13 @@
   </div>
 
   <script>
-    // Sheet open/minimize + action-button tray
+    // Sheet open/minimize
     (function () {
       var body = document.body;
       var btn = document.getElementById("sheet-toggle");
       var label = document.getElementById("sheet-toggle-label");
       var hint = document.getElementById("sheet-hint");
       var sheetBody = document.getElementById("sheet-body");
-      var actionsToggle = document.getElementById("btn-actions-toggle");
-      var actionsWrap = document.getElementById("float-actions");
 
       function setOpen(open) {
         body.classList.toggle("sheet-open", !!open);
@@ -348,8 +321,8 @@
         if (label) label.textContent = open ? "Minimize" : "Open";
         if (hint) {
           hint.textContent = open
-            ? "Scroll list - tap bar to minimize"
-            : "Tap bar to open Pay - Music - Socials";
+            ? "Scroll list — tap bar to minimize"
+            : "Tap bar to open Pay · Socials";
         }
         if (open && sheetBody) sheetBody.scrollTop = 0;
       }
@@ -364,31 +337,18 @@
         });
       }
 
-      if (actionsToggle && actionsWrap) {
-        actionsToggle.addEventListener("click", function (e) {
-          e.preventDefault();
-          var collapsed = actionsWrap.classList.toggle("collapsed");
-          actionsToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-          actionsToggle.textContent = collapsed ? "Buttons" : "Hide";
-          actionsToggle.title = collapsed ? "Show action buttons" : "Hide action buttons";
-        });
-      }
-
       var sheet = document.getElementById("link-sheet");
       if (sheet) {
         ["touchstart", "touchmove", "wheel"].forEach(function (ev) {
           sheet.addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
         });
       }
-
-      // Instagram links go to go-instagram.html (clean page + manual tap).
-      // Auto-redirects / app schemes often end as blank white pages on phones.
     })();
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=58"></script>
-  <script src="analytics.js?v=58"></script>
+  <script src="api-config.js?v=68"></script>
+  <script src="analytics.js?v=68"></script>
   <script type="importmap">
   {
     "imports": {
@@ -397,20 +357,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=58"></script>
-  <script type="module" src="bio.js?v=58"></script>
-  <script type="module" src="daily-wisdom.js?v=58"></script>
-  <script type="module" src="oracle.js?v=58"></script>
-  <script type="module" src="music.js?v=61"></script>
-  <script type="module" src="personality.js?v=58"></script>
-  <script type="module" src="mjolnir.js?v=61"></script>
-  <script>
-    // Sheet "Play music here" opens the floating player
-    document.getElementById("daily-open-bio")?.addEventListener("click", function () { window.TelephantimScenes?.setScene("bio"); });
-    document.getElementById("btn-music-sheet")?.addEventListener("click", function () {
-      window.TelephantimMusic?.setOpen(true);
-      document.body.classList.remove("sheet-open");
-    });
-  </script>
+  <script type="module" src="scenes.js?v=68"></script>
+  <script type="module" src="bio.js?v=68"></script>
+  <script type="module" src="daily-wisdom.js?v=68"></script>
+  <script type="module" src="music.js?v=68"></script>
+  <script type="module" src="personality.js?v=real-speak-3"></script>
+  <script type="module" src="mjolnir.js?v=real-speak-3"></script>
 </body>
 </html>

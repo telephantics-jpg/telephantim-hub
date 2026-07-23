@@ -118,33 +118,25 @@ const stormLight = new THREE.PointLight(0xaaddff, 0, 18, 2);
 stormLight.position.set(0, 1.4, 0);
 scene.add(stormLight);
 
+// Soft pad under relics only — keep video bg open (no big dark disc)
 const ground = new THREE.Mesh(
-  new THREE.CircleGeometry(18, 64),
-  new THREE.MeshStandardMaterial({ color: 0x0a0e16, metalness: 0.7, roughness: 0.45 })
+  new THREE.CircleGeometry(3.2, 48),
+  new THREE.MeshStandardMaterial({
+    color: 0x0a0e16,
+    metalness: 0.55,
+    roughness: 0.55,
+    transparent: true,
+    opacity: 0.35,
+  })
 );
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.02;
 ground.receiveShadow = true;
 scene.add(ground);
 
-const ring = new THREE.Mesh(
-  new THREE.RingGeometry(1.35, 1.55, 64),
-  new THREE.MeshBasicMaterial({ color: 0xc9a227, transparent: true, opacity: 0.22, side: THREE.DoubleSide })
-);
-ring.rotation.x = -Math.PI / 2;
-ring.position.y = 0.01;
-scene.add(ring);
-
-const runeGroup = new THREE.Group();
-const runeMat = new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.35 });
-for (let i = 0; i < 8; i++) {
-  const a = (i / 8) * Math.PI * 2;
-  const rune = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.22), runeMat);
-  rune.position.set(Math.cos(a) * 1.9, 0.02, Math.sin(a) * 1.9);
-  rune.rotation.y = -a;
-  runeGroup.add(rune);
-}
-scene.add(runeGroup);
+// Floor ring + rune orbit removed — stage was too busy over the video bg
+const ring = null;
+const runeGroup = null;
 
 const metalHead = new THREE.MeshStandardMaterial({ color: 0x6e7888, metalness: 0.95, roughness: 0.28 });
 const metalDark = new THREE.MeshStandardMaterial({ color: 0x3a404c, metalness: 0.92, roughness: 0.4 });
@@ -743,7 +735,7 @@ function projectOntoDragPlane(event, target, worldPos) {
 
 function isUiTarget(event) {
   return !!event.target.closest?.(
-    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .music-dock, .dbox, .dialogue-layer, .world-switch, .scene-frame, .scene-fallback, .music-player"
+    ".sheet, .sheet-handle, .btn-luna, .btn-chip, .btn-min, .topbar, a, button, input, .float-actions, .dbox, .dialogue-layer, .world-switch, .scene-frame, .scene-fallback, .music-player"
   );
 }
 
@@ -895,12 +887,33 @@ const elBoxCad = document.getElementById("box-caduceus");
 
 function placeBubble(el, object3d, headY) {
   if (!el || !wrap || !object3d) return;
-  object3d.getWorldPosition(_labelProj);
-  _labelProj.y += headY;
-  _labelProj.project(camera);
 
   const w = wrap.clientWidth || window.innerWidth;
   const h = wrap.clientHeight || window.innerHeight;
+  const isCad = el.id === "box-caduceus";
+
+  // Minimized minds dock to corners — clear of the 3D relics mid-stage
+  if (el.classList.contains("collapsed") || el.classList.contains("docked")) {
+    const padX = isMobile() ? 10 : 14;
+    const padY = isMobile() ? 118 : 100; // above Talk / sheet
+    if (isCad) {
+      el.style.left = `${w - padX}px`;
+      el.style.top = `${h - padY}px`;
+      el.style.transform = "translate(-100%, -100%)";
+    } else {
+      el.style.left = `${padX}px`;
+      el.style.top = `${h - padY}px`;
+      el.style.transform = "translate(0, -100%)";
+    }
+    el.style.visibility = el.classList.contains("show") ? "visible" : "hidden";
+    return;
+  }
+
+  // Expanded: sit above the 3D speaker head
+  el.style.transform = "translate(-50%, -100%)";
+  object3d.getWorldPosition(_labelProj);
+  _labelProj.y += headY;
+  _labelProj.project(camera);
 
   // Behind camera / clipped
   if (_labelProj.z > 1 || _labelProj.z < -1) {
@@ -911,7 +924,6 @@ function placeBubble(el, object3d, headY) {
   let x = (_labelProj.x * 0.5 + 0.5) * w;
   let y = (-_labelProj.y * 0.5 + 0.5) * h;
 
-  // Keep fully on-screen (half-width approx — wider bubbles for longer chats)
   const halfW = isMobile() ? 105 : 145;
   const padTop = isMobile() ? 52 : 60;
   const padBot = isMobile() ? 130 : 110;
@@ -929,6 +941,15 @@ function updateDialogueAnchors() {
   placeBubble(elBoxCad, caduceus, 2.5);
 }
 
+// Track press vs drag so a click always speaks a new phrase
+const press = {
+  x: 0,
+  y: 0,
+  moved: false,
+  pid: null,
+  t: 0,
+};
+
 function onPointerDown(event) {
   if (isUiTarget(event)) return;
   if (event.button !== undefined && event.button !== 0) return;
@@ -942,24 +963,25 @@ function onPointerDown(event) {
     controls.autoRotate = false;
     setCursor("grabbing");
     hand.visible = true;
+    press.x = event.clientX;
+    press.y = event.clientY;
+    press.moved = false;
+    press.pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
+    press.t = performance.now();
     if (grabHint) {
       grabHint.textContent =
         grab.kind === "caduceus"
-          ? "Caduceus grabbed! Fluid snakes · drag & toss"
-          : "Mjolnir grabbed! Drag around · release to toss";
+          ? "Caduceus — click for a new phrase · drag to toss"
+          : "Mjolnir — click for a new phrase · drag to toss";
     }
 
     projectOntoDragPlane(event, grab.hit, picked.position);
     grab.offset.copy(picked.position).sub(grab.hit);
     grab.last.copy(picked.position);
     grab.vel.set(0, 0, 0);
-    picked.position.y += 0.2;
+    picked.position.y += 0.12;
     strike(picked);
-    // Personality line on grab (Ollama via local server)
-    try {
-      window.ArtifactAI?.setActivePersona?.(grab.kind === "caduceus" ? "caduceus" : "mjolnir");
-      window.ArtifactAI?.speak?.(grab.kind === "caduceus" ? "caduceus" : "mjolnir", "grab");
-    } catch (_) {}
+    // Speech fires on pointer-up so click vs toss is one line (no double-swap)
     try {
       renderer.domElement.setPointerCapture(event.pointerId);
     } catch (_) {}
@@ -974,6 +996,9 @@ function onPointerMove(event) {
   }
 
   if (grab.active && grab.target) {
+    const dx = event.clientX - press.x;
+    const dy = event.clientY - press.y;
+    if (dx * dx + dy * dy > 36) press.moved = true;
     if (projectOntoDragPlane(event, grab.hit, grab.target.position)) {
       const next = grab.hit.clone().add(grab.offset);
       next.x = THREE.MathUtils.clamp(next.x, -4.5, 4.5);
@@ -994,15 +1019,16 @@ function onPointerMove(event) {
   grab.hovering = !!over;
   setCursor(over ? "grab" : "default");
   if (grabHint) {
-    if (over === caduceus) grabHint.textContent = "Grab the Caduceus — DNA snakes flow";
-    else if (over === hammer) grabHint.textContent = "Grab Mjolnir! (click & drag)";
-    else grabHint.textContent = "Grab Mjolnir or Caduceus · open menu for pay links";
+    if (over === caduceus) grabHint.textContent = "Click Caduceus for a new phrase · drag to toss";
+    else if (over === hammer) grabHint.textContent = "Click Mjolnir for a new phrase · drag to toss";
+    else grabHint.textContent = "Click a relic for a new phrase · Talk for a long duel";
   }
 }
 
 function onPointerUp(event) {
   if (!grab.active) return;
   const was = grab.target;
+  const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
   lastTossed = was;
   grab.active = false;
   controls.enabled = true;
@@ -1011,20 +1037,26 @@ function onPointerUp(event) {
   if (grabHint) {
     grabHint.textContent =
       grab.kind === "caduceus"
-        ? "Caduceus returns… snakes keep flowing"
-        : "Mjolnir floats home… grab either relic anytime";
+        ? "Caduceus ready — click again for another phrase"
+        : "Mjolnir ready — click again for another phrase";
   }
 
   grab.vel.multiplyScalar(14);
   grab.spin.y += grab.vel.x * 0.5;
-  if (grab.vel.length() > 1.5) strike(was);
+  const tossedHard = grab.vel.length() > 1.5 && press.moved;
+  // ONE speech per interaction: toss phrase if flung, else press/click phrase
   try {
-    const pid = grab.kind === "caduceus" ? "caduceus" : "mjolnir";
-    window.ArtifactAI?.setActivePersona?.(pid);
-    window.ArtifactAI?.speak?.(pid, grab.vel.length() > 1.5 ? "toss" : "toss");
+    if (tossedHard) {
+      strike(was);
+      window.ArtifactAI?.speakPhrase?.(pid, "toss");
+    } else {
+      window.ArtifactAI?.speakPhrase?.(pid, "press");
+    }
   } catch (_) {}
 
   grab.target = null;
+  press.moved = false;
+  press.pid = null;
   try {
     renderer.domElement.releasePointerCapture(event.pointerId);
   } catch (_) {}
@@ -1202,10 +1234,6 @@ function animate() {
   }
 
   updateDialogueAnchors();
-
-  runeGroup.rotation.y = t * 0.25;
-  runeMat.opacity = 0.2 + Math.sin(t * 2) * 0.12;
-  ring.material.opacity = 0.15 + Math.sin(t * 1.5) * 0.08;
 
   auraTimer += dt;
   if (auraEnabled && auraTimer > 0.12) {
