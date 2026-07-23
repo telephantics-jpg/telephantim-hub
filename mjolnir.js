@@ -981,10 +981,7 @@ function onPointerDown(event) {
     grab.vel.set(0, 0, 0);
     picked.position.y += 0.12;
     strike(picked);
-    // Every press/click: new phrase from this artifact
-    try {
-      window.ArtifactAI?.speakPhrase?.(press.pid, "press");
-    } catch (_) {}
+    // Speech fires on pointer-up so click vs toss is one line (no double-swap)
     try {
       renderer.domElement.setPointerCapture(event.pointerId);
     } catch (_) {}
@@ -1047,13 +1044,15 @@ function onPointerUp(event) {
   grab.vel.multiplyScalar(14);
   grab.spin.y += grab.vel.x * 0.5;
   const tossedHard = grab.vel.length() > 1.5 && press.moved;
-  if (tossedHard) {
-    strike(was);
-    // Hard toss gets a fresh toss phrase (different from the press line)
-    try {
+  // ONE speech per interaction: toss phrase if flung, else press/click phrase
+  try {
+    if (tossedHard) {
+      strike(was);
       window.ArtifactAI?.speakPhrase?.(pid, "toss");
-    } catch (_) {}
-  }
+    } else {
+      window.ArtifactAI?.speakPhrase?.(pid, "press");
+    }
+  } catch (_) {}
 
   grab.target = null;
   press.moved = false;

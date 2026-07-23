@@ -7,7 +7,14 @@
  * Characters never mention tech.
  */
 import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from "./native-brain.js";
-import { freeMindsBanter, freeMindsSpeak, freeMindsHealth } from "./free-minds.js";
+import {
+  freeMindsBanter,
+  freeMindsSpeak,
+  freeMindsHealth,
+  sceneSeed,
+  looksLikePromptLeak,
+  isStrongLine,
+} from "./free-minds.js";
 import {
   pickWord as pickCachedWord,
   pickInteractLine,
@@ -220,13 +227,33 @@ function wireDboxMinimize() {
   });
 }
 
-export function showInBox(persona, text, meta, power) {
+/** Per-relic speech generation — late free-mind replies must not overwrite a newer click. */
+const speechGen = { mjolnir: 0, caduceus: 0 };
+const stickyText = { mjolnir: "", caduceus: "" };
+
+function speechHoldMs(text, opts = {}) {
+  const len = String(text || "").length;
+  // Readable hold — min ~14s, scales with length, max ~48s (was flashing away ~6–16s)
+  const base = opts.thinking ? 8000 : 14000;
+  const scaled = base + len * 55;
+  return Math.min(opts.maxMs || 48000, Math.max(opts.minMs || 12000, scaled));
+}
+
+export function showInBox(persona, text, meta, power, opts = {}) {
   const id = persona === "caduceus" ? "caduceus" : "mjolnir";
   const b = boxes[id];
   if (!b?.root) return;
+  // Optional: refuse overwrite of sticky line unless same gen or force
+  if (
+    opts.onlyIfGen != null &&
+    opts.onlyIfGen !== speechGen[id]
+  ) {
+    return;
+  }
   if (b.text) b.text.textContent = text || "…";
   if (b.meta) b.meta.textContent = meta || "word of power";
   if (b.power && power != null) b.power.textContent = `PWR ${power}`;
+  if (text && text !== "…") stickyText[id] = text;
   b.root.classList.add("show", "pulse");
   const collapsed = b.root.classList.contains("collapsed");
   // Soft ping when minimized — mind is still talking, stage stays clear
@@ -237,16 +264,21 @@ export function showInBox(persona, text, meta, power) {
   }
   setTimeout(() => b.root.classList.remove("pulse"), 450);
   clearTimeout(hideTimers[id]);
+  if (opts.sticky) {
+    // Stay until next speech / banter end — don't auto-hide
+    hideTimers[id] = null;
+    return;
+  }
   // Collapsed chips stay while the mind is active (don't vanish mid-banter)
   if (collapsed) {
     hideTimers[id] = setTimeout(() => {
       b.root.classList.remove("active-speaker");
       // keep .show so the chip remains until banter ends / user hides
-    }, Math.min(16000, 4000 + String(text || "").length * 42));
+    }, speechHoldMs(text, opts));
     return;
   }
-  // Expanded: readable hold, then soft hide so stage reopens
-  const hold = Math.min(16000, 4000 + String(text || "").length * 42);
+  // Expanded: hold long enough to read; don't flash-switch
+  const hold = speechHoldMs(text, opts);
   hideTimers[id] = setTimeout(() => {
     b.root.classList.remove("active-speaker", "show");
   }, hold);
@@ -347,43 +379,32 @@ export async function speak(persona, event, message, opts = {}) {
       : id === "mjolnir"
         ? "power · courage"
         : "healing · balance";
-  const prompt = interactPrompt(id, event, message);
-
-  // Instant quality line while minds think (event-specific cache)
+  const seed = sceneSeed(id, event || "grab");
+  const gen = ++speechGen[id];
   const cached = pickInteractLine(id, event || "grab");
 
-  // Full dual banter owns the stage — still give a strong cached beat
+  // Full dual banter owns the stage — one sticky cached beat, no mid-swap spam
   if (busy && !opts.skipBusy) {
-    showInBox(id, cached, meta, null);
-    freeMindsSpeak(id, prompt)
-      .then((fm) => {
-        if (fm?.text) {
-          setBrainPill("free", "Free minds");
-          showInBox(id, fm.text, meta, null);
-        }
-      })
-      .catch(() => {});
+    showInBox(id, cached, meta, null, { onlyIfGen: gen, sticky: true });
     return { text: cached, provider: "cache", deferred: true };
   }
 
+  setActivePersona(id);
   if (!opts.quiet) {
-    setActivePersona(id);
-    // Show a good cached line immediately, then upgrade if free minds answers well
-    showInBox(id, cached, meta, null);
-  } else {
-    setActivePersona(id);
+    // Thinking only — do NOT flash a full line then replace it
+    showInBox(id, "…", meta, null, { onlyIfGen: gen, thinking: true });
   }
 
   const lock = !opts.skipBusy;
   if (lock) busy = true;
 
   try {
-    // 1) Free minds (same as 2D Luna Camp) — only keep strong polished lines
+    // 1) Free minds — scene seed only (never director "Reply ONLY as…")
     try {
-      const fm = await freeMindsSpeak(id, prompt);
-      if (fm?.text) {
+      const fm = await freeMindsSpeak(id, seed, { event: event || "grab" });
+      if (fm?.text && isStrongLine(fm.text) && !looksLikePromptLeak(fm.text) && gen === speechGen[id]) {
         setBrainPill("free", "Free minds");
-        showInBox(id, fm.text, meta, null);
+        showInBox(id, fm.text, meta, null, { onlyIfGen: gen, sticky: true });
         return fm;
       }
     } catch (_) {}
@@ -398,8 +419,11 @@ export async function speak(persona, event, message, opts = {}) {
           message: message || prompt,
         }),
       });
-      const line = (data.text && String(data.text).trim().length > 30 ? data.text : null) || cached;
-      showInBox(id, line, meta, data.power);
+      let line = (data.text && String(data.text).trim().length > 30 ? data.text : null) || cached;
+      if (looksLikePromptLeak(line)) line = cached;
+      if (gen === speechGen[id]) {
+        showInBox(id, line, meta, data.power, { onlyIfGen: gen, sticky: true });
+      }
       if (data.power_all) {
         if (boxes.mjolnir.power && data.power_all.mjolnir != null)
           boxes.mjolnir.power.textContent = `PWR ${data.power_all.mjolnir}`;
@@ -422,17 +446,19 @@ export async function speak(persona, event, message, opts = {}) {
       });
       if (m !== "none") {
         const text = await nativeSpeak(id, prompt);
-        if (text && text.length > 30) {
+        if (text && text.length > 30 && gen === speechGen[id]) {
           setBrainPill("native", "Local mind");
-          showInBox(id, text, meta, null);
+          showInBox(id, text, meta, null, { onlyIfGen: gen, sticky: true });
           return { text, provider: m };
         }
       }
     } catch (_) {}
 
-    // 4) High-quality event cache (already shown; reaffirm)
-    setBrainPill("script", "Relics ready");
-    showInBox(id, cached, meta, null);
+    // 4) One sticky cached line (never a second swap after a brain line)
+    if (gen === speechGen[id]) {
+      setBrainPill("script", "Relics ready");
+      showInBox(id, cached, meta, null, { onlyIfGen: gen, sticky: true });
+    }
     return { text: cached, provider: "cache" };
   } finally {
     if (lock) busy = false;
@@ -440,16 +466,16 @@ export async function speak(persona, event, message, opts = {}) {
 }
 
 /**
- * Click / press a relic → always speak a NEW phrase (instant cache + optional free-mind upgrade).
- * Not blocked by Talk banter; each press cycles a fresh line.
+ * Click / press a relic → ONE stable phrase (no flash-swap).
+ * Free minds may answer first; cache is fallback only — never "line A then line B".
  */
 const _phraseCooldown = { mjolnir: 0, caduceus: 0 };
 
 export function speakPhrase(persona, event = "press") {
   const id = persona === "caduceus" ? "caduceus" : "mjolnir";
   const now = Date.now();
-  // Allow rapid multi-click; only ignore true double-fire in same frame
-  if (now - (_phraseCooldown[id] || 0) < 80) return null;
+  // Debounce double-fire (pointer + toss, or multi-touch)
+  if (now - (_phraseCooldown[id] || 0) < 420) return null;
   _phraseCooldown[id] = now;
 
   const ev = event === "toss" || event === "bonk" || event === "grab" ? event : "press";
@@ -460,22 +486,46 @@ export function speakPhrase(persona, event = "press") {
         ? "power · courage"
         : "healing · balance";
 
-  const text = pickFreshPhrase(id, ev);
+  const gen = ++speechGen[id];
+  const fallback = pickFreshPhrase(id, ev);
   setActivePersona(id);
-  showInBox(id, text, meta, null);
+  // Soft thinking — single final line lands once (never a prompt leak)
+  showInBox(id, "…", meta, null, { onlyIfGen: gen, thinking: true });
 
-  // Soft upgrade from free minds when available (won't spam partner)
-  const prompt = interactPrompt(id, ev === "press" ? "grab" : ev, null);
-  freeMindsSpeak(id, prompt)
+  // Short scene seed only — never send "Reply ONLY as…" (that was echoing into the bubble)
+  const seed = sceneSeed(id, ev === "press" ? "grab" : ev);
+  let settled = false;
+  const settle = (text) => {
+    if (settled || gen !== speechGen[id]) return;
+    settled = true;
+    let line = String(text || "").trim();
+    if (!line || looksLikePromptLeak(line) || !isStrongLine(line)) {
+      line = fallback;
+    }
+    showInBox(id, line, meta, null, { onlyIfGen: gen, sticky: true });
+  };
+
+  // Give free minds a real window; fall back to quality cached saying (not a prompt)
+  const failSafe = setTimeout(() => {
+    if (!settled) settle(fallback);
+  }, 4200);
+
+  freeMindsSpeak(id, seed, { event: ev === "press" ? "grab" : ev })
     .then((fm) => {
-      if (!fm?.text) return;
-      // Only replace if this relic is still the active speaker vibe
-      setBrainPill("free", "Free minds");
-      showInBox(id, fm.text, meta, null);
+      clearTimeout(failSafe);
+      if (fm?.text && isStrongLine(fm.text) && !looksLikePromptLeak(fm.text)) {
+        setBrainPill("free", "Free minds");
+        settle(fm.text);
+      } else {
+        settle(fallback);
+      }
     })
-    .catch(() => {});
+    .catch(() => {
+      clearTimeout(failSafe);
+      settle(fallback);
+    });
 
-  return { text, provider: "phrase", persona: id };
+  return { text: fallback, provider: "phrase", persona: id, gen };
 }
 
 /**
