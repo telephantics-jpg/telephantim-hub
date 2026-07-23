@@ -9,8 +9,10 @@ Source of truth:
 Rules:
   - All playlist tracks (paginated until next_cursor is empty)
   - Proper titles from clip.title
-  - No duplicates (by song id, audio_url, normalized title — keep first)
-  - No length filter (whole playlist)
+  - Drop tracks under 3 minutes (duration < 180s); keep unknown duration
+  - No duplicates — method: first win by song id, then audio_url, then
+    normalized title (lowercase, strip punctuation). Same-title alt takes
+    are dropped after the first.
 
 Run:
   python refresh-suno-catalog.py
@@ -32,6 +34,8 @@ OUT = ROOT / "suno-catalog.json"
 HANDLE = "telephantix"
 PLAYLIST_ID = "eb4d09a6-f232-4b1a-8582-fcbf0d76a5f7"
 API_BASE = f"https://studio-api.prod.suno.com/api/playlist/{PLAYLIST_ID}/"
+# Drop songs shorter than this (seconds). Tracks with no duration are kept.
+MIN_SEC = 180.0  # 3 minutes
 # Never ship these to telephantim.com (id and/or normalized title)
 EXCLUDE_IDS = {
     "b6cf5be4-57f8-48c9-980a-25e4b5163ea5",  # Green Sleeves
@@ -39,6 +43,16 @@ EXCLUDE_IDS = {
 EXCLUDE_TITLES = {
     "green sleeves",
 }
+# Junk / placeholder titles (after norm_title)
+JUNK_TITLES = {
+    "untitled",
+    "verse 1",
+    "17 6s recording feb 28 12 06 pm",
+}
+JUNK_TITLE_RE = re.compile(
+    r"^(verse\s*\d+|untitled|recording\b.*@|\d+(\.\d+)?s\s+recording)",
+    re.I,
+)
 
 
 def fetch_json(url: str) -> dict:
@@ -122,11 +136,13 @@ def norm_title(t: str) -> str:
     return re.sub(r"\s+", " ", t).strip()
 
 
-def dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
+def filter_and_dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
     """
-    Keep every unique song id (full playlist).
-    Only skip true duplicates: same id or same audio URL.
-    Same title with different ids = different takes — keep both and label.
+    Filter + dedupe method (first wins, playlist order):
+      1. unique song id
+      2. unique audio_url (cdn1.suno.ai/{id}.mp3)
+      3. unique normalized title (alt takes of same song name dropped)
+    Also drop: under MIN_SEC, hard excludes, junk titles.
     """
     by_id: OrderedDict[str, dict] = OrderedDict()
     skipped: list[str] = []
@@ -140,7 +156,7 @@ def dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
 
     out: list[dict] = []
     seen_audio: set[str] = set()
-    title_counts: dict[str, int] = {}
+    seen_titles: set[str] = set()
 
     for c in by_id.values():
         title = re.sub(r"\s+", " ", (c.get("title") or "").strip())
@@ -148,28 +164,36 @@ def dedupe(clips: list[dict]) -> tuple[list[dict], list[str]]:
             title = f"Untitled · {c['id'][:8]}"
         nt = norm_title(title)
         audio = f"https://cdn1.suno.ai/{c['id']}.mp3"
+        dur = c.get("duration")
 
         if c["id"] in EXCLUDE_IDS or nt in EXCLUDE_TITLES:
             skipped.append(f"excluded: {title}")
             continue
+        if nt in JUNK_TITLES or JUNK_TITLE_RE.search(title.strip()):
+            skipped.append(f"junk: {title}")
+            continue
+        # Length: drop known short tracks; keep if duration missing
+        if dur is not None and float(dur) < MIN_SEC:
+            skipped.append(f"under 3m ({float(dur)/60:.1f}m): {title}")
+            continue
         if audio in seen_audio:
             skipped.append(f"dup audio: {title}")
             continue
-        seen_audio.add(audio)
+        if nt in seen_titles:
+            skipped.append(f"dup title: {title}")
+            continue
 
-        # Disambiguate repeated titles so both show in the queue
-        n = title_counts.get(nt, 0) + 1
-        title_counts[nt] = n
-        display = title if n == 1 else f"{title} ({n})"
+        seen_audio.add(audio)
+        seen_titles.add(nt)
 
         row = {
             "id": c["id"],
-            "title": display,
+            "title": title,
             "audio_url": audio,
             "artist": f"Suno · @{HANDLE}",
         }
-        if c.get("duration") is not None:
-            row["duration_sec"] = round(float(c["duration"]), 2)
+        if dur is not None:
+            row["duration_sec"] = round(float(dur), 2)
         out.append(row)
 
     return out, skipped
@@ -186,7 +210,7 @@ def main() -> int:
         return 1
 
     print(f"raw clips fetched: {len(clips)} (api num_total_results={num_total})")
-    final, skipped = dedupe(clips)
+    final, skipped = filter_and_dedupe(clips)
 
     # Playlist order as returned (page 1 first), not re-sorted by length
     text = json.dumps(final, indent=2, ensure_ascii=False) + "\n"
@@ -195,23 +219,26 @@ def main() -> int:
     if public.parent.is_dir():
         public.write_text(text, encoding="utf-8")
 
-    print(f"\nwrote {OUT} ({len(final)} unique tracks, no dups)")
+    print(
+        f"\nwrote {OUT} ({len(final)} tracks, ≥{MIN_SEC/60:.0f}m when duration known, "
+        f"no dups by id/audio/title)"
+    )
     for i, c in enumerate(final, 1):
         dur = c.get("duration_sec")
         d = f"{dur/60:4.1f}m" if dur else "  ?  "
         print(f"  {i:3}. {d}  {c['title']}")
 
     if skipped:
-        print(f"\nskipped dups/junk {len(skipped)}:")
-        for s in skipped[:30]:
+        print(f"\nskipped short/dups/junk/exclude {len(skipped)}:")
+        for s in skipped[:40]:
             print(f"  - {s}")
-        if len(skipped) > 30:
-            print(f"  … +{len(skipped)-30} more")
+        if len(skipped) > 40:
+            print(f"  … +{len(skipped)-40} more")
 
-    if num_total and len(final) < num_total * 0.9:
+    if num_total and len(final) < num_total * 0.5:
         print(
-            f"WARNING: got {len(final)} unique vs api total {num_total} "
-            f"— some may still be missing or were dups"
+            f"NOTE: {len(final)} kept vs api total {num_total} "
+            f"— expected when filtering <3m + title dups"
         )
 
     bad = [c for c in final if not c["title"] or c["id"] not in c["audio_url"]]
