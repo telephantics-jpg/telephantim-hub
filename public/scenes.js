@@ -110,13 +110,9 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
     }
     frame.hidden = false;
     frame.title = scene.label;
+    // No "Open Luna Camp full page" chip — covered the camp dock on mobile
     if (fallback) {
-      fallback.hidden = false;
-      const open = $("scene-fallback-open");
-      if (open) {
-        open.href = scene.url;
-        open.textContent = `Open ${scene.label} full page`;
-      }
+      fallback.hidden = true;
     }
   } else if (frame) {
     frame.hidden = true;

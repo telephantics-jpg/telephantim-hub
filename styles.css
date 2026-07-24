@@ -517,12 +517,9 @@ body.scene-bio .daily-word-stage {
 body.scene-external .float-actions {
   display: none !important;
 }
+/* Hide full-page open chip over 2D/3D — it sat on the camp dock on phones */
 body.scene-external .scene-fallback {
-  bottom: calc(var(--sheet-peek) + 56px + var(--safe-bottom));
-  left: auto;
-  right: 0.5rem;
-  transform: none;
-  z-index: 42;
+  display: none !important;
 }
 /* Leave a thin top safe zone so Luna's world-nav isn't under notches */
 body.scene-external .scene-frame {
