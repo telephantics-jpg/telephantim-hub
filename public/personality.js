@@ -299,23 +299,33 @@ function wait(ms) {
 }
 
 export async function refreshBrainPill() {
-  // 1) Same free minds as 2D Luna Camp (telephanti.com)
+  // 1) Local unified / hub API first (Ollama) — do not wait on remote free_minds
+  try {
+    const s = await api("/api/status");
+    const ok =
+      s &&
+      (s.ok ||
+        s.unified ||
+        s.server === "telephantim-ai" ||
+        s.server === "telephantix-unified" ||
+        s.cms ||
+        s.brains);
+    const awake = !!(ok && (s.brains || s.ollama || s.xai || s.groq || s.prefer === "ollama"));
+    if (awake) {
+      setBrainPill(
+        "cloud",
+        s.prefer === "ollama" || s.ollama ? "Ollama · Relics awake" : "Relics awake",
+      );
+      return s;
+    }
+  } catch (_) {}
+
+  // 2) Same free minds as 2D Luna Camp (remote) — optional
   try {
     const fm = await freeMindsHealth();
     if (fm.ok && fm.free_minds !== false) {
       setBrainPill("free", "Free minds");
       return { ok: true, free_minds: true, backend: fm.backend };
-    }
-  } catch (_) {}
-
-  // 2) Optional telephantim-ai / local server
-  try {
-    const s = await api("/api/status");
-    const ok = s && s.server === "telephantim-ai";
-    const cloud = !!(ok && (s.brains || s.ollama || s.xai || s.groq));
-    if (cloud) {
-      setBrainPill("cloud", "Relics awake");
-      return s;
     }
   } catch (_) {}
 
@@ -411,7 +421,8 @@ export async function speak(persona, event, message, opts = {}) {
 
     // 2) Local/optional telephantim API
     try {
-      const data = await api("/api/chat", {
+      // /api/hub/chat = relics JSON (Luna owns POST /api/chat as SSE)
+      const data = await api("/api/hub/chat", {
         method: "POST",
         body: JSON.stringify({
           persona: id,

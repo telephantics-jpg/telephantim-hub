@@ -1,0 +1,82 @@
+GOOGLE ANALYTICS — Telephantim + Telephanti (Luna)
+==================================================
+
+Account ownership (Stood)
+-------------------------
+  Main / “good” Google account:  stoodstrong@gmail.com
+    → prefer for telephanti.com (Luna Camp) and everyday GA viewing
+
+  telephantim.com account:       telephantix@gmail.com
+    → owns / is for the hub site telephantim.com
+
+  Optional but smart: on each property, Admin → Property access management
+    → add the OTHER Gmail as Viewer or Editor so both logins can see both sites
+    without mixing ownership.
+
+What we track
+-------------
+  telephantim.com   hub (relics, bio, music, pay links)  site = telephantim
+  telephanti.com    Luna Camp                           site = luna
+
+  Brand name “Telephantix” is the artist/persona; the *sites* that report
+  traffic are telephantim + telephanti. telephantix.com (Beacons) is separate
+  unless you paste a G- ID into Beacons too.
+
+Measurement ID in code right now
+--------------------------------
+  G-418J7T1HZ1
+
+  Hub:  telephantix-demo/api-config.js  → TELEPHANTIM_GA_ID
+  Luna: luna-avatar/static/ga.js        → same default unless LUNA_GA_ID is set
+
+  Two clean options:
+  A) ONE property, TWO web streams (telephantim.com + telephanti.com)
+     same G- family or one G- with host dimension — simple reports, filter by host/site
+  B) TWO properties (one under telephantix@, one under stoodstrong@)
+     separate G- IDs in api-config.js vs ga.js — strict ownership split
+
+  Code already tags events with site=telephantim | site=luna so one property
+  still separates cleanly in Explorations.
+
+
+Setup under the right Gmail
+---------------------------
+1) telephantim.com  (sign in as telephantix@gmail.com)
+   analytics.google.com → Property → Data streams → Web
+   URL: https://telephantim.com
+   Copy G-… → TELEPHANTIM_GA_ID in api-config.js → redeploy hub
+
+2) telephanti.com   (sign in as stoodstrong@gmail.com)
+   Same or other property → stream for https://telephanti.com
+   If a different G-: set in luna pages or window.LUNA_GA_ID before ga.js
+   Redeploy Luna
+
+3) Cross-access (recommended)
+   Each property → Admin → Property access management
+   Invite stoodstrong@ on telephantim property (Viewer+)
+   Invite telephantix@ on telephanti property if you want symmetry
+
+
+Accuracy (both sites)
+---------------------
+  • localhost / file:// never send hits
+  • ?internal=1  → traffic_type=internal  (exclude in Admin data filter)
+  • ?ga_debug=1  → DebugView
+  • Hub virtual pages: /  /world/bio  /world/luna-2d  /world/luna-3d
+  • Events: world_view, music_*, relic_*, generate_lead (support), engagement_milestone
+
+  Mark yourself internal once per browser:
+    https://telephantim.com/?internal=1
+    https://telephanti.com/?internal=1
+
+
+Verify
+------
+  https://telephantim.com/?ga_debug=1  → Admin → DebugView
+  https://telephanti.com/?ga_debug=1
+
+Files
+-----
+  telephantix-demo/analytics.js
+  telephantix-demo/api-config.js
+  luna-avatar/static/ga.js

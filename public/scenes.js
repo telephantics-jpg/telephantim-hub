@@ -3,6 +3,29 @@
  * Bio = Beacons-style page (your video/image bg + scroll quote & links).
  */
 
+/**
+ * Camp URLs — same origin when unified server (one process).
+ * Fallback: local Luna :8767, then live telephanti.com.
+ */
+function lunaCampBase() {
+  try {
+    const h = (location.hostname || "").toLowerCase();
+    const port = String(location.port || "");
+    // Unified server: hub + firmament on same host/port
+    if (h === "localhost" || h === "127.0.0.1") {
+      // Prefer same origin (unified on 8765 or any port)
+      return location.origin;
+    }
+    // Live multi-domain: camp on telephanti.com
+    if (h.includes("telephantim") || h.includes("github.io")) {
+      return "https://telephanti.com";
+    }
+  } catch (_) {}
+  return "https://telephanti.com";
+}
+
+const LUNA = lunaCampBase();
+
 const SCENES = {
   telephantim: {
     id: "telephantim",
@@ -25,7 +48,8 @@ const SCENES = {
     label: "Luna Camp 2D",
     short: "2D",
     hint: "Luna Camp 2D",
-    url: "https://telephanti.com/firmament/play",
+    // hub=1 → camp hides its own Play music (hub has the one center button)
+    url: `${LUNA}/firmament/play?hub=1`,
     mode: "external",
   },
   "luna-3d": {
@@ -33,7 +57,7 @@ const SCENES = {
     label: "Luna Camp 3D",
     short: "3D",
     hint: "Luna Camp 3D",
-    url: "https://telephanti.com/firmament/3d",
+    url: `${LUNA}/firmament/3d?hub=1`,
     mode: "external",
   },
 };
@@ -94,6 +118,10 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   document.body.classList.toggle("scene-native", isRelics);
   // Never leave the hub pay-sheet open over Luna/Bio — covers content
   if (isExternal || isBio) {
+    document.body.classList.remove("sheet-open");
+  }
+  // 2D only: pay-socials bar is fully hidden (CSS); force closed
+  if (sceneId === "luna-2d") {
     document.body.classList.remove("sheet-open");
   }
 

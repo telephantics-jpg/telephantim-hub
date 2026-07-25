@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Telephantim Admin</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #12141c;
+      --panel2: #181b26;
+      --line: #2a2f3f;
+      --text: #eef1f8;
+      --muted: #9aa3b8;
+      --accent: #7c9cff;
+      --accent2: #b794f6;
+      --good: #3dd68c;
+      --bad: #ff6b7a;
+      --warn: #f0c14b;
+      --radius: 14px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); }
+    body {
+      background:
+        radial-gradient(900px 500px at 10% -10%, rgba(124,156,255,.18), transparent 55%),
+        radial-gradient(700px 400px at 100% 0%, rgba(183,148,246,.12), transparent 50%),
+        var(--bg);
+    }
+    a { color: var(--accent); }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+    .brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+    .brand h1 { margin: 0; font-size: 1.35rem; letter-spacing: .02em; }
+    .brand p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: 999px; font-size: .78rem;
+      background: var(--panel2); border: 1px solid var(--line); color: var(--muted);
+    }
+    .pill.on { color: var(--good); border-color: rgba(61,214,140,.35); }
+    .card {
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.25);
+    }
+    .card h2 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card .hint { margin: 0 0 14px; color: var(--muted); font-size: .88rem; line-height: 1.4; }
+    label { display: block; font-size: .78rem; color: var(--muted); margin: 10px 0 4px; }
+    input, textarea, select {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--line); background: #0d0f16; color: var(--text);
+      font: inherit;
+    }
+    input:focus, textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+    textarea { min-height: 88px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 720px) { .row { grid-template-columns: 1fr; } }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    button, .btn {
+      appearance: none; border: 0; cursor: pointer; font: inherit;
+      padding: 10px 14px; border-radius: 10px; color: #0b0c10; background: var(--accent);
+      font-weight: 600;
+    }
+    button.secondary, .btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+    button.danger { background: var(--bad); color: #1a0508; }
+    button.ghost { background: transparent; color: var(--muted); border: 1px solid transparent; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .tabs button {
+      background: transparent; color: var(--muted); border: 1px solid var(--line);
+      font-weight: 500; padding: 8px 12px;
+    }
+    .tabs button.active { color: var(--text); border-color: var(--accent); background: rgba(124,156,255,.12); }
+    .list-item {
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px;
+      background: rgba(0,0,0,.18);
+    }
+    .list-item .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+    .list-item strong { display: block; }
+    .list-item small { color: var(--muted); word-break: break-all; }
+    .toast {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+      background: #161a28; border: 1px solid var(--line); color: var(--text);
+      padding: 10px 16px; border-radius: 999px; font-size: .9rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,.4); z-index: 50;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .toast.show { opacity: 1; }
+    .toast.good { border-color: rgba(61,214,140,.45); }
+    .toast.bad { border-color: rgba(255,107,122,.5); }
+    .hidden { display: none !important; }
+    .login-wrap { max-width: 400px; margin: 10vh auto 0; }
+    .login-wrap h1 { text-align: center; }
+    .login-wrap .card { margin-top: 16px; }
+    .count { color: var(--muted); font-size: .85rem; }
+    .song-search { margin-bottom: 10px; }
+    .song-list { max-height: 420px; overflow: auto; padding-right: 4px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div id="toast" class="toast" role="status"></div>
+
+  <!-- LOGIN (visible by default so you always see a form) -->
+  <div id="view-login" class="wrap login-wrap">
+    <h1>Telephantim Admin</h1>
+    <p style="text-align:center;color:var(--muted);margin:0">Beacons-style dashboard for your hub</p>
+    <div class="card">
+      <p class="hint" id="login-hint">Sign in to edit profile, links, bio quote, and songs.</p>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Admin password" autofocus />
+      <div class="btn-row">
+        <button id="btn-login" type="button">Log in</button>
+        <a class="btn secondary" href="/" target="_blank" rel="noopener">View local site</a>
+      </div>
+      <p class="hint" style="margin-top:14px;margin-bottom:0" id="login-note">
+        Local password: <strong>telephantix</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="view-dash" class="wrap hidden">
+    <div class="brand">
+      <div>
+        <h1>Telephantim Dashboard</h1>
+        <p>Edit what visitors see · save · it goes live via the API</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <span class="pill on" id="status-pill">CMS online</span>
+        <button type="button" class="secondary" id="btn-logout">Log out</button>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <button type="button" data-tab="profile" class="active">Profile</button>
+      <button type="button" data-tab="relics">Relics page</button>
+      <button type="button" data-tab="bio">Bio page</button>
+      <button type="button" data-tab="songs">Music catalog</button>
+      <button type="button" data-tab="support">Pay / Support</button>
+      <button type="button" data-tab="featured">Featured</button>
+      <button type="button" data-tab="socials">Socials</button>
+    </div>
+
+    <!-- PROFILE -->
+    <section class="card tab-panel" data-panel="profile">
+      <h2>Profile</h2>
+      <p class="hint">Name, handle, tagline, avatar — the top of your Beacons-style page.</p>
+      <div class="row">
+        <div>
+          <label>Name</label>
+          <input id="p-name" />
+        </div>
+        <div>
+          <label>Handle</label>
+          <input id="p-handle" />
+        </div>
+      </div>
+      <label>Tagline</label>
+      <input id="p-tagline" />
+      <label>Avatar image URL</label>
+      <input id="p-avatar" />
+      <div class="row">
+        <div>
+          <label>Beacons URL</label>
+          <input id="p-beacons" />
+        </div>
+        <div>
+          <label>Main site URL</label>
+          <input id="p-site" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="save-profile">Save profile</button>
+      </div>
+    </section>
+
+    <!-- SUPPORT -->
+    <section class="card tab-panel hidden" data-panel="support">
+      <h2>Pay / Support links</h2>
+      <p class="hint">PayPal, Cash App, Venmo, GoFundMe, coffee — same idea as Beacons buttons.</p>
+      <div id="support-list"></div>
+      <div class="btn-row">
+        <button type="button" class="secondary" id="add-support">+ Add support link</button>
+        <button type="button" id="save-support">Save support links</button>
+      </div>
+    </section>
+
+    <!-- FEATURED -->
+    <section class="card tab-panel hidden" data-panel="featured">
+      <h2>Featured</h2>
+      <p class="hint">Albums, Luna Camp, anything you want to highlight.</p>
+      <div id="featured-list"></div>
+      <div class="btn-row">
+        <button type="button" class="secondary" id="add-featured">+ Add featured</button>
+        <button type="button" id="save-featured">Save featured</button>
+      </div>
+    </section>
+
+    <!-- SOCIALS -->
+    <section class="card tab-panel hidden" data-panel="socials">
+      <h2>Socials</h2>
+      <p class="hint">Instagram, X, Facebook, Threads…</p>
+      <div id="socials-list"></div>
+      <div class="btn-row">
+        <button type="button" class="secondary" id="add-social">+ Add social</button>
+        <button type="button" id="save-socials">Save socials</button>
+      </div>
+    </section>
+
+    <!-- RELICS -->
+    <section class="card tab-panel hidden" data-panel="relics">
+      <h2>Relics page</h2>
+      <p class="hint">
+        Background video + quote on the hammer/staff stage.
+        Video path example: <code>media/bg.mp4</code> (drop a file in the <code>media/</code> folder)
+        or any public URL like <code>https://…/my-clip.mp4</code>.
+      </p>
+      <label>Page title</label>
+      <input id="r-title" placeholder="Telephantim" />
+      <label>Top hint line</label>
+      <input id="r-hint" placeholder="Click a relic…" />
+      <label>Background video (path or URL)</label>
+      <input id="r-video" placeholder="media/bg.mp4 or https://…" />
+      <label>Background image fallback (optional)</label>
+      <input id="r-image" placeholder="media/bg.jpg" />
+      <label>Background quote on Relics page</label>
+      <textarea id="r-quote" placeholder="Words that float over the relics stage"></textarea>
+      <label>Quote by</label>
+      <input id="r-by" placeholder="Telephantim" />
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px">
+        <input type="checkbox" id="r-show-quote" style="width:auto" checked />
+        Show quote on Relics page
+      </label>
+      <div class="btn-row">
+        <button type="button" id="save-relics">Save relics page</button>
+        <a class="btn secondary" href="/#telephantim" target="_blank" rel="noopener">Preview Relics</a>
+      </div>
+    </section>
+
+    <!-- BIO -->
+    <section class="card tab-panel hidden" data-panel="bio">
+      <h2>Bio page</h2>
+      <p class="hint">Beacons-style bio: quote under your name + background video/image.</p>
+      <label>Quote</label>
+      <textarea id="bio-quote"></textarea>
+      <label>Attributed to</label>
+      <input id="bio-by" />
+      <label>Background mode</label>
+      <select id="bio-mode">
+        <option value="video">video</option>
+        <option value="image">image</option>
+        <option value="auto">auto</option>
+      </select>
+      <label>Bio background video (path or URL)</label>
+      <input id="bio-video" placeholder="media/bg.mp4" />
+      <label>Bio background image (path or URL)</label>
+      <input id="bio-image" placeholder="media/bg.jpg" />
+      <div class="btn-row">
+        <button type="button" id="save-bio">Save bio</button>
+        <a class="btn secondary" href="/#bio" target="_blank" rel="noopener">Preview Bio</a>
+      </div>
+    </section>
+
+    <!-- SONGS / CATALOG -->
+    <section class="card tab-panel hidden" data-panel="songs">
+      <h2>Music catalog</h2>
+      <p class="hint">
+        Playlist for hub <strong>♪ Play music</strong> (Relics / Bio / 2D / 3D on this PC).
+        Best paste: song <strong>title</strong> + <strong>UUID</strong> or
+        <code>https://cdn1.suno.ai/UUID.mp3</code>.
+        After add: open the site → <strong>♪ Play music</strong> → search the title (list reloads automatically).
+      </p>
+
+      <h2 style="font-size:1rem;margin-top:8px">Add one song</h2>
+      <div class="row">
+        <div>
+          <label>Song title</label>
+          <input id="song-title" placeholder="My new track" />
+        </div>
+        <div>
+          <label>UUID / CDN mp3 / any Suno link with a UUID</label>
+          <input id="song-id" placeholder="paste UUID or https://cdn1.suno.ai/….mp3" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" id="add-song">Add song to top</button>
+        <a class="btn secondary" href="/?v=75" target="_blank" rel="noopener">Open site + Play music</a>
+      </div>
+      <p class="hint" id="song-add-status" style="margin-top:8px"></p>
+
+      <h2 style="font-size:1rem;margin-top:20px">Catalog list</h2>
+      <div class="toolbar">
+        <span class="count" id="song-count">0 songs</span>
+        <input class="song-search" id="song-filter" placeholder="Filter songs…" style="max-width:260px;margin:0" />
+      </div>
+      <div class="song-list" id="song-list"></div>
+      <div class="btn-row">
+        <button type="button" id="save-songs">Save catalog changes</button>
+        <button type="button" class="secondary" id="export-songs">Download JSON</button>
+      </div>
+
+      <h2 style="font-size:1rem;margin-top:22px">Replace entire catalog</h2>
+      <p class="hint">Paste a JSON array of songs <code>[{ "id", "title", "audio_url" }, …]</code> then apply.</p>
+      <textarea id="song-import" placeholder='[ { "id": "…", "title": "…", "audio_url": "https://cdn1.suno.ai/….mp3" } ]' style="min-height:120px"></textarea>
+      <div class="btn-row">
+        <button type="button" class="secondary" id="import-songs">Apply pasted catalog</button>
+      </div>
+
+      <h2 style="font-size:1rem;margin-top:22px">Albums (Spotify / YouTube embeds)</h2>
+      <p class="hint">Fixed albums at the end of “Play all” mode.</p>
+      <div id="albums-list"></div>
+      <div class="btn-row">
+        <button type="button" class="secondary" id="add-album">+ Add album</button>
+        <button type="button" id="save-albums">Save albums</button>
+      </div>
+    </section>
+
+    <p class="hint" style="text-align:center;margin-top:8px">
+      Public site: <a href="https://telephantim.com" target="_blank" rel="noopener">telephantim.com</a>
+      · Content API: <code>/api/content</code>
+      · Updated: <span id="updated-at">—</span>
+    </p>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const toastEl = $("toast");
+    let content = null;
+    let tracks = [];
+
+    function toast(msg, kind) {
+      toastEl.textContent = msg;
+      toastEl.className = "toast show" + (kind ? " " + kind : "");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => { toastEl.className = "toast"; }, 2800);
+    }
+
+    async function api(path, opts = {}) {
+      const res = await fetch(path, {
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+        ...opts,
+      });
+      let data = {};
+      try { data = await res.json(); } catch (_) {}
+      if (!res.ok) {
+        const err = new Error(data.error || res.statusText || "request failed");
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+      return data;
+    }
+
+    function show(view) {
+      $("view-login").classList.toggle("hidden", view !== "login");
+      $("view-dash").classList.toggle("hidden", view !== "dash");
+    }
+
+    function setTab(name) {
+      document.querySelectorAll(".tabs button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tab === name);
+      });
+      document.querySelectorAll(".tab-panel").forEach((p) => {
+        p.classList.toggle("hidden", p.dataset.panel !== name);
+      });
+    }
+
+    function fillProfile() {
+      const p = content.profile || {};
+      $("p-name").value = p.name || "";
+      $("p-handle").value = p.handle || "";
+      $("p-tagline").value = p.tagline || "";
+      $("p-avatar").value = p.avatar || "";
+      $("p-beacons").value = p.beacons || "";
+      $("p-site").value = p.site || "";
+    }
+
+    function readProfile() {
+      content.profile = {
+        ...(content.profile || {}),
+        name: $("p-name").value.trim(),
+        handle: $("p-handle").value.trim(),
+        tagline: $("p-tagline").value.trim(),
+        avatar: $("p-avatar").value.trim(),
+        beacons: $("p-beacons").value.trim(),
+        site: $("p-site").value.trim(),
+      };
+    }
+
+    function fillBio() {
+      const b = content.bio || {};
+      $("bio-quote").value = b.quote || "";
+      $("bio-by").value = b.quoteBy || "";
+      $("bio-mode").value = b.mode || "video";
+      $("bio-video").value = b.video || "";
+      $("bio-image").value = b.image || "";
+    }
+
+    function readBio() {
+      content.bio = {
+        ...(content.bio || {}),
+        quote: $("bio-quote").value,
+        quoteBy: $("bio-by").value.trim(),
+        mode: $("bio-mode").value,
+        video: $("bio-video").value.trim(),
+        image: $("bio-image").value.trim(),
+      };
+    }
+
+    function fillRelics() {
+      const r = content.relics || {};
+      $("r-title").value = r.title || "";
+      $("r-hint").value = r.hint || "";
+      $("r-video").value = r.backgroundVideo || "";
+      $("r-image").value = r.backgroundImage || "";
+      $("r-quote").value = r.quote || "";
+      $("r-by").value = r.quoteBy || "";
+      $("r-show-quote").checked = r.showQuote !== false;
+    }
+
+    function readRelics() {
+      content.relics = {
+        ...(content.relics || {}),
+        title: $("r-title").value.trim(),
+        hint: $("r-hint").value.trim(),
+        backgroundVideo: $("r-video").value.trim(),
+        backgroundImage: $("r-image").value.trim(),
+        quote: $("r-quote").value,
+        quoteBy: $("r-by").value.trim(),
+        showQuote: $("r-show-quote").checked,
+      };
+    }
+
+    function linkEditor(listEl, items, fields) {
+      listEl.innerHTML = "";
+      (items || []).forEach((item, idx) => {
+        const box = document.createElement("div");
+        box.className = "list-item";
+        const html = fields.map((f) => {
+          const val = item[f.key] != null ? String(item[f.key]) : "";
+          return `<label>${f.label}</label><input data-i="${idx}" data-k="${f.key}" value="${escapeAttr(val)}" />`;
+        }).join("");
+        box.innerHTML = html + `<div class="btn-row"><button type="button" class="danger" data-del="${idx}">Remove</button></div>`;
+        listEl.appendChild(box);
+      });
+      listEl.querySelectorAll("input").forEach((inp) => {
+        inp.addEventListener("input", () => {
+          const i = +inp.dataset.i;
+          const k = inp.dataset.k;
+          items[i][k] = inp.value;
+        });
+      });
+      listEl.querySelectorAll("[data-del]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          items.splice(+btn.dataset.del, 1);
+          renderLists();
+        });
+      });
+    }
+
+    function escapeAttr(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;");
+    }
+
+    function renderLists() {
+      linkEditor($("support-list"), content.support || (content.support = []), [
+        { key: "title", label: "Title" },
+        { key: "subtitle", label: "Subtitle" },
+        { key: "url", label: "URL" },
+        { key: "icon", label: "Icon key (paypal, cashapp, …)" },
+        { key: "accent", label: "Accent color" },
+      ]);
+      linkEditor($("featured-list"), content.featured || (content.featured = []), [
+        { key: "title", label: "Title" },
+        { key: "subtitle", label: "Subtitle" },
+        { key: "url", label: "URL" },
+        { key: "icon", label: "Icon key" },
+      ]);
+      linkEditor($("socials-list"), content.socials || (content.socials = []), [
+        { key: "title", label: "Title" },
+        { key: "url", label: "URL" },
+        { key: "icon", label: "Icon key" },
+      ]);
+      $("updated-at").textContent = content.updatedAt || "not saved yet";
+      renderSongs();
+      renderAlbums();
+    }
+
+    function renderAlbums() {
+      const list = content.albums || (content.albums = []);
+      linkEditor($("albums-list"), list, [
+        { key: "title", label: "Title" },
+        { key: "artist", label: "Artist" },
+        { key: "type", label: "Type (spotify | youtube)" },
+        { key: "embedId", label: "Spotify embedId (album/…)" },
+        { key: "listId", label: "YouTube listId" },
+        { key: "id", label: "Internal id" },
+      ]);
+    }
+
+    function renderSongs() {
+      const q = ($("song-filter").value || "").toLowerCase().trim();
+      const host = $("song-list");
+      host.innerHTML = "";
+      const rows = tracks
+        .map((t, idx) => ({ t, idx }))
+        .filter(({ t }) => {
+          if (!q) return true;
+          return (t.title || "").toLowerCase().includes(q) || (t.id || "").toLowerCase().includes(q);
+        });
+      $("song-count").textContent = `${tracks.length} songs` + (q ? ` · showing ${rows.length}` : "");
+      rows.forEach(({ t, idx }) => {
+        const box = document.createElement("div");
+        box.className = "list-item";
+        box.innerHTML = `
+          <label>Title</label>
+          <input data-ti="${idx}" value="${escapeAttr(t.title || "")}" />
+          <small style="display:block;margin:6px 0;color:var(--muted)">${escapeAttr(t.id || "")}</small>
+          <label>Audio URL</label>
+          <input data-au="${idx}" value="${escapeAttr(t.audio_url || t.url || "")}" />
+          <div class="btn-row">
+            <button type="button" class="danger" data-rm="${escapeAttr(t.id || "")}">Remove</button>
+          </div>`;
+        host.appendChild(box);
+      });
+      host.querySelectorAll("[data-ti]").forEach((inp) => {
+        inp.addEventListener("input", () => {
+          const i = +inp.dataset.ti;
+          if (tracks[i]) tracks[i].title = inp.value;
+        });
+      });
+      host.querySelectorAll("[data-au]").forEach((inp) => {
+        inp.addEventListener("input", () => {
+          const i = +inp.dataset.au;
+          if (tracks[i]) tracks[i].audio_url = inp.value;
+        });
+      });
+      host.querySelectorAll("[data-rm]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.rm;
+          try {
+            const data = await api("/api/admin/suno-remove", {
+              method: "POST",
+              body: JSON.stringify({ id }),
+            });
+            tracks = data.tracks || [];
+            renderSongs();
+            toast("Song removed", "good");
+          } catch (e) {
+            toast(e.message || "Remove failed", "bad");
+          }
+        });
+      });
+    }
+
+    async function saveContent(msg) {
+      readProfile();
+      readBio();
+      readRelics();
+      const data = await api("/api/admin/content", {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      });
+      content = data.content || content;
+      $("updated-at").textContent = content.updatedAt || "—";
+      toast(msg || "Saved", "good");
+    }
+
+    async function loadAll() {
+      const [c, s] = await Promise.all([
+        api("/api/content"),
+        api("/api/suno-catalog"),
+      ]);
+      content = c.content || c;
+      if (!content.relics) {
+        content.relics = {
+          title: "Telephantim",
+          hint: "Click a relic for a new phrase · drag to toss · Talk for a duel",
+          backgroundVideo: (content.bio && content.bio.video) || "media/bg.mp4",
+          backgroundImage: (content.bio && content.bio.image) || "",
+          quote: (content.bio && content.bio.quote) || "",
+          quoteBy: (content.bio && content.bio.quoteBy) || "Telephantim",
+          showQuote: true,
+        };
+      }
+      tracks = s.tracks || (Array.isArray(s) ? s : []);
+      fillProfile();
+      fillBio();
+      fillRelics();
+      renderLists();
+    }
+
+    async function boot() {
+      let session;
+      try {
+        session = await api("/api/admin/session");
+      } catch (e) {
+        $("login-note").textContent = "Cannot reach admin API. Run: python server.py";
+        show("login");
+        return;
+      }
+      if (!session.passwordConfigured) {
+        $("login-hint").textContent = "Set ADMIN_PASSWORD on the server, then refresh.";
+        $("login-note").textContent = session.cloud
+          ? "Render → your telephantim-ai service → Environment → ADMIN_PASSWORD"
+          : "PowerShell: $env:ADMIN_PASSWORD='your-secret'; python server.py";
+        show("login");
+        return;
+      }
+      if (session.cloud) {
+        $("login-note").textContent = "Live admin on this server. Use the password you set in Render.";
+      } else {
+        $("login-note").textContent = "Local default password is telephantix unless you set ADMIN_PASSWORD.";
+      }
+      if (session.loggedIn) {
+        show("dash");
+        try {
+          await loadAll();
+        } catch (e) {
+          toast("Load failed: " + e.message, "bad");
+        }
+      } else {
+        show("login");
+      }
+    }
+
+    $("btn-login").addEventListener("click", async () => {
+      try {
+        await api("/api/admin/login", {
+          method: "POST",
+          body: JSON.stringify({ password: $("password").value }),
+        });
+        show("dash");
+        await loadAll();
+        toast("Welcome back", "good");
+      } catch (e) {
+        toast(e.data?.hint || e.message || "Login failed", "bad");
+      }
+    });
+    $("password").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") $("btn-login").click();
+    });
+    $("btn-logout").addEventListener("click", async () => {
+      try { await api("/api/admin/logout", { method: "POST", body: "{}" }); } catch (_) {}
+      show("login");
+      toast("Logged out");
+    });
+
+    document.querySelectorAll(".tabs button").forEach((b) => {
+      b.addEventListener("click", () => setTab(b.dataset.tab));
+    });
+
+    $("save-profile").addEventListener("click", () => saveContent("Profile saved").catch((e) => toast(e.message, "bad")));
+    $("save-bio").addEventListener("click", () => saveContent("Bio saved").catch((e) => toast(e.message, "bad")));
+    $("save-relics").addEventListener("click", () => saveContent("Relics page saved").catch((e) => toast(e.message, "bad")));
+    $("save-support").addEventListener("click", () => saveContent("Support links saved").catch((e) => toast(e.message, "bad")));
+    $("save-featured").addEventListener("click", () => saveContent("Featured saved").catch((e) => toast(e.message, "bad")));
+    $("save-socials").addEventListener("click", () => saveContent("Socials saved").catch((e) => toast(e.message, "bad")));
+    $("save-albums").addEventListener("click", () => saveContent("Albums saved").catch((e) => toast(e.message, "bad")));
+    $("add-album").addEventListener("click", () => {
+      content.albums = content.albums || [];
+      content.albums.push({
+        id: "album-" + Date.now(),
+        title: "New album",
+        artist: "Telephantix",
+        type: "spotify",
+        embedId: "album/",
+      });
+      renderAlbums();
+    });
+    $("export-songs").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(tracks, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "suno-catalog.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("Catalog downloaded", "good");
+    });
+    $("import-songs").addEventListener("click", async () => {
+      let parsed;
+      try {
+        parsed = JSON.parse($("song-import").value || "[]");
+      } catch (e) {
+        return toast("Invalid JSON", "bad");
+      }
+      if (!Array.isArray(parsed)) return toast("Need a JSON array", "bad");
+      try {
+        const data = await api("/api/admin/suno-catalog", {
+          method: "POST",
+          body: JSON.stringify({ tracks: parsed }),
+        });
+        tracks = data.tracks || parsed;
+        renderSongs();
+        toast("Catalog replaced (" + tracks.length + " songs)", "good");
+      } catch (e) {
+        toast(e.message, "bad");
+      }
+    });
+
+    $("add-support").addEventListener("click", () => {
+      content.support = content.support || [];
+      content.support.push({ id: "link-" + Date.now(), title: "New link", subtitle: "", url: "https://", icon: "spark", accent: "#7c9cff" });
+      renderLists();
+    });
+    $("add-featured").addEventListener("click", () => {
+      content.featured = content.featured || [];
+      content.featured.push({ id: "feat-" + Date.now(), title: "Featured", subtitle: "", url: "https://", icon: "music" });
+      renderLists();
+    });
+    $("add-social").addEventListener("click", () => {
+      content.socials = content.socials || [];
+      content.socials.push({ title: "Social", url: "https://", icon: "x" });
+      renderLists();
+    });
+
+    function extractSongPaste(raw) {
+      const s = String(raw || "").trim();
+      const uuid = s.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      if (uuid) {
+        const id = uuid[0].toLowerCase();
+        return { id, url: `https://cdn1.suno.ai/${id}.mp3` };
+      }
+      if (/cdn\d*\.suno\.ai\/.+\.mp3/i.test(s) || /\.mp3(\?|$)/i.test(s)) {
+        return { id: s, url: s };
+      }
+      return { id: s, url: s };
+    }
+
+    async function reloadTracksFromServer() {
+      const data = await api("/api/suno-catalog");
+      tracks = data.tracks || [];
+      renderSongs();
+      return tracks.length;
+    }
+
+    $("add-song").addEventListener("click", async () => {
+      const title = $("song-title").value.trim();
+      const raw = $("song-id").value.trim();
+      const status = $("song-add-status");
+      if (!raw) {
+        if (status) status.textContent = "Paste a UUID or cdn1.suno.ai/….mp3 link.";
+        return toast("Need a UUID or CDN mp3 URL", "bad");
+      }
+      if (/suno\.com\/s\//i.test(raw) && !/[0-9a-f]{8}-[0-9a-f]{4}/i.test(raw)) {
+        const msg = "That suno.com/s/… share link has no UUID — open the song on Suno, copy the long id from the URL or the cdn1.suno.ai mp3 link.";
+        if (status) status.textContent = msg;
+        return toast(msg, "bad");
+      }
+      const ref = extractSongPaste(raw);
+      if (status) status.textContent = "Adding…";
+      try {
+        const data = await api("/api/admin/suno-add", {
+          method: "POST",
+          body: JSON.stringify({
+            title: title || "New song",
+            id: ref.id,
+            url: ref.url,
+            audio_url: ref.url,
+          }),
+        });
+        tracks = data.tracks || [];
+        // Always re-pull so list matches disk
+        try { await reloadTracksFromServer(); } catch (_) { renderSongs(); }
+        $("song-title").value = "";
+        $("song-id").value = "";
+        const n = tracks.length;
+        const msg = `Added “${title || "New song"}” · catalog now ${n} songs · open site → ♪ Play music → search title`;
+        if (status) status.textContent = msg;
+        toast(msg, "good");
+      } catch (e) {
+        const msg = e.data?.hint || e.message || "Add failed — log in again?";
+        if (status) status.textContent = msg;
+        toast(msg, "bad");
+      }
+    });
+
+    $("save-songs").addEventListener("click", async () => {
+      try {
+        const data = await api("/api/admin/suno-catalog", {
+          method: "POST",
+          body: JSON.stringify({ tracks }),
+        });
+        tracks = data.tracks || tracks;
+        try { await reloadTracksFromServer(); } catch (_) { renderSongs(); }
+        toast("Catalog saved · open site → ♪ Play music to hear it", "good");
+        const status = $("song-add-status");
+        if (status) status.textContent = `Saved ${tracks.length} songs to the server.`;
+      } catch (e) {
+        toast(e.message || "Save failed — log in again?", "bad");
+      }
+    });
+
+    $("song-filter").addEventListener("input", renderSongs);
+
+    boot();
+  </script>
+</body>
+</html>

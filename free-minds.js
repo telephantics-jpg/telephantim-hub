@@ -13,7 +13,15 @@
  * camp/aether will echo them into the bubble. Scene seeds only.
  */
 
-const CAMP_API = "https://telephanti.com";
+// Prefer same-origin camp (unified server) so shop/TV/brains work offline of telephanti.com
+function campApiBase() {
+  try {
+    const h = (location.hostname || "").toLowerCase();
+    if (h === "localhost" || h === "127.0.0.1") return location.origin;
+  } catch (_) {}
+  return "https://telephanti.com";
+}
+const CAMP_API = campApiBase();
 
 function mapAgent(id) {
   const a = String(id || "").toLowerCase();

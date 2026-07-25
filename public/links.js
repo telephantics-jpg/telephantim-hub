@@ -2,6 +2,9 @@
  * Telephantix hub links (Beacons pay apps + Luna Camp)
  * Main site target: https://telephantix.com
  * Luna Camp lives on telephanti.com (separate).
+ *
+ * Editable live via /admin dashboard → data/site-content.json
+ * Defaults below ship with the static site; CMS can override at runtime.
  */
 export const PROFILE = {
   name: "Telephantix",
@@ -120,3 +123,26 @@ export const ICONS = {
   truth: "T",
   suno: "Su",
 };
+
+/** Merge CMS payload into live link tables (in-place so importers see updates). */
+export function applySiteContent(content) {
+  if (!content || typeof content !== "object") return;
+  if (content.profile && typeof content.profile === "object") {
+    Object.assign(PROFILE, content.profile);
+  }
+  if (Array.isArray(content.support)) {
+    SUPPORT.length = 0;
+    content.support.forEach((row) => row && SUPPORT.push(row));
+  }
+  if (Array.isArray(content.featured)) {
+    FEATURED.length = 0;
+    content.featured.forEach((row) => row && FEATURED.push(row));
+  }
+  if (Array.isArray(content.socials)) {
+    SOCIALS.length = 0;
+    content.socials.forEach((row) => row && SOCIALS.push(row));
+  }
+  if (content.icons && typeof content.icons === "object") {
+    Object.assign(ICONS, content.icons);
+  }
+}

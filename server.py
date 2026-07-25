@@ -10,21 +10,42 @@ Must use THIS server (not `python -m http.server`) or /api/* will 404.
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import random
 import re
+import secrets
 import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 ROOT = Path(__file__).resolve().parent
 PUBLIC = ROOT / "public"
 if not (PUBLIC / "index.html").exists():
     PUBLIC = ROOT
+
+# --- Beacons-style CMS (admin dashboard) ---
+SITE_CONTENT_FILE = ROOT / "data" / "site-content.json"
+SITE_CONTENT_PUBLIC = PUBLIC / "site-content.json"
+SUNO_CATALOG_FILE = ROOT / "suno-catalog.json"
+if not SUNO_CATALOG_FILE.is_file():
+    SUNO_CATALOG_FILE = PUBLIC / "suno-catalog.json"
+SUNO_CATALOG_PUBLIC = PUBLIC / "suno-catalog.json"
+ADMIN_COOKIE = "telephantim_admin"
+# On Render you MUST set ADMIN_PASSWORD. Local default is only for laptop testing.
+_ON_CLOUD = bool(os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT"))
+ADMIN_PASSWORD = (os.getenv("ADMIN_PASSWORD") or "").strip()
+if not ADMIN_PASSWORD and not _ON_CLOUD:
+    ADMIN_PASSWORD = "telephantix"
+ADMIN_SESSION_SECRET = (os.getenv("ADMIN_SESSION_SECRET") or "").strip() or secrets.token_hex(32)
+ADMIN_SESSION_HOURS = int(os.getenv("ADMIN_SESSION_HOURS") or "168")  # 7 days
 
 def _load_dotenv() -> None:
     """Load KEY=VAL from nearby .env files without overwriting existing env."""
@@ -63,10 +84,20 @@ GROQ_API_KEY = (os.getenv("GROQ_API_KEY") or "").strip()
 GROQ_URL = os.getenv("GROQ_URL", "https://api.groq.com/openai/v1/chat/completions")
 GROQ_MODEL_MJOLNIR = os.getenv("GROQ_MODEL_MJOLNIR", "llama-3.1-8b-instant")
 GROQ_MODEL_CADUCEUS = os.getenv("GROQ_MODEL_CADUCEUS", "llama-3.3-70b-versatile")
-# Prefer cloud brains on live hosts; local keeps Ollama first unless forced
-PREFER_CLOUD = os.getenv("PREFER_XAI", "").strip() in ("1", "true", "yes") or bool(
-    os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PREFER_CLOUD")
+# Default brain: Ollama first.
+# Only use cloud-first when PREFER_CLOUD=1 or PREFER_XAI=1 *and* PREFER_OLLAMA=0.
+# (Do not auto-force cloud on Render — set PREFER_CLOUD=1 there if you need it.)
+_prefer_ollama = os.getenv("PREFER_OLLAMA", "1").strip().lower() not in (
+    "0",
+    "false",
+    "no",
+    "off",
 )
+_prefer_cloud_explicit = (
+    os.getenv("PREFER_CLOUD", "").strip().lower() in ("1", "true", "yes", "on")
+    or os.getenv("PREFER_XAI", "").strip().lower() in ("1", "true", "yes", "on")
+)
+PREFER_CLOUD = _prefer_cloud_explicit and not _prefer_ollama
 
 # Prefer different local minds when both exist
 MODEL_MJOLNIR = os.getenv("OLLAMA_MODEL_MJOLNIR", "llama3.2")
@@ -147,6 +178,234 @@ def _daily_cache_save() -> None:
 _daily_cache_load()
 
 
+def _default_site_content() -> dict:
+    """Minimal seed if data/site-content.json is missing."""
+    return {
+        "version": 1,
+        "updatedAt": None,
+        "profile": {
+            "name": "Telephantix",
+            "handle": "@telephantix",
+            "tagline": "Music · AI · Crowdfunding",
+            "avatar": "",
+            "beacons": "https://beacons.ai/telephantix",
+            "site": "https://telephantix.com",
+            "lunaCamp": "https://telephanti.com/firmament/play",
+            "lunaCamp2d": "https://telephanti.com/firmament/play",
+            "lunaCamp3d": "https://telephanti.com/firmament/3d",
+            "lunaHome": "https://telephanti.com/",
+        },
+        "support": [],
+        "featured": [],
+        "socials": [],
+        "bio": {
+            "mode": "video",
+            "video": "media/bg.mp4",
+            "image": "media/bg.jpg",
+            "poster": "media/bg-poster.jpg",
+            "quote": "",
+            "quoteBy": "Telephantim",
+            "muted": True,
+        },
+        "albums": [],
+        "icons": {},
+    }
+
+
+def load_site_content() -> dict:
+    for path in (SITE_CONTENT_FILE, SITE_CONTENT_PUBLIC, ROOT / "site-content.json"):
+        try:
+            if path.is_file():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    return data
+        except Exception as e:
+            print("[telephantim] site-content load failed:", path, e)
+    return _default_site_content()
+
+
+def save_site_content(content: dict) -> dict:
+    if not isinstance(content, dict):
+        raise ValueError("content must be object")
+    content = dict(content)
+    content["version"] = int(content.get("version") or 1)
+    content["updatedAt"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    text = json.dumps(content, indent=2, ensure_ascii=False)
+    SITE_CONTENT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SITE_CONTENT_FILE.write_text(text, encoding="utf-8")
+    try:
+        SITE_CONTENT_PUBLIC.parent.mkdir(parents=True, exist_ok=True)
+        SITE_CONTENT_PUBLIC.write_text(text, encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] public site-content mirror failed:", e)
+    # Root mirror for local ROOT==PUBLIC edge cases
+    try:
+        (ROOT / "site-content.json").write_text(text, encoding="utf-8")
+    except Exception:
+        pass
+    return content
+
+
+_UUID_RE = re.compile(
+    r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+    re.I,
+)
+
+
+def normalize_suno_track(row: dict) -> dict | None:
+    """
+    Normalize a catalog row to a playable {id, title, audio_url, ...}.
+    Accepts UUID, cdn1.suno.ai/UUID.mp3, or suno.com/song/UUID.
+    Rejects suno.com/s/short links (not a CDN id) and broken double-prefixed URLs.
+    """
+    if not isinstance(row, dict):
+        return None
+    title = str(row.get("title") or "Untitled").strip() or "Untitled"
+    raw_id = str(row.get("id") or row.get("songId") or "").strip()
+    audio = str(row.get("audio_url") or row.get("url") or "").strip()
+    blob = f"{raw_id} {audio}"
+
+    # Fix "https://cdn1.suno.ai/https://..." mistakes
+    if "cdn" in audio and audio.count("https://") > 1:
+        mfix = _UUID_RE.search(audio)
+        if mfix:
+            uid = mfix.group(1).lower()
+            return {
+                "id": uid,
+                "title": title,
+                "audio_url": f"https://cdn1.suno.ai/{uid}.mp3",
+                "artist": str(row.get("artist") or "Suno · @telephantix"),
+                "duration_sec": row.get("duration_sec"),
+            }
+        return None
+
+    m = _UUID_RE.search(blob)
+    if m:
+        uid = m.group(1).lower()
+        if audio.endswith(".mp3") and audio.startswith("http") and "cdn" in audio and uid in audio:
+            final_audio = audio
+        else:
+            final_audio = f"https://cdn1.suno.ai/{uid}.mp3"
+        return {
+            "id": uid,
+            "title": title,
+            "audio_url": final_audio,
+            "artist": str(row.get("artist") or "Suno · @telephantix"),
+            "duration_sec": row.get("duration_sec"),
+        }
+
+    # Direct mp3 URL without UUID (custom host)
+    if audio.startswith("http") and (".mp3" in audio.lower() or "audio" in audio.lower()):
+        tid = raw_id or hashlib.sha1(audio.encode("utf-8")).hexdigest()[:16]
+        return {
+            "id": tid,
+            "title": title,
+            "audio_url": audio,
+            "artist": str(row.get("artist") or "Suno · @telephantix"),
+            "duration_sec": row.get("duration_sec"),
+        }
+
+    # suno.com/s/SHORT — not playable as CDN without resolve
+    if "suno.com/s/" in blob.lower():
+        return None
+
+    if raw_id and not raw_id.startswith("http"):
+        # last resort: treat as opaque id (may 404 if not a real CDN key)
+        return {
+            "id": raw_id,
+            "title": title,
+            "audio_url": audio or f"https://cdn1.suno.ai/{raw_id}.mp3",
+            "artist": str(row.get("artist") or "Suno · @telephantix"),
+            "duration_sec": row.get("duration_sec"),
+        }
+    return None
+
+
+def load_suno_catalog() -> list:
+    for path in (SUNO_CATALOG_FILE, SUNO_CATALOG_PUBLIC, ROOT / "suno-catalog.json"):
+        try:
+            if path.is_file():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(data, list):
+                    return data
+                if isinstance(data, dict) and isinstance(data.get("tracks"), list):
+                    return data["tracks"]
+        except Exception as e:
+            print("[telephantim] suno catalog load failed:", path, e)
+    return []
+
+
+def save_suno_catalog(tracks: list) -> list:
+    if not isinstance(tracks, list):
+        raise ValueError("catalog must be array")
+    cleaned = []
+    seen = set()
+    for row in tracks:
+        norm = normalize_suno_track(row)
+        if not norm:
+            continue
+        tid = norm["id"]
+        if tid in seen:
+            continue
+        seen.add(tid)
+        cleaned.append(norm)
+    text = json.dumps(cleaned, indent=2, ensure_ascii=False)
+    try:
+        SUNO_CATALOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        SUNO_CATALOG_FILE.write_text(text, encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] suno catalog save failed:", e)
+    try:
+        SUNO_CATALOG_PUBLIC.write_text(text, encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] public suno catalog mirror failed:", e)
+    # Keep root mirror in sync when PUBLIC is a subfolder
+    try:
+        if SUNO_CATALOG_FILE.resolve() != (ROOT / "suno-catalog.json").resolve():
+            (ROOT / "suno-catalog.json").write_text(text, encoding="utf-8")
+    except Exception:
+        pass
+    return cleaned
+
+
+def admin_password_configured() -> bool:
+    return bool(ADMIN_PASSWORD)
+
+
+def _sign_session(exp: int) -> str:
+    payload = f"admin:{exp}"
+    sig = hmac.new(
+        ADMIN_SESSION_SECRET.encode("utf-8"),
+        payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def make_admin_token() -> str:
+    exp = int(time.time()) + max(1, ADMIN_SESSION_HOURS) * 3600
+    return _sign_session(exp)
+
+
+def verify_admin_token(token: str | None) -> bool:
+    if not token or not isinstance(token, str):
+        return False
+    parts = token.split(":")
+    if len(parts) != 3:
+        return False
+    who, exp_s, sig = parts
+    if who != "admin":
+        return False
+    try:
+        exp = int(exp_s)
+    except ValueError:
+        return False
+    if exp < int(time.time()):
+        return False
+    expect = _sign_session(exp)
+    return hmac.compare_digest(token, expect)
+
+
 def _parse_daily_text(raw: str) -> tuple[str, str]:
     text = (raw or "").strip()
     title = "Daily Word"
@@ -165,31 +424,14 @@ def _parse_daily_text(raw: str) -> tuple[str, str]:
 
 
 def generate_daily_wisdom(day: str) -> dict | None:
-    """Try XAI → Groq → Ollama once for this day. Returns payload or None."""
+    """Generate once for this day. Ollama first when local; cloud first only if PREFER_CLOUD."""
     user = (
         f"Date key: {day}. Write today's Daily Word.\n"
         "Line 1 exactly: TITLE: <short title>\n"
         "Then one paragraph 120-220 words: esoteric tone, strictly true core "
         "(science, history, psychology, natural philosophy). No lists."
     )
-    # Prefer cloud on live; still try all
-    attempts: list[tuple[str, callable]] = []
-    if XAI_API_KEY:
-        attempts.append(("xai", lambda: chat_xai(DAILY_SYSTEM, user)))
-    if GROQ_API_KEY:
-        attempts.append(
-            (
-                "groq",
-                lambda: chat_openai_compat(
-                    GROQ_URL,
-                    GROQ_API_KEY,
-                    GROQ_MODEL_CADUCEUS,
-                    DAILY_SYSTEM,
-                    user,
-                ),
-            )
-        )
-    # Ollama last (home PC / local)
+
     def _ollama() -> str:
         models = ollama_models()
         model = resolve_model(MODEL_CADUCEUS, models) or resolve_model(MODEL_MJOLNIR, models)
@@ -197,7 +439,32 @@ def generate_daily_wisdom(day: str) -> dict | None:
             return ""
         return chat_ollama(DAILY_SYSTEM, user, model)
 
-    attempts.append(("ollama", _ollama))
+    def _xai() -> str:
+        return chat_xai(DAILY_SYSTEM, user) if XAI_API_KEY else ""
+
+    def _groq() -> str:
+        if not GROQ_API_KEY:
+            return ""
+        return chat_openai_compat(
+            GROQ_URL,
+            GROQ_API_KEY,
+            GROQ_MODEL_CADUCEUS,
+            DAILY_SYSTEM,
+            user,
+        )
+
+    if PREFER_CLOUD:
+        attempts: list[tuple[str, callable]] = [
+            ("xai", _xai),
+            ("groq", _groq),
+            ("ollama", _ollama),
+        ]
+    else:
+        attempts = [
+            ("ollama", _ollama),
+            ("groq", _groq),
+            ("xai", _xai),
+        ]
 
     for source, fn in attempts:
         try:
@@ -381,7 +648,8 @@ def chat_ollama(system: str, user: str, model: str) -> str:
             # Slightly cooler = cleaner, less ramble/stage-play
             "options": {"temperature": 0.75, "num_predict": 180, "top_p": 0.9},
         },
-        timeout=180.0,
+        # Keep short so a slow model cannot freeze the whole site
+        timeout=45.0,
     )
     return sanitize_reply(((data.get("message") or {}).get("content") or "").strip())
 
@@ -399,7 +667,8 @@ def chat_openai_compat(url: str, api_key: str, model: str, system: str, user: st
             "max_tokens": 220,
         },
         headers={"Authorization": f"Bearer {api_key}"},
-        timeout=90.0,
+        # Fail fast on bad keys / network so pages keep loading
+        timeout=12.0,
     )
     choices = data.get("choices") or []
     if not choices:
@@ -615,11 +884,11 @@ def speak(persona_id: str, user_msg: str, model: str | None, models: list[str]) 
             print("[telephantim] ollama error:", e)
         return None
 
-    # Local PC: Ollama first. Render/cloud: cloud keys first (no home PC needed).
+    # Default: Ollama → Groq → xAI. Cloud-first only if PREFER_CLOUD=1 (and PREFER_OLLAMA off).
     if PREFER_CLOUD:
         order = [try_xai, try_groq, try_ollama]
     else:
-        order = [try_ollama, try_xai, try_groq]
+        order = [try_ollama, try_groq, try_xai]
     for fn in order:
         hit = fn()
         if hit:
@@ -639,15 +908,64 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-    def _json(self, code: int, payload: dict) -> None:
+    def _json(self, code: int, payload: dict, set_cookie: str | None = None) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self._cors()
         self.send_header("Cache-Control", "no-store")
+        if set_cookie is not None:
+            self.send_header("Set-Cookie", set_cookie)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _read_json_body(self) -> dict | None:
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(n) if n else b"{}"
+            data = json.loads(raw.decode("utf-8") or "{}")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return None
+
+    def _cookie_value(self, name: str) -> str | None:
+        raw = self.headers.get("Cookie") or ""
+        if not raw:
+            return None
+        jar = SimpleCookie()
+        try:
+            jar.load(raw)
+        except Exception:
+            return None
+        morsel = jar.get(name)
+        return morsel.value if morsel else None
+
+    def _is_admin(self) -> bool:
+        return verify_admin_token(self._cookie_value(ADMIN_COOKIE))
+
+    def _admin_cookie_header(self, token: str | None, clear: bool = False) -> str:
+        secure = _ON_CLOUD or self.headers.get("X-Forwarded-Proto") == "https"
+        if clear or not token:
+            parts = [
+                f"{ADMIN_COOKIE}=",
+                "Path=/",
+                "HttpOnly",
+                "SameSite=Lax",
+                "Max-Age=0",
+            ]
+        else:
+            max_age = max(1, ADMIN_SESSION_HOURS) * 3600
+            parts = [
+                f"{ADMIN_COOKIE}={token}",
+                "Path=/",
+                "HttpOnly",
+                "SameSite=Lax",
+                f"Max-Age={max_age}",
+            ]
+        if secure:
+            parts.append("Secure")
+        return "; ".join(parts)
 
     def do_OPTIONS(self) -> None:  # noqa: N802
         self.send_response(204)
@@ -656,6 +974,10 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?")[0]
+        if path in ("/admin", "/admin/"):
+            # Prefer /admin/index.html
+            self.path = "/admin/index.html"
+            return super().do_GET()
         if path == "/api/status":
             models = ollama_models()
             m_m = resolve_model(MODEL_MJOLNIR, models)
@@ -682,6 +1004,8 @@ class Handler(SimpleHTTPRequestHandler):
                     ),
                     "memory": len(MEMORY),
                     "brains": bool(models) or bool(XAI_API_KEY) or bool(GROQ_API_KEY),
+                    "admin": admin_password_configured(),
+                    "cms": True,
                 },
             )
             return
@@ -692,6 +1016,7 @@ class Handler(SimpleHTTPRequestHandler):
                     "ok": True,
                     "server": "telephantim-ai",
                     "brains": bool(ollama_models()) or bool(XAI_API_KEY) or bool(GROQ_API_KEY),
+                    "cms": True,
                 },
             )
             return
@@ -702,8 +1027,6 @@ class Handler(SimpleHTTPRequestHandler):
             # ?day=YYYY-MM-DD optional
             day = None
             if "?" in self.path:
-                from urllib.parse import parse_qs, urlparse
-
                 q = parse_qs(urlparse(self.path).query)
                 day = (q.get("day") or [None])[0]
             self._json(200, get_daily_wisdom(day))
@@ -721,16 +1044,172 @@ class Handler(SimpleHTTPRequestHandler):
                 },
             )
             return
+        # --- Public CMS reads ---
+        if path == "/api/content":
+            content = load_site_content()
+            self._json(200, {"ok": True, "content": content, "server": "telephantim-ai"})
+            return
+        if path == "/api/suno-catalog":
+            tracks = load_suno_catalog()
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "tracks": tracks,
+                    "count": len(tracks),
+                    "server": "telephantim-ai",
+                },
+            )
+            return
+        # --- Admin session ---
+        if path == "/api/admin/session":
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "loggedIn": self._is_admin(),
+                    "passwordConfigured": admin_password_configured(),
+                    "cloud": _ON_CLOUD,
+                    "server": "telephantim-ai",
+                },
+            )
+            return
         return super().do_GET()
 
     def do_POST(self) -> None:  # noqa: N802
         path = self.path.split("?")[0]
-        try:
-            n = int(self.headers.get("Content-Length") or 0)
-            raw = self.rfile.read(n) if n else b"{}"
-            data = json.loads(raw.decode("utf-8") or "{}")
-        except Exception:
+        data = self._read_json_body()
+        if data is None:
             self._json(400, {"ok": False, "error": "bad json"})
+            return
+
+        # --- Admin auth + CMS writes (before heavy brain work) ---
+        if path == "/api/admin/login":
+            if not admin_password_configured():
+                self._json(
+                    503,
+                    {
+                        "ok": False,
+                        "error": "password_not_set",
+                        "hint": "Set ADMIN_PASSWORD on the server (Render env), then redeploy.",
+                    },
+                )
+                return
+            pw = str(data.get("password") or "")
+            if not pw or not hmac.compare_digest(pw, ADMIN_PASSWORD):
+                time.sleep(0.4)  # slow brute force a bit
+                self._json(401, {"ok": False, "error": "bad_password"})
+                return
+            token = make_admin_token()
+            self._json(
+                200,
+                {"ok": True, "loggedIn": True, "server": "telephantim-ai"},
+                set_cookie=self._admin_cookie_header(token),
+            )
+            return
+
+        if path == "/api/admin/logout":
+            self._json(
+                200,
+                {"ok": True, "loggedIn": False},
+                set_cookie=self._admin_cookie_header(None, clear=True),
+            )
+            return
+
+        if path == "/api/admin/content":
+            if not self._is_admin():
+                self._json(401, {"ok": False, "error": "login_required"})
+                return
+            payload = data.get("content") if isinstance(data.get("content"), dict) else data
+            try:
+                saved = save_site_content(payload)
+            except Exception as e:
+                self._json(400, {"ok": False, "error": str(e)})
+                return
+            self._json(200, {"ok": True, "content": saved, "server": "telephantim-ai"})
+            return
+
+        if path == "/api/admin/suno-catalog":
+            if not self._is_admin():
+                self._json(401, {"ok": False, "error": "login_required"})
+                return
+            tracks = data.get("tracks") if isinstance(data.get("tracks"), list) else data.get("catalog")
+            if not isinstance(tracks, list):
+                self._json(400, {"ok": False, "error": "tracks array required"})
+                return
+            try:
+                saved = save_suno_catalog(tracks)
+            except Exception as e:
+                self._json(400, {"ok": False, "error": str(e)})
+                return
+            self._json(
+                200,
+                {"ok": True, "tracks": saved, "count": len(saved), "server": "telephantim-ai"},
+            )
+            return
+
+        if path == "/api/admin/suno-add":
+            if not self._is_admin():
+                self._json(401, {"ok": False, "error": "login_required"})
+                return
+            tid = str(data.get("id") or data.get("songId") or "").strip()
+            raw_url = str(data.get("url") or data.get("audio_url") or "").strip()
+            title = str(data.get("title") or "New song").strip() or "New song"
+            # Prefer the field that looks most like a CDN / UUID paste
+            blob = " ".join(x for x in (raw_url, tid) if x)
+            if "suno.com/s/" in blob.lower() and not _UUID_RE.search(blob):
+                self._json(
+                    400,
+                    {
+                        "ok": False,
+                        "error": "short_link",
+                        "hint": (
+                            "Paste the song UUID or CDN mp3 URL "
+                            "(https://cdn1.suno.ai/UUID.mp3), not suno.com/s/… share links."
+                        ),
+                    },
+                )
+                return
+            norm = normalize_suno_track(
+                {
+                    "id": tid,
+                    "title": title,
+                    "audio_url": raw_url or tid,
+                    "artist": data.get("artist"),
+                    "duration_sec": data.get("duration_sec"),
+                }
+            )
+            if not norm:
+                self._json(
+                    400,
+                    {
+                        "ok": False,
+                        "error": "bad_song",
+                        "hint": "Need a UUID or https://cdn1.suno.ai/….mp3 link.",
+                    },
+                )
+                return
+            tracks = load_suno_catalog()
+            tracks = [t for t in tracks if str(t.get("id")) != norm["id"]]
+            tracks.insert(0, norm)
+            saved = save_suno_catalog(tracks)
+            self._json(
+                200,
+                {"ok": True, "tracks": saved, "count": len(saved), "added": norm["id"]},
+            )
+            return
+
+        if path == "/api/admin/suno-remove":
+            if not self._is_admin():
+                self._json(401, {"ok": False, "error": "login_required"})
+                return
+            tid = str(data.get("id") or data.get("songId") or "").strip()
+            if not tid:
+                self._json(400, {"ok": False, "error": "id required"})
+                return
+            tracks = [t for t in load_suno_catalog() if str(t.get("id")) != tid]
+            saved = save_suno_catalog(tracks)
+            self._json(200, {"ok": True, "tracks": saved, "count": len(saved), "removed": tid})
             return
 
         models = ollama_models()
@@ -963,11 +1442,24 @@ def main() -> None:
     print("=" * 56)
     print("  Telephantim AI server (required for speech)")
     print(f"  Open:    http://127.0.0.1:{PORT}/")
+    print(f"  Admin:   http://127.0.0.1:{PORT}/admin/")
     print(f"  Health:  http://127.0.0.1:{PORT}/api/status")
     print(f"  Ollama:  {'YES' if models else 'NO — start Ollama app'}")
     if models:
         print(f"  Mjolnir mind:   {m_m}")
         print(f"  Caduceus mind:  {m_c}")
+    if admin_password_configured():
+        if _ON_CLOUD:
+            print("  CMS:     ADMIN_PASSWORD set (login at /admin/)")
+        else:
+            print("  CMS:     /admin/  (local default password: telephantix)")
+            print("           override with env ADMIN_PASSWORD")
+    else:
+        print("  CMS:     set ADMIN_PASSWORD env to enable /admin login")
+    print(
+        f"  Brains:  {'CLOUD first (xAI/Groq)' if PREFER_CLOUD else 'OLLAMA first (default)'} · "
+        f"Ollama={'YES' if models else 'NO'}"
+    )
     print("  Do NOT use: python -m http.server  (breaks /api)")
     print("=" * 56)
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)

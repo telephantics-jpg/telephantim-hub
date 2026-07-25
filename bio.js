@@ -3,6 +3,8 @@
  */
 import { BIO } from "./bio-config.js";
 import { PROFILE, SUPPORT, FEATURED, ICONS } from "./links.js";
+import { hydrateSiteContent } from "./load-site.js";
+import { applyRotatingQuote, scheduleQuoteRefresh } from "./quote-rotate.js";
 
 function $(id) {
   return document.getElementById(id);
@@ -85,20 +87,24 @@ function applyMedia() {
   else setImageBg(BIO.image || poster);
 }
 
+function renderQuote() {
+  applyRotatingQuote(
+    { textId: "bio-quote-text", byId: "bio-quote-by" },
+    { fallbackText: BIO.quote, fallbackBy: BIO.quoteBy },
+  );
+}
+
 function renderProfile() {
   const av = $("bio-avatar");
   const name = $("bio-name");
   const handle = $("bio-handle");
-  const quote = $("bio-quote-text");
-  const by = $("bio-quote-by");
   if (av && PROFILE.avatar) {
     av.src = PROFILE.avatar;
     av.alt = PROFILE.name || "Profile";
   }
   if (name) name.textContent = PROFILE.name || "Telephantix";
   if (handle) handle.textContent = PROFILE.handle || "";
-  if (quote) quote.textContent = BIO.quote || "";
-  if (by) by.textContent = BIO.quoteBy ? `— ${BIO.quoteBy}` : "";
+  renderQuote();
 }
 
 function linkButton(item) {
@@ -180,17 +186,26 @@ function onScene(e) {
   }
 }
 
-function wire() {
+async function wire() {
+  try {
+    await hydrateSiteContent();
+  } catch (err) {
+    console.warn("Bio CMS hydrate failed; using defaults", err);
+  }
   renderProfile();
   renderLinks();
   applyMedia();
   window.addEventListener("telephantim-scene", onScene);
+  // Rotate quote every 2 hours while the tab stays open
+  scheduleQuoteRefresh(renderQuote);
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", wire);
+  document.addEventListener("DOMContentLoaded", () => {
+    wire();
+  });
 } else {
   wire();
 }
 
-window.TelephantimBio = { applyMedia, BIO };
+window.TelephantimBio = { applyMedia, BIO, refresh: wire };

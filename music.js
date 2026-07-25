@@ -10,7 +10,7 @@ const SUNO_PROFILE = "https://suno.com/@telephantix";
 const SUNO_OPEN = "go-suno.html";
 const SUNO_CATALOG_URL = "suno-catalog.json";
 
-/** Fixed albums (embeds). Suno tracks are injected from the catalog. */
+/** Fixed albums (embeds). Suno tracks are injected from the catalog. Editable via /admin. */
 const BASE_ALBUMS = [
   {
     id: "spotify-album",
@@ -60,6 +60,14 @@ let shuffleOn = false;
  * Never autoplay on page load / catalog hydrate / scene change.
  */
 let userStarted = false;
+/** Live filter for the track list search box */
+let listFilter = "";
+/** First open this page session → shuffled queue + random start (not always song #1) */
+let firstOpenShufflePending = true;
+/** Drag-placed Play music button (null = default center-bottom) */
+const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
+let musicBtnPos = null; // { x, y } top-left of button
+let musicBtnDrag = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -157,43 +165,112 @@ function sunoFromCatalog(rows) {
     .filter(Boolean);
 }
 
+function catalogUrls() {
+  const bust = Date.now();
+  // Always hit local server first (admin saves land here)
+  const urls = [`/api/suno-catalog?v=${bust}`];
+  const api = (typeof window !== "undefined" && window.TELEPHANTIM_API != null
+    ? String(window.TELEPHANTIM_API)
+    : ""
+  ).replace(/\/$/, "");
+  let host = "";
+  try {
+    host = (location.hostname || "").toLowerCase();
+  } catch (_) {}
+  const isLocal = host === "localhost" || host === "127.0.0.1";
+  // On this PC, never pull a dead remote catalog over the admin-saved one
+  if (api && !isLocal) urls.push(`${api}/api/suno-catalog?v=${bust}`);
+  urls.push(`${SUNO_CATALOG_URL}?v=${bust}`);
+  return urls;
+}
+
+async function loadAlbumsFromCms() {
+  try {
+    const api = (typeof window !== "undefined" && window.TELEPHANTIM_API != null
+      ? String(window.TELEPHANTIM_API)
+      : ""
+    ).replace(/\/$/, "");
+    const urls = ["/api/content"];
+    if (api) urls.push(`${api}/api/content`);
+    urls.push(`site-content.json?v=${Date.now()}`);
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const content = data.content || data;
+        const albums = content && content.albums;
+        if (Array.isArray(albums) && albums.length) {
+          BASE_ALBUMS.length = 0;
+          albums.forEach((a) => a && BASE_ALBUMS.push(a));
+          rebuildPlaylist();
+          return true;
+        }
+      } catch (_) {
+        /* try next */
+      }
+    }
+  } catch (err) {
+    console.warn("CMS albums load failed", err);
+  }
+  return false;
+}
+
 async function loadSunoCatalog() {
   const sub = $("music-now-sub");
-  if (sub && !catalogLoaded) sub.textContent = "Loading all Suno songs…";
-  try {
-    const res = await fetch(`${SUNO_CATALOG_URL}?v=${Date.now()}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`catalog ${res.status}`);
-    const rows = await res.json();
-    orderedSunoTracks = sunoFromCatalog(rows);
-    allSunoTracks = [...orderedSunoTracks];
-    if (shuffleOn) {
-      applyShuffle(false);
-    } else {
-      rebuildPlaylist();
+  if (sub) sub.textContent = "Loading catalog…";
+  await loadAlbumsFromCms();
+  let lastErr = null;
+  for (const url of catalogUrls()) {
+    try {
+      const res = await fetch(url, { cache: "no-store", credentials: "same-origin" });
+      if (!res.ok) throw new Error(`catalog ${res.status}`);
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : data.tracks || data.catalog;
+      if (!Array.isArray(rows)) throw new Error("catalog not array");
+      // Empty remote is useless — keep trying (local file / other host)
+      if (!rows.length && !url.startsWith("/api/")) continue;
+      orderedSunoTracks = sunoFromCatalog(rows);
+      allSunoTracks = [...orderedSunoTracks];
+      // Default queue = full Suno list first so new admin adds show at top
+      mode = mode || "all";
+      if (shuffleOn) {
+        applyShuffle(false);
+      } else {
+        rebuildPlaylist();
+      }
+      catalogLoaded = true;
+      // First visit this session: shuffle so the same songs aren't always first
+      if (firstOpenShufflePending && allSunoTracks.length > 1) {
+        shuffleOn = true;
+        applyShuffle(false);
+        index = Math.floor(Math.random() * allSunoTracks.length);
+        // Don't clear flag here — setOpen also reshuffles once on first open for a fresh order
+      } else if (allSunoTracks.length && !shuffleOn) {
+        // Ordered mode — start at top of catalog
+        if (!userStarted) index = 0;
+      } else if (index >= PLAYLIST.length) {
+        index = 0;
+      }
+      updateSunoChip();
+      updateShuffleChip();
+      renderList();
+      if (userStarted) loadTrack(false);
+      else if (sub && allSunoTracks.length) {
+        sub.textContent = shuffleOn
+          ? `${allSunoTracks.length} songs · shuffled · tap Play`
+          : `${allSunoTracks.length} songs · search or tap a title`;
+      }
+      return allSunoTracks.length;
+    } catch (err) {
+      lastErr = err;
     }
-    catalogLoaded = true;
-    updateSunoChip();
-    updateShuffleChip();
-    renderList();
-    // Prefer landing on the full Suno queue once catalog is ready
-    if (allSunoTracks.length && !isSunoTrack(current())) {
-      index = 0;
-    }
-    // Do NOT start audio here — only refresh UI / media if user already hit Play
-    if (userStarted) loadTrack(false);
-    else if (sub && allSunoTracks.length) {
-      sub.textContent = `${allSunoTracks.length} songs ready · tap Play music`;
-    }
-    return allSunoTracks.length;
-  } catch (err) {
-    console.warn("Suno catalog load failed", err);
-    catalogLoaded = true;
-    updateSunoChip();
-    if (sub) sub.textContent = "Suno list offline — albums still play";
-    return 0;
   }
+  console.warn("Suno catalog load failed", lastErr);
+  catalogLoaded = true;
+  updateSunoChip();
+  if (sub) sub.textContent = "Suno list offline — albums still play";
+  return 0;
 }
 
 function current() {
@@ -255,18 +332,35 @@ function renderList() {
   if (!list) return;
   list.innerHTML = "";
 
+  const q = (listFilter || "").trim().toLowerCase();
+  const entries = PLAYLIST.map((t, i) => ({ t, i })).filter(({ t }) => {
+    if (!q) return true;
+    const hay = `${t.title || ""} ${t.artist || ""} ${t.songId || t.id || ""}`.toLowerCase();
+    return hay.includes(q);
+  });
+
   // Group label for long Suno lists
   if (sunoCount > 0) {
     const head = document.createElement("div");
     head.className = "music-list-head";
-    head.textContent =
-      mode === "suno"
+    head.textContent = q
+      ? `Search · ${entries.length} match${entries.length === 1 ? "" : "es"} (of ${PLAYLIST.length})`
+      : mode === "suno"
         ? `All published Suno · ${sunoCount}`
         : `Suno (${sunoCount}) + albums`;
     list.appendChild(head);
   }
 
-  PLAYLIST.forEach((t, i) => {
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "music-list-head";
+    empty.textContent = q ? "No songs match that search" : "No tracks loaded";
+    list.appendChild(empty);
+    updateHint();
+    return;
+  }
+
+  entries.forEach(({ t, i }) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "music-track" + (i === index ? " active" : "");
@@ -283,9 +377,22 @@ function renderList() {
   updateHint();
 }
 
+/** Tell camp iframe to stop any of its own audio (prevents double music). */
+function signalCampStopMusic() {
+  try {
+    const frame = document.getElementById("scene-frame");
+    if (frame && frame.contentWindow) {
+      frame.contentWindow.postMessage({ type: "telephantim-stop-music" }, "*");
+    }
+  } catch (_) {
+    /* cross-origin until camp is updated — safe to ignore */
+  }
+}
+
 function stopAllMedia() {
   const audio = $("music-audio");
   const frame = $("music-embed");
+  const stage = $("music-stage");
   if (audio) {
     try {
       audio.pause();
@@ -295,9 +402,13 @@ function stopAllMedia() {
     audio.hidden = true;
   }
   if (frame) {
-    frame.removeAttribute("src");
+    try {
+      frame.removeAttribute("src");
+    } catch (_) {}
     frame.hidden = true;
   }
+  if (stage) stage.classList.remove("has-audio", "has-embed");
+  signalCampStopMusic();
 }
 
 function loadTrack(autoPlayHint) {
@@ -339,25 +450,40 @@ function loadTrack(autoPlayHint) {
 
   if (!t) return;
 
+  const stage = $("music-stage");
+  // Always only one source: kill the other before starting this track
+  signalCampStopMusic();
+
   if (t.type === "audio" && audio && frame) {
+    // Native Suno mp3 — no iframe (prevents double playback)
+    try {
+      frame.removeAttribute("src");
+    } catch (_) {}
     frame.hidden = true;
-    frame.removeAttribute("src");
     audio.hidden = false;
-    if (audio.src !== t.url) {
+    if (stage) {
+      stage.classList.add("has-audio");
+      stage.classList.remove("has-embed");
+    }
+    if (audio.src !== t.url && !(audio.src && t.url && audio.src.endsWith(t.songId + ".mp3"))) {
       audio.src = t.url;
     }
     if (autoPlayHint) {
       audio.play().catch(() => {});
-    } else {
-      // Catalog/shuffle refresh — keep paused if user already paused
-      // (do not force-play)
     }
   } else if (frame && audio) {
-    audio.pause();
+    // Spotify / YouTube embed only — pause native audio fully
+    try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load?.();
+    } catch (_) {}
     audio.hidden = true;
-    audio.removeAttribute("src");
     frame.hidden = false;
-    // Only attach embed when user wants sound (avoids Spotify/YT auto-start)
+    if (stage) {
+      stage.classList.add("has-embed");
+      stage.classList.remove("has-audio");
+    }
     if (autoPlayHint || !frame.getAttribute("src")) {
       frame.src = embedSrc(t, !!autoPlayHint);
     } else {
@@ -374,6 +500,179 @@ function isAudioPlaying() {
   return !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
 }
 
+function loadMusicBtnPos() {
+  try {
+    const raw = localStorage.getItem(MUSIC_BTN_POS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.x === "number" && typeof p?.y === "number") return p;
+  } catch (_) {}
+  return null;
+}
+
+function saveMusicBtnPos(pos) {
+  try {
+    if (!pos) localStorage.removeItem(MUSIC_BTN_POS_KEY);
+    else localStorage.setItem(MUSIC_BTN_POS_KEY, JSON.stringify(pos));
+  } catch (_) {}
+}
+
+function clampMusicBtnPos(x, y, btn) {
+  const w = btn?.offsetWidth || 160;
+  const h = btn?.offsetHeight || 48;
+  const pad = 8;
+  const maxX = Math.max(pad, window.innerWidth - w - pad);
+  const maxY = Math.max(pad, window.innerHeight - h - pad);
+  return {
+    x: Math.min(maxX, Math.max(pad, x)),
+    y: Math.min(maxY, Math.max(pad, y)),
+  };
+}
+
+function applyMusicBtnPos() {
+  const btn = $("btn-music");
+  const panel = $("music-player");
+  if (!btn) return;
+  if (musicBtnPos) {
+    const p = clampMusicBtnPos(musicBtnPos.x, musicBtnPos.y, btn);
+    musicBtnPos = p;
+    btn.classList.add("is-placed");
+    btn.style.setProperty("--music-btn-left", `${p.x}px`);
+    btn.style.setProperty("--music-btn-top", `${p.y}px`);
+    btn.style.left = `${p.x}px`;
+    btn.style.top = `${p.y}px`;
+    btn.style.bottom = "auto";
+    btn.style.transform = "none";
+    // Panel sits above the button when open
+    if (panel) {
+      const pw = panel.offsetWidth || 360;
+      const ph = panel.offsetHeight || 280;
+      let px = p.x + (btn.offsetWidth || 160) / 2 - pw / 2;
+      let py = p.y - ph - 12;
+      if (py < 8) py = p.y + (btn.offsetHeight || 48) + 12;
+      px = Math.min(window.innerWidth - pw - 8, Math.max(8, px));
+      panel.classList.add("is-anchored");
+      panel.style.setProperty("--music-panel-left", `${px}px`);
+      panel.style.setProperty("--music-panel-top", `${py}px`);
+      panel.style.left = `${px}px`;
+      panel.style.top = `${py}px`;
+      panel.style.bottom = "auto";
+      panel.style.transform = "none";
+    }
+  } else {
+    btn.classList.remove("is-placed");
+    btn.style.removeProperty("--music-btn-left");
+    btn.style.removeProperty("--music-btn-top");
+    btn.style.left = "";
+    btn.style.top = "";
+    btn.style.bottom = "";
+    btn.style.transform = "";
+    if (panel) {
+      panel.classList.remove("is-anchored");
+      panel.style.removeProperty("--music-panel-left");
+      panel.style.removeProperty("--music-panel-top");
+      panel.style.left = "";
+      panel.style.top = "";
+      panel.style.bottom = "";
+      panel.style.transform = "";
+    }
+  }
+}
+
+function wireMusicBtnDrag() {
+  const btn = $("btn-music");
+  if (!btn || btn.dataset.dragWired === "1") return;
+  btn.dataset.dragWired = "1";
+  musicBtnPos = loadMusicBtnPos();
+  applyMusicBtnPos();
+
+  const onMove = (e) => {
+    if (!musicBtnDrag) return;
+    const pt = e.touches ? e.touches[0] : e;
+    if (!pt) return;
+    const dx = pt.clientX - musicBtnDrag.startX;
+    const dy = pt.clientY - musicBtnDrag.startY;
+    if (!musicBtnDrag.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      musicBtnDrag.moved = true;
+      btn.classList.add("is-dragging");
+      // First move off default: convert to absolute placement
+      if (!musicBtnPos) {
+        const r = btn.getBoundingClientRect();
+        musicBtnPos = { x: r.left, y: r.top };
+        musicBtnDrag.originX = r.left;
+        musicBtnDrag.originY = r.top;
+      }
+    }
+    if (!musicBtnDrag.moved) return;
+    e.preventDefault?.();
+    const next = clampMusicBtnPos(
+      musicBtnDrag.originX + dx,
+      musicBtnDrag.originY + dy,
+      btn,
+    );
+    musicBtnPos = next;
+    applyMusicBtnPos();
+  };
+
+  const onUp = (e) => {
+    if (!musicBtnDrag) return;
+    const wasDrag = musicBtnDrag.moved;
+    if (wasDrag) {
+      saveMusicBtnPos(musicBtnPos);
+      e.preventDefault?.();
+      e.stopPropagation?.();
+    }
+    btn.classList.remove("is-dragging");
+    // Suppress click that follows a drag
+    musicBtnDrag = wasDrag ? { suppressClick: true } : null;
+    if (wasDrag) {
+      setTimeout(() => {
+        if (musicBtnDrag?.suppressClick) musicBtnDrag = null;
+      }, 40);
+    }
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    window.removeEventListener("touchmove", onMove);
+    window.removeEventListener("touchend", onUp);
+  };
+
+  btn.addEventListener("pointerdown", (e) => {
+    if (e.button != null && e.button !== 0) return;
+    const r = btn.getBoundingClientRect();
+    const pt = e;
+    musicBtnDrag = {
+      startX: pt.clientX,
+      startY: pt.clientY,
+      originX: musicBtnPos ? musicBtnPos.x : r.left,
+      originY: musicBtnPos ? musicBtnPos.y : r.top,
+      moved: false,
+    };
+    try {
+      btn.setPointerCapture?.(e.pointerId);
+    } catch (_) {}
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  });
+
+  // Double-click / long-press reset: double-tap title area — also reset via title attribute hint
+  btn.addEventListener("dblclick", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    musicBtnPos = null;
+    saveMusicBtnPos(null);
+    applyMusicBtnPos();
+  });
+
+  window.addEventListener("resize", () => {
+    if (musicBtnPos) {
+      musicBtnPos = clampMusicBtnPos(musicBtnPos.x, musicBtnPos.y, btn);
+      applyMusicBtnPos();
+    }
+  });
+}
+
 function updateMusicChrome() {
   const label = $("btn-music-label");
   const btn = $("btn-music");
@@ -384,10 +683,10 @@ function updateMusicChrome() {
   const playing = isAudioPlaying();
 
   if (label) {
-    if (!open && !playing) label.textContent = "Play music";
-    else if (open && !minimized) label.textContent = "Hide music";
-    else if (open && minimized) label.textContent = "Expand music";
-    else label.textContent = "Show music"; // closed shell but still playing
+    if (!open && !playing) label.textContent = "♪ Play music";
+    else if (open && !minimized) label.textContent = "♪ Hide list";
+    else if (open && minimized) label.textContent = "♪ Expand";
+    else label.textContent = "♪ Playing"; // closed shell but still playing
   }
   if (btn) {
     btn.classList.toggle("on", open && !minimized);
@@ -395,10 +694,10 @@ function updateMusicChrome() {
     btn.setAttribute("aria-expanded", open && !minimized ? "true" : "false");
     btn.title =
       open && !minimized
-        ? "Hide player (music keeps playing)"
+        ? "Hide player · drag to move · double-click resets"
         : playing
-          ? "Show / expand music player"
-          : "Play Telephantix music";
+          ? "Show player · drag to move · double-click resets"
+          : "Play music · drag to move · double-click resets place";
   }
   if (panel) {
     panel.hidden = !open;
@@ -412,6 +711,8 @@ function updateMusicChrome() {
   document.body.classList.toggle("music-open", open && !minimized);
   document.body.classList.toggle("music-minimized", open && minimized);
   document.body.classList.toggle("music-playing", playing);
+  // Keep panel glued to dragged button
+  if (open) applyMusicBtnPos();
 }
 
 function updateMusicButtonLabel() {
@@ -428,24 +729,40 @@ function setOpen(v, opts) {
   if (open) minimized = false;
   updateMusicChrome();
   if (open) {
-    const wantPlay = opts?.play !== false;
-    const audio = $("music-audio");
-    const cur = current();
-    const already =
-      !!(
-        audio &&
-        cur &&
-        isSunoTrack(cur) &&
-        !audio.paused &&
-        audio.src &&
-        (audio.src === cur.url ||
-          (cur.songId && audio.src.includes(cur.songId)))
-      );
-    // First time user opens the chip → start sound. Re-open while already
-    // playing → just show UI. Never autoplay without this path.
-    if (wantPlay && !already) loadTrack(true);
-    else if (userStarted) loadTrack(false);
-    else if (wantPlay) loadTrack(true);
+    // Always re-pull catalog when opening so admin "add song" shows up
+    loadSunoCatalog().finally(() => {
+      // First open: reshuffle + random start so it's never the same intro track
+      if (firstOpenShufflePending && allSunoTracks.length > 1) {
+        firstOpenShufflePending = false;
+        shuffleOn = true;
+        applyShuffle(false);
+        index = Math.floor(Math.random() * allSunoTracks.length);
+        updateShuffleChip();
+        renderList();
+      } else if (firstOpenShufflePending) {
+        firstOpenShufflePending = false;
+      }
+
+      const wantPlay = opts?.play !== false;
+      const audio = $("music-audio");
+      const cur = current();
+      const already =
+        !!(
+          audio &&
+          cur &&
+          isSunoTrack(cur) &&
+          !audio.paused &&
+          audio.src &&
+          (audio.src === cur.url ||
+            (cur.songId && audio.src.includes(cur.songId)))
+        );
+      // First time user opens the chip → start sound. Re-open while already
+      // playing → just show UI. Never autoplay without this path.
+      if (wantPlay && !already) loadTrack(true);
+      else if (userStarted) loadTrack(false);
+      else if (wantPlay) loadTrack(true);
+      else renderList();
+    });
   }
 }
 
@@ -511,8 +828,16 @@ function onAudioEnded() {
 }
 
 function wire() {
+  wireMusicBtnDrag();
   // Single bottom "Play music" chip — only control that starts sound by default
-  $("btn-music")?.addEventListener("click", () => {
+  $("btn-music")?.addEventListener("click", (e) => {
+    // Ignore click that follows a drag
+    if (musicBtnDrag?.suppressClick || musicBtnDrag?.moved) {
+      musicBtnDrag = null;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (!open) {
       // First tap: open panel AND start music (explicit user gesture)
       setOpen(true, { play: true });
@@ -539,6 +864,14 @@ function wire() {
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
+  $("music-search")?.addEventListener("input", (e) => {
+    listFilter = e.target?.value || "";
+    renderList();
+  });
+  // After admin adds songs in another tab, refresh catalog when you come back
+  window.addEventListener("focus", () => {
+    if (open || catalogLoaded) loadSunoCatalog();
+  });
   $("music-shuffle")?.addEventListener("click", toggleShuffle);
   $("music-suno-link")?.addEventListener("click", playAllSuno);
 

@@ -1,4 +1,5 @@
 import { PROFILE, SUPPORT, FEATURED, SOCIALS, ICONS } from "./links.js";
+import { hydrateSiteContent } from "./load-site.js";
 
 function el(tag, className, html) {
   const n = document.createElement(tag);
@@ -26,10 +27,17 @@ function linkButton(item, { compact = false } = {}) {
   return a;
 }
 
-export function mountBio({ rootId = "bio-root", compact = false } = {}) {
+export async function mountBio({ rootId = "bio-root", compact = false } = {}) {
   const root = document.getElementById(rootId);
   if (!root) return;
 
+  try {
+    await hydrateSiteContent();
+  } catch (err) {
+    console.warn("CMS hydrate failed; using defaults", err);
+  }
+
+  root.innerHTML = "";
   const card = el("div", "bio-card");
 
   // Profile

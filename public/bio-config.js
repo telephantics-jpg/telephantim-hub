@@ -26,3 +26,12 @@ export const BIO = {
   /** Mute looping video (required for autoplay on phones) */
   muted: true,
 };
+
+/** Merge CMS bio fields (from /admin or site-content.json). */
+export function applyBioContent(bio) {
+  if (!bio || typeof bio !== "object") return;
+  const keys = ["mode", "video", "image", "poster", "quote", "quoteBy", "muted"];
+  for (const k of keys) {
+    if (bio[k] !== undefined) BIO[k] = bio[k];
+  }
+}

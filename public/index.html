@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=68" />
+  <link rel="stylesheet" href="styles.css?v=84" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -109,9 +109,15 @@
     ></video>
     <div id="canvas-wrap"></div>
 
+    <!-- CMS quote on Relics page (edit in /admin → Relics) -->
+    <aside class="relics-quote" id="relics-quote" hidden>
+      <p class="relics-quote-text" id="relics-quote-text"></p>
+      <cite class="relics-quote-by" id="relics-quote-by"></cite>
+    </aside>
+
     <div class="topbar">
       <div class="brand">
-        <h1>Telephantim</h1>
+        <h1 id="relics-title">Telephantim</h1>
         <p id="grab-hint">Click a relic for a new phrase · drag to toss · Talk for a duel</p>
       </div>
       <div class="badge-stack">
@@ -155,34 +161,44 @@
   </section>
 
   <!--
-    Global music chrome — OUTSIDE stage so Bio / 2D / 3D / Relics all see it
-    (PC + mobile). Minimize keeps audio; maximize restores the panel.
+    ONE global Play music chip (center-bottom) · all modes.
+    Camp hides its own music UI when loaded with ?hub=1.
   -->
   <div class="music-chrome" id="music-chrome" aria-label="Telephantix music">
     <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
-      <span id="btn-music-label">Play music</span>
+      <span id="btn-music-label">♪ Play music</span>
     </button>
     <div class="music-player" id="music-player" aria-label="Music player" hidden>
       <div class="music-player-inner">
         <div class="music-head">
           <div class="music-head-text">
-            <strong class="music-brand">Telephantix Radio</strong>
+            <strong class="music-brand">Telephantix</strong>
             <p class="music-now"><span id="music-now-title">Ready</span><br /><span id="music-now-sub" class="music-sub"></span></p>
           </div>
           <div class="music-head-actions">
-            <button type="button" class="music-icon-btn" id="music-min" aria-label="Minimize player" title="Minimize (keep playing)">−</button>
-            <button type="button" class="music-icon-btn" id="music-max" aria-label="Maximize player" title="Maximize" hidden>+</button>
-            <button type="button" class="music-icon-btn music-x" id="music-close" aria-label="Close player" title="Close panel (keep playing)">×</button>
+            <button type="button" class="music-icon-btn" id="music-min" aria-label="Minimize" title="Minimize">−</button>
+            <button type="button" class="music-icon-btn" id="music-max" aria-label="Expand" title="Expand" hidden>+</button>
+            <button type="button" class="music-icon-btn music-x" id="music-close" aria-label="Close panel" title="Close panel">×</button>
           </div>
         </div>
         <div class="music-panel-body" id="music-panel-body">
           <div class="music-controls">
             <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
             <button type="button" class="btn-chip ghost" id="music-next">Next</button>
-            <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle the full Suno queue">Shuffle</button>
-            <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Play all published Suno songs">Play all Suno</a>
+            <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle queue">Shuffle</button>
+            <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Suno queue only">Suno only</a>
           </div>
-          <div class="music-stage">
+          <div class="music-search-wrap">
+            <input
+              type="search"
+              id="music-search"
+              class="music-search"
+              placeholder="Search songs…"
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+          </div>
+          <div class="music-stage" id="music-stage">
             <iframe
               id="music-embed"
               class="music-embed"
@@ -190,12 +206,12 @@
               allow="clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
               referrerpolicy="strict-origin-when-cross-origin"
+              hidden
             ></iframe>
-            <!-- No autoplay — only starts after bottom "Play music" is tapped -->
             <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
-          <p class="music-hint">Full All I Got playlist · minimize keeps playing · all modes (Relics · Bio · 2D · 3D)</p>
+          <p class="music-hint">One player · one song at a time · search the queue</p>
         </div>
       </div>
     </div>
@@ -347,20 +363,22 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=68"></script>
-  <script src="analytics.js?v=68"></script>
+  <script src="api-config.js?v=84"></script>
+  <script src="analytics.js?v=84"></script>
+  <!-- Local Three.js (no CDN) so Relics still load offline -->
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/"
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=68"></script>
-  <script type="module" src="bio.js?v=68"></script>
-  <script type="module" src="daily-wisdom.js?v=68"></script>
-  <script type="module" src="music.js?v=68"></script>
+  <script type="module" src="scenes.js?v=84"></script>
+  <script type="module" src="relics-cms.js?v=84"></script>
+  <script type="module" src="bio.js?v=84"></script>
+  <script type="module" src="daily-wisdom.js?v=84"></script>
+  <script type="module" src="music.js?v=84"></script>
   <script type="module" src="personality.js?v=real-speak-3"></script>
   <script type="module" src="mjolnir.js?v=real-speak-3"></script>
 </body>
