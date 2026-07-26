@@ -96,13 +96,47 @@ export const FEATURED = [
   },
 ];
 
-/** Socials */
+/**
+ * Socials — one clean row (Instagram · Facebook · Snapchat · X · Threads · Truth).
+ * Edit live via /admin → Socials.
+ */
 export const SOCIALS = [
-  { title: "Instagram", url: "https://www.instagram.com/telephantix/", icon: "ig" },
-  { title: "X / Twitter", url: "https://x.com/Telephantix", icon: "x" },
-  { title: "Facebook", url: "https://www.facebook.com/telephantics", icon: "fb" },
-  { title: "Threads", url: "https://www.threads.net/@telephantix", icon: "threads" },
-  { title: "Truth Social", url: "https://truthsocial.com/@Telephantics", icon: "truth" },
+  {
+    title: "Instagram",
+    subtitle: "@telephantix",
+    url: "https://www.instagram.com/telephantix/",
+    icon: "ig",
+  },
+  {
+    title: "Facebook",
+    subtitle: "telephantics",
+    url: "https://www.facebook.com/telephantics",
+    icon: "fb",
+  },
+  {
+    title: "Snapchat",
+    subtitle: "Add Telephantix",
+    url: "https://www.snapchat.com/add/telephantix",
+    icon: "snap",
+  },
+  {
+    title: "X / Twitter",
+    subtitle: "@Telephantix",
+    url: "https://x.com/Telephantix",
+    icon: "x",
+  },
+  {
+    title: "Threads",
+    subtitle: "@telephantix",
+    url: "https://www.threads.net/@telephantix",
+    icon: "threads",
+  },
+  {
+    title: "Truth Social",
+    subtitle: "@Telephantics",
+    url: "https://truthsocial.com/@Telephantics",
+    icon: "truth",
+  },
 ];
 
 /** Plain text emblems (encoding-safe brand marks) */
@@ -122,6 +156,8 @@ export const ICONS = {
   in: "in",
   truth: "T",
   suno: "Su",
+  snap: "Sc",
+  beacons: "B",
 };
 
 /** Merge CMS payload into live link tables (in-place so importers see updates). */

@@ -234,10 +234,20 @@ body.scene-bio .float-actions {
   position: relative;
   z-index: 2;
   flex: 1 1 auto;
+  min-height: 0; /* critical for flex child scroll */
+  max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(3.1rem + env(safe-area-inset-top, 0px)) 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  padding: calc(3.1rem + env(safe-area-inset-top, 0px)) 1rem calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 39, 0.45) transparent;
+}
+.bio-scroll::-webkit-scrollbar { width: 6px; }
+.bio-scroll::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 39, 0.4);
+  border-radius: 99px;
 }
 .bio-card {
   width: min(100%, 420px);
@@ -247,7 +257,7 @@ body.scene-bio .float-actions {
   align-items: center;
   text-align: center;
   gap: 0.55rem;
-  padding-bottom: 2rem;
+  padding-bottom: 2.5rem;
 }
 .bio-avatar {
   width: 88px;
@@ -1666,6 +1676,55 @@ body:not(.sheet-open) .sheet-body {
 .social.ico-in { background: #0a66c2; border-color: transparent; }
 .social.ico-truth { background: #5000b9; border-color: transparent; }
 .social.ico-suno { background: linear-gradient(145deg, #7c5cff, #4a2fd6); border-color: transparent; }
+.social.ico-yt,
+.ico.ico-yt { background: linear-gradient(145deg, #ff0033, #b00020); border-color: transparent; }
+.social.ico-snap { background: #fffc00; border-color: transparent; color: #111; }
+.social.ico-beacons { background: linear-gradient(145deg, #00d4aa, #0a8f72); border-color: transparent; }
+
+/* Bio — social chips sit under quote (always in view) */
+.bio-socials-label {
+  margin: 0.35rem 0 0.15rem !important;
+  text-align: center;
+  width: 100%;
+}
+.bio-socials-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0.05rem 0 0.55rem;
+  position: relative;
+  z-index: 3;
+}
+.bio-social-chip {
+  min-width: 46px;
+  height: 46px;
+  padding: 0 0.55rem;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(138, 155, 176, 0.35);
+  background: rgba(12, 16, 28, 0.88);
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.bio-social-chip:hover,
+.bio-social-chip:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(201, 162, 39, 0.65);
+  outline: none;
+}
+.bio-social-chip.ico-ig { background: linear-gradient(135deg, #f58529, #dd2a7b 50%, #8134af); border-color: transparent; }
+.bio-social-chip.ico-fb { background: #1877f2; border-color: transparent; font-family: Georgia, serif; font-size: 1.15rem; }
+.bio-social-chip.ico-snap { background: #fffc00; border-color: transparent; color: #111; }
+.bio-social-chip.ico-x { background: #111; border-color: #444; }
+.bio-social-chip.ico-threads { background: #101010; border-color: #444; }
+.bio-social-chip.ico-truth { background: #5000b9; border-color: transparent; }
 
 .foot {
   margin-top: 1rem;

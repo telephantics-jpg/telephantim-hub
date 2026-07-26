@@ -1,22 +1,18 @@
 /**
  * Compact world switcher — Relics / Bio / Luna 2D / Luna 3D.
- * Bio = Beacons-style page (your video/image bg + scroll quote & links).
+ * Switches in-place (no full page navigation). Iframes stay warm when hidden.
  */
 
 /**
  * Camp URLs — same origin when unified server (one process).
- * Fallback: local Luna :8767, then live telephanti.com.
+ * Fallback: live telephanti.com.
  */
 function lunaCampBase() {
   try {
     const h = (location.hostname || "").toLowerCase();
-    const port = String(location.port || "");
-    // Unified server: hub + firmament on same host/port
     if (h === "localhost" || h === "127.0.0.1") {
-      // Prefer same origin (unified on 8765 or any port)
       return location.origin;
     }
-    // Live multi-domain: camp on telephanti.com
     if (h.includes("telephantim") || h.includes("github.io")) {
       return "https://telephanti.com";
     }
@@ -48,7 +44,6 @@ const SCENES = {
     label: "Luna Camp 2D",
     short: "2D",
     hint: "Luna Camp 2D",
-    // hub=1 → camp hides its own Play music (hub has the one center button)
     url: `${LUNA}/firmament/play?hub=1`,
     mode: "external",
   },
@@ -81,13 +76,22 @@ function readHash() {
   if (h === "luna3d" || h === "3d") return "luna-3d";
   if (h === "relics" || h === "hub" || h === "home") return "telephantim";
   if (h === "bio" || h === "beacons" || h === "links" || h === "quote") return "bio";
+  // Ignore unknown hashes (e.g. #socials) — stay on current/relics
+  if (h && !SCENES[h]) return "telephantim";
   return normalizeScene(h);
 }
 
 function writeHash(id) {
-  const next = id === "telephantim" ? "" : `#${id}`;
-  if ((location.hash || "") === next) return;
-  history.replaceState(null, "", next || location.pathname + location.search);
+  const path = location.pathname + location.search;
+  const next = id === "telephantim" ? path : `${path}#${id}`;
+  const cur = location.pathname + location.search + (location.hash || "");
+  if (cur === next || (id === "telephantim" && !location.hash && location.pathname + location.search === path)) {
+    return;
+  }
+  // replaceState only — never assign location / never full navigation
+  try {
+    history.replaceState({ telephantimScene: id }, "", next);
+  } catch (_) {}
 }
 
 function updateChrome(scene) {
@@ -106,6 +110,7 @@ function updateChrome(scene) {
 function setScene(id, { persist = true, fromHash = false } = {}) {
   const sceneId = normalizeScene(id);
   const scene = SCENES[sceneId];
+  const prev = current;
   current = sceneId;
 
   const isExternal = !!scene.url;
@@ -116,11 +121,10 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   document.body.classList.toggle("scene-external", isExternal);
   document.body.classList.toggle("scene-bio", isBio);
   document.body.classList.toggle("scene-native", isRelics);
-  // Never leave the hub pay-sheet open over Luna/Bio — covers content
+
   if (isExternal || isBio) {
     document.body.classList.remove("sheet-open");
   }
-  // 2D only: pay-socials bar is fully hidden (CSS); force closed
   if (sceneId === "luna-2d") {
     document.body.classList.remove("sheet-open");
   }
@@ -132,22 +136,18 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   if (bioPage) bioPage.hidden = !isBio;
 
   if (scene.url && frame) {
-    if (frame.getAttribute("data-src") !== scene.url) {
-      frame.setAttribute("data-src", scene.url);
-      frame.src = scene.url;
+    // Load once per camp URL — keep warm when switching away (no reload flash)
+    const want = scene.url;
+    if (frame.getAttribute("data-src") !== want) {
+      frame.setAttribute("data-src", want);
+      frame.src = want;
     }
     frame.hidden = false;
     frame.title = scene.label;
-    // No "Open Luna Camp full page" chip — covered the camp dock on mobile
-    if (fallback) {
-      fallback.hidden = true;
-    }
+    if (fallback) fallback.hidden = true;
   } else if (frame) {
+    // Hide only — do NOT clear src (keeps 2D/3D ready for next visit)
     frame.hidden = true;
-    if (frame.getAttribute("data-src")) {
-      frame.removeAttribute("data-src");
-      frame.removeAttribute("src");
-    }
     if (fallback) fallback.hidden = true;
   }
 
@@ -160,12 +160,14 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   }
   if (!fromHash) writeHash(sceneId);
 
-  // Only run WebGL on Relics
-  window.dispatchEvent(
-    new CustomEvent("telephantim-scene", {
-      detail: { scene: sceneId, active: isRelics },
-    })
-  );
+  // Skip redundant events when re-selecting same scene
+  if (prev !== sceneId) {
+    window.dispatchEvent(
+      new CustomEvent("telephantim-scene", {
+        detail: { scene: sceneId, active: isRelics, prev },
+      })
+    );
+  }
 
   if (isRelics) {
     window.dispatchEvent(new Event("resize"));
@@ -175,7 +177,7 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
 function onWorldClick(e) {
   const btn = e.target.closest?.("[data-scene]");
   if (!btn) return;
-  // Only handle our world controls (tabs / sheet / menu), not random links
+  // Only hub world controls — never hijack random links
   if (
     !btn.classList.contains("world-tab") &&
     !btn.classList.contains("world-opt") &&
@@ -185,15 +187,27 @@ function onWorldClick(e) {
     return;
   }
   e.preventDefault();
-  setScene(btn.getAttribute("data-scene"));
+  e.stopPropagation();
+  const id = btn.getAttribute("data-scene");
+  if (!id || !SCENES[id]) return;
+  setScene(id);
   document.body.classList.remove("sheet-open");
 }
 
 function wire() {
   const bar = $("world-switch");
-  bar?.addEventListener("click", onWorldClick);
+  // Capture phase so nothing else steals the tap
+  bar?.addEventListener("click", onWorldClick, true);
+  bar?.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.target.closest?.(".world-tab")) {
+        e.stopPropagation();
+      }
+    },
+    true
+  );
 
-  // Sheet world buttons
   $("sheet-body")?.addEventListener("click", onWorldClick);
 
   // Luna camp (iframe) → same tabs via postMessage
@@ -206,7 +220,13 @@ function wire() {
   });
 
   window.addEventListener("hashchange", () => {
-    setScene(readHash(), { fromHash: true });
+    const next = readHash();
+    if (next !== current) setScene(next, { fromHash: true });
+  });
+
+  // Block accidental middle-click / modified clicks on world tabs from opening new pages
+  bar?.addEventListener("auxclick", (e) => {
+    if (e.target.closest?.(".world-tab")) e.preventDefault();
   });
 
   let start = readHash();

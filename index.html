@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=84" />
+  <link rel="stylesheet" href="styles.css?v=87-live-telephantim" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -65,6 +65,17 @@
           <p id="bio-quote-text"></p>
           <cite id="bio-quote-by"></cite>
         </blockquote>
+
+        <!-- Socials always in bio (top) — JS refreshes from CMS -->
+        <p class="bio-links-label bio-socials-label">Socials</p>
+        <div class="bio-socials-row" id="bio-socials" aria-label="Social links">
+          <a class="bio-social-chip ico-ig" href="https://www.instagram.com/telephantix/" target="_blank" rel="noopener noreferrer" title="Instagram">IG</a>
+          <a class="bio-social-chip ico-fb" href="https://www.facebook.com/telephantics" target="_blank" rel="noopener noreferrer" title="Facebook">f</a>
+          <a class="bio-social-chip ico-snap" href="https://www.snapchat.com/add/telephantix" target="_blank" rel="noopener noreferrer" title="Snapchat">Sc</a>
+          <a class="bio-social-chip ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener noreferrer" title="X">X</a>
+          <a class="bio-social-chip ico-threads" href="https://www.threads.net/@telephantix" target="_blank" rel="noopener noreferrer" title="Threads">Th</a>
+          <a class="bio-social-chip ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener noreferrer" title="Truth Social">T</a>
+        </div>
 
         <!-- Daily Word: new esoteric-true paragraph each calendar day (minimizable) -->
         <article class="daily-word daily-word-bio" id="daily-word-bio" aria-label="Daily Word">
@@ -302,11 +313,12 @@
       <section class="section">
         <h3>Socials</h3>
         <div class="socials">
-          <a class="social ico-ig" href="go-instagram.html" title="Instagram @telephantix">IG</a>
-          <a class="social ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener" title="X">X</a>
-          <a class="social ico-fb" href="https://www.facebook.com/telephantics" target="_blank" rel="noopener" title="Facebook">f</a>
-          <a class="social ico-threads" href="https://www.threads.net/@telephantix" target="_blank" rel="noopener" title="Threads">Th</a>
-          <a class="social ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener" title="Truth">T</a>
+          <a class="social ico-ig" href="https://www.instagram.com/telephantix/" target="_blank" rel="noopener noreferrer" title="Instagram @telephantix">IG</a>
+          <a class="social ico-fb" href="https://www.facebook.com/telephantics" target="_blank" rel="noopener noreferrer" title="Facebook">f</a>
+          <a class="social ico-snap" href="https://www.snapchat.com/add/telephantix" target="_blank" rel="noopener noreferrer" title="Snapchat">Sc</a>
+          <a class="social ico-x" href="https://x.com/Telephantix" target="_blank" rel="noopener noreferrer" title="X @Telephantix">X</a>
+          <a class="social ico-threads" href="https://www.threads.net/@telephantix" target="_blank" rel="noopener noreferrer" title="Threads">Th</a>
+          <a class="social ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener noreferrer" title="Truth Social">T</a>
         </div>
       </section>
 
@@ -363,8 +375,8 @@
   </script>
 
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
-  <script src="api-config.js?v=84"></script>
-  <script src="analytics.js?v=84"></script>
+  <script src="api-config.js?v=87-live-telephantim"></script>
+  <script src="analytics.js?v=87-live-telephantim"></script>
   <!-- Local Three.js (no CDN) so Relics still load offline -->
   <script type="importmap">
   {
@@ -374,12 +386,12 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=84"></script>
-  <script type="module" src="relics-cms.js?v=84"></script>
-  <script type="module" src="bio.js?v=84"></script>
-  <script type="module" src="daily-wisdom.js?v=84"></script>
-  <script type="module" src="music.js?v=84"></script>
+  <script type="module" src="scenes.js?v=87-live-telephantim"></script>
+  <script type="module" src="relics-cms.js?v=87-live-telephantim"></script>
+  <script type="module" src="bio.js?v=87-live-telephantim"></script>
+  <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
+  <script type="module" src="music.js?v=87-live-telephantim"></script>
   <script type="module" src="personality.js?v=real-speak-3"></script>
-  <script type="module" src="mjolnir.js?v=real-speak-3"></script>
+  <script type="module" src="mjolnir.js?v=87-live-telephantim"></script>
 </body>
 </html>

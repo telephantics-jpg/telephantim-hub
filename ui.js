@@ -72,17 +72,18 @@ export async function mountBio({ rootId = "bio-root", compact = false } = {}) {
     featSec.appendChild(featList);
     card.appendChild(featSec);
 
-    // Socials
+    // Socials — one chip row only
     const socialSec = el("section", "bio-section");
     socialSec.appendChild(el("h2", null, "Socials"));
     const socialRow = el("div", "bio-socials");
     SOCIALS.forEach((s) => {
+      if (!s?.url) return;
       const a = document.createElement("a");
       a.className = "bio-social";
       a.href = s.url;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.title = s.title;
+      a.title = s.title + (s.subtitle ? ` · ${s.subtitle}` : "");
       a.textContent = ICONS[s.icon] || s.title[0];
       socialRow.appendChild(a);
     });

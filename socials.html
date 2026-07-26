@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Telephantix — All socials</title>
+  <meta name="description" content="Every Telephantix social — Instagram, X, Facebook, Threads, Truth, Suno, music, Beacons." />
+  <link rel="stylesheet" href="styles.css?v=socials1" />
+  <style>
+    body.socials-page {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 50% 0%, #1a1430 0%, #070a12 55%, #04060c 100%);
+      color: #e8eef8;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .sp-wrap {
+      width: min(440px, 100%);
+      margin: 0 auto;
+      padding: 1.35rem 1rem 2.5rem;
+    }
+    .sp-head {
+      text-align: center;
+      margin-bottom: 1.15rem;
+    }
+    .sp-av {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(201, 162, 39, 0.55);
+      box-shadow: 0 0 28px rgba(124, 92, 255, 0.35);
+    }
+    .sp-head h1 {
+      margin: 0.65rem 0 0.15rem;
+      font-size: 1.35rem;
+      letter-spacing: 0.02em;
+    }
+    .sp-head p {
+      margin: 0;
+      color: #8b97ad;
+      font-size: 0.88rem;
+    }
+    .sp-label {
+      margin: 1.1rem 0 0.45rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #94a3b8;
+    }
+    .sp-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.65rem;
+    }
+    .sp-chip {
+      min-width: 44px;
+      height: 44px;
+      padding: 0 0.5rem;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      border: 1px solid rgba(138, 155, 176, 0.28);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.75rem;
+      text-decoration: none;
+    }
+    .sp-chip:hover { border-color: rgba(201, 162, 39, 0.55); }
+    .sp-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .sp-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 0.9rem;
+      border-radius: 14px;
+      border: 1px solid rgba(138, 155, 176, 0.22);
+      background: rgba(12, 16, 28, 0.72);
+      color: inherit;
+      text-decoration: none;
+    }
+    .sp-link:hover {
+      border-color: rgba(201, 162, 39, 0.45);
+      background: rgba(20, 24, 40, 0.9);
+    }
+    .sp-ico {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 0.72rem;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .sp-link strong { display: block; font-size: 0.95rem; }
+    .sp-link small { display: block; color: #8b97ad; font-size: 0.75rem; margin-top: 0.1rem; }
+    .sp-foot {
+      margin-top: 1.4rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #8b97ad;
+    }
+    .sp-foot a { color: #c9a227; }
+  </style>
+</head>
+<body class="socials-page">
+  <div class="sp-wrap">
+    <header class="sp-head">
+      <img
+        class="sp-av"
+        id="sp-av"
+        src="https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591"
+        alt="Telephantix"
+      />
+      <h1 id="sp-name">Telephantix</h1>
+      <p id="sp-tag">All socials · same links as Beacons</p>
+    </header>
+
+    <p class="sp-label">Quick</p>
+    <div class="sp-chips" id="sp-chips"></div>
+
+    <p class="sp-label">Socials</p>
+    <div class="sp-list" id="sp-socials"></div>
+
+    <p class="sp-label">Support</p>
+    <div class="sp-list" id="sp-support"></div>
+
+    <p class="sp-foot">
+      <a href="./#bio">Hub bio</a>
+      ·
+      <a href="https://beacons.ai/telephantix" target="_blank" rel="noopener">Beacons</a>
+      ·
+      <a href="./">Home</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { PROFILE, SOCIALS, SUPPORT, ICONS, applySiteContent } from "./links.js?v=socials1";
+    import { hydrateSiteContent } from "./load-site.js?v=socials1";
+
+    function esc(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function linkRow(item) {
+      const a = document.createElement("a");
+      a.className = "sp-link";
+      a.href = item.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      const ico = ICONS[item.icon] || "→";
+      a.innerHTML =
+        `<span class="sp-ico">${esc(ico)}</span>` +
+        `<span><strong>${esc(item.title)}</strong>` +
+        (item.subtitle ? `<small>${esc(item.subtitle)}</small>` : "") +
+        `</span>`;
+      return a;
+    }
+
+    async function boot() {
+      try {
+        const c = await hydrateSiteContent();
+        if (c) applySiteContent(c);
+      } catch (_) {}
+
+      const av = document.getElementById("sp-av");
+      const name = document.getElementById("sp-name");
+      const tag = document.getElementById("sp-tag");
+      if (av && PROFILE.avatar) av.src = PROFILE.avatar;
+      if (name) name.textContent = PROFILE.name || "Telephantix";
+      if (tag) {
+        tag.textContent = `${PROFILE.handle || "@telephantix"} · all socials`;
+      }
+
+      const chips = document.getElementById("sp-chips");
+      const socials = document.getElementById("sp-socials");
+      const support = document.getElementById("sp-support");
+      chips.innerHTML = "";
+      socials.innerHTML = "";
+      support.innerHTML = "";
+
+      SOCIALS.forEach((s) => {
+        if (!s?.url) return;
+        const c = document.createElement("a");
+        c.className = "sp-chip";
+        c.href = s.url;
+        c.target = "_blank";
+        c.rel = "noopener noreferrer";
+        c.title = s.title;
+        c.textContent = ICONS[s.icon] || s.title.slice(0, 2);
+        chips.appendChild(c);
+        socials.appendChild(linkRow(s));
+      });
+      SUPPORT.forEach((s) => {
+        if (!s?.url) return;
+        support.appendChild(linkRow(s));
+      });
+    }
+    boot();
+  </script>
+</body>
+</html>

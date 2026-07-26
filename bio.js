@@ -2,7 +2,7 @@
  * Beacons-style Bio: fixed bg video/image + scrollable quote & links.
  */
 import { BIO } from "./bio-config.js";
-import { PROFILE, SUPPORT, FEATURED, ICONS } from "./links.js";
+import { PROFILE, SUPPORT, FEATURED, SOCIALS, ICONS } from "./links.js";
 import { hydrateSiteContent } from "./load-site.js";
 import { applyRotatingQuote, scheduleQuoteRefresh } from "./quote-rotate.js";
 
@@ -120,11 +120,37 @@ function linkButton(item) {
   return a;
 }
 
+/** Top-of-bio social chips (always visible — not buried under Support). */
+function renderSocials() {
+  const row = $("bio-socials");
+  if (!row) return;
+  const list = Array.isArray(SOCIALS) && SOCIALS.length
+    ? SOCIALS.filter((s) => s && s.url)
+    : [];
+  if (!list.length) return; // keep static HTML fallback
+  row.innerHTML = "";
+  list.forEach((s) => {
+    const a = document.createElement("a");
+    const ico = s.icon || "in";
+    a.className = `bio-social-chip ico-${escapeHtml(ico)}`;
+    a.href = s.url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = s.title + (s.subtitle ? ` · ${s.subtitle}` : "");
+    a.textContent = ICONS[ico] || s.title.slice(0, 2);
+    row.appendChild(a);
+  });
+}
+
 function renderLinks() {
   const host = $("bio-links");
   if (!host) return;
   host.innerHTML = "";
 
+  // Socials live in #bio-socials (above Daily Word) — refresh them here too
+  renderSocials();
+
+  // Classic bio stack: Support · Featured · Worlds
   const blocks = [
     { title: "Support", items: SUPPORT },
     { title: "Featured", items: FEATURED },
@@ -142,7 +168,7 @@ function renderLinks() {
     });
   });
 
-  // World jumps (same screen)
+  // World jumps — same hub, no page reload
   const worlds = document.createElement("p");
   worlds.className = "bio-links-label";
   worlds.textContent = "Worlds";
@@ -156,10 +182,13 @@ function renderLinks() {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "bio-link bio-link-btn";
+    b.setAttribute("data-scene", w.scene);
     b.innerHTML = `<span class="bio-link-ico">${escapeHtml(w.ico)}</span><span class="bio-link-copy"><strong>${escapeHtml(
       w.title
     )}</strong><small>${escapeHtml(w.subtitle)}</small></span>`;
-    b.addEventListener("click", () => {
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       window.TelephantimScenes?.setScene(w.scene);
     });
     host.appendChild(b);
@@ -187,12 +216,17 @@ function onScene(e) {
 }
 
 async function wire() {
+  // Paint socials immediately from defaults (HTML fallback already visible)
+  try {
+    renderSocials();
+  } catch (_) {}
   try {
     await hydrateSiteContent();
   } catch (err) {
     console.warn("Bio CMS hydrate failed; using defaults", err);
   }
   renderProfile();
+  renderSocials();
   renderLinks();
   applyMedia();
   window.addEventListener("telephantim-scene", onScene);

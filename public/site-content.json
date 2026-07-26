@@ -88,26 +88,37 @@
   "socials": [
     {
       "title": "Instagram",
+      "subtitle": "@telephantix",
       "url": "https://www.instagram.com/telephantix/",
       "icon": "ig"
     },
     {
-      "title": "X / Twitter",
-      "url": "https://x.com/Telephantix",
-      "icon": "x"
-    },
-    {
       "title": "Facebook",
+      "subtitle": "telephantics",
       "url": "https://www.facebook.com/telephantics",
       "icon": "fb"
     },
     {
+      "title": "Snapchat",
+      "subtitle": "Add Telephantix",
+      "url": "https://www.snapchat.com/add/telephantix",
+      "icon": "snap"
+    },
+    {
+      "title": "X / Twitter",
+      "subtitle": "@Telephantix",
+      "url": "https://x.com/Telephantix",
+      "icon": "x"
+    },
+    {
       "title": "Threads",
+      "subtitle": "@telephantix",
       "url": "https://www.threads.net/@telephantix",
       "icon": "threads"
     },
     {
       "title": "Truth Social",
+      "subtitle": "@Telephantics",
       "url": "https://truthsocial.com/@Telephantics",
       "icon": "truth"
     }
@@ -159,7 +170,9 @@
     "threads": "Th",
     "in": "in",
     "truth": "T",
-    "suno": "Su"
+    "suno": "Su",
+    "snap": "Sc",
+    "beacons": "B"
   },
   "relics": {
     "title": "Telephantim",
