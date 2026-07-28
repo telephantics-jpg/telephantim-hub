@@ -181,7 +181,7 @@ export function createDjRadio(api = {}) {
 
   function djApiBase() {
     // Hub (telephantim.com static) → Luna free DJ on telephanti.com
-    // Local unified server → same-origin
+    // Local hub 8765 → Luna 8767 (hub has no /api/firmament/dj)
     try {
       if (typeof api.getApiBase === "function") {
         const b = String(api.getApiBase() || "").replace(/\/$/, "");
@@ -190,12 +190,16 @@ export function createDjRadio(api = {}) {
     } catch (_) {}
     try {
       const h = (location.hostname || "").toLowerCase();
-      if (h === "localhost" || h === "127.0.0.1") return "";
+      const port = String(location.port || "");
+      if (h === "localhost" || h === "127.0.0.1") {
+        if (port === "8767") return ""; // same-origin Luna
+        return "http://127.0.0.1:8767"; // hub / other local → Luna DJ
+      }
       if (h.includes("telephantim") || h.includes("github.io")) {
         return "https://telephanti.com";
       }
     } catch (_) {}
-    return "";
+    return "https://telephanti.com";
   }
 
   async function fetchDrop(prevTrack, nextTrack, kind = "bridge") {
@@ -205,7 +209,8 @@ export function createDjRadio(api = {}) {
       artist: nextTrack?.artist || "Telephantix",
       station: "Telephantix Radio",
       voice: "vox",
-      use_llm: true,
+      // Templates + edge-tts are free and fast; LLM is optional (can hang local Ollama)
+      use_llm: false,
       mood: "happy",
       rate: 14,
       pitch: -2,
@@ -213,15 +218,25 @@ export function createDjRadio(api = {}) {
     };
     const base = djApiBase();
     const url = `${base}/api/firmament/dj/drop`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      cache: "no-store",
-      mode: "cors",
-    });
-    if (!res.ok) throw new Error(`DJ drop HTTP ${res.status}`);
-    return res.json();
+    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), 25000) : null;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        cache: "no-store",
+        mode: "cors",
+        signal: ctrl?.signal,
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`DJ drop HTTP ${res.status} ${t.slice(0, 80)}`);
+      }
+      return res.json();
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   /**
@@ -250,7 +265,10 @@ export function createDjRadio(api = {}) {
         return data;
       })
       .catch((err) => {
-        console.warn("[dj] fetch", err);
+        console.warn("[dj] fetch", err?.message || err);
+        try {
+          status(`Vox offline · ${String(err?.message || err).slice(0, 48)}`);
+        } catch (_) {}
         inflight.delete(key);
         return null;
       });

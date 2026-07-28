@@ -508,8 +508,8 @@ function loadTrack(autoPlayHint) {
     if (autoPlayHint) {
       userPaused = false;
       audio.play().catch(() => {});
-      // Spotify-style Vox intro for this track (song already started)
-      setTimeout(() => notifyDjTrackChange(), 120);
+      // Spotify-style Vox intro (async — waits for DJ module so first play isn't silent)
+      void notifyDjTrackChange();
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
     saveMusicPersist();
@@ -1146,10 +1146,22 @@ function onHubSceneChange() {
   updateMusicChrome();
 }
 
+function setDjStatus(msg) {
+  const el = $("music-dj-status");
+  if (!el) return;
+  if (msg) {
+    el.hidden = false;
+    el.textContent = msg;
+  } else {
+    el.hidden = true;
+    el.textContent = "";
+  }
+}
+
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=89-one-radio`);
+    const mod = await import(`./hub-dj-radio.mjs?v=92-vox-fix`);
     djRadio = mod.createDjRadio({
       getAudio: () => $("music-audio"),
       getTracks: () =>
@@ -1170,7 +1182,10 @@ async function ensureDjRadio() {
       getApiBase: () => {
         try {
           const h = (location.hostname || "").toLowerCase();
+          const port = String(location.port || "");
           if (h === "localhost" || h === "127.0.0.1") {
+            // Hub 8765 has no DJ route — always hit Luna free town
+            if (port === "8767") return "";
             return "http://127.0.0.1:8767";
           }
           return "https://telephanti.com";
@@ -1181,36 +1196,31 @@ async function ensureDjRadio() {
       // Hub owns next/prev + ended; DJ only speaks
       advanceOnEnded: false,
       isWantedOn: () => wantBackgroundPlay(),
-      setStatus: (msg) => {
-        const el = $("music-dj-status");
-        if (!el) return;
-        if (msg) {
-          el.hidden = false;
-          el.textContent = msg;
-        } else {
-          el.hidden = true;
-          el.textContent = "";
-        }
-      },
-      onUi: ({ enabled }) => {
+      setStatus: setDjStatus,
+      onUi: ({ enabled, status: st }) => {
         const btn = $("music-dj");
         if (btn) {
           btn.classList.toggle("on", !!enabled);
           btn.setAttribute("aria-pressed", enabled ? "true" : "false");
           btn.textContent = enabled ? "DJ Vox · on" : "DJ Vox";
         }
+        if (st) setDjStatus(st);
       },
     });
     return djRadio;
   } catch (err) {
     console.warn("[music] DJ module failed", err);
+    setDjStatus("Vox module failed — hard refresh");
     return null;
   }
 }
 
 async function setDjEnabled(on) {
   const dj = await ensureDjRadio();
-  if (!dj) return;
+  if (!dj) {
+    setDjStatus("Vox unavailable");
+    return;
+  }
   dj.setEnabled(!!on);
   try {
     localStorage.setItem(DJ_PREF_KEY, on ? "1" : "0");
@@ -1219,15 +1229,34 @@ async function setDjEnabled(on) {
     try {
       dj.onTrackChanged?.(null);
     } catch (_) {}
+  } else if (on) {
+    setDjStatus("DJ Vox · on — plays when a song starts");
+  } else {
+    setDjStatus("");
   }
 }
 
-function notifyDjTrackChange() {
-  if (!djRadio?.isEnabled?.()) return;
+/** Fire Vox for the current track — waits for module; auto-enables unless user turned off */
+async function notifyDjTrackChange() {
   try {
-    djRadio.hush?.();
-    djRadio.onTrackChanged?.(null);
-  } catch (_) {}
+    let prefOn = true;
+    try {
+      const p = localStorage.getItem(DJ_PREF_KEY);
+      if (p === "0") prefOn = false;
+    } catch (_) {}
+    if (!prefOn) return;
+
+    const dj = await ensureDjRadio();
+    if (!dj) return;
+    if (!dj.isEnabled()) {
+      dj.setEnabled(true);
+    }
+    // Don't hush the line we're about to start unless mid-rant from a prior skip
+    dj.onTrackChanged?.(null);
+  } catch (err) {
+    console.warn("[music] Vox notify", err);
+    setDjStatus("Vox error — check Luna on :8767");
+  }
 }
 
 function notifyDjSkip() {
@@ -1400,6 +1429,10 @@ function wire() {
   $("music-dj")?.addEventListener("click", async () => {
     const on = !($("music-dj")?.classList.contains("on"));
     await setDjEnabled(on);
+    if (on && userStarted && isSunoTrack(current())) {
+      setDjStatus("Vox · cueing…");
+      void notifyDjTrackChange();
+    }
   });
   // Seamless radio across Relics / Bio / Luna 2D / Luna 3D
   window.addEventListener("telephantim-scene", onHubSceneChange);
