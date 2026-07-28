@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=87-live-telephantim" />
+  <link rel="stylesheet" href="styles.css?v=89-one-radio" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-native" data-scene="telephantim">
@@ -176,29 +176,36 @@
     Camp hides its own music UI when loaded with ?hub=1.
   -->
   <div class="music-chrome" id="music-chrome" aria-label="Telephantix music">
-    <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music">
+    <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music · drag to move">
       <span id="btn-music-label">♪ Play music</span>
     </button>
     <div class="music-player" id="music-player" aria-label="Music player" hidden>
       <div class="music-player-inner">
-        <div class="music-head">
+        <div class="music-head" id="music-head" title="Drag to move · double-click resets place">
           <div class="music-head-text">
-            <strong class="music-brand">Telephantix</strong>
+            <strong class="music-brand">Telephantix Radio</strong>
             <p class="music-now"><span id="music-now-title">Ready</span><br /><span id="music-now-sub" class="music-sub"></span></p>
           </div>
           <div class="music-head-actions">
             <button type="button" class="music-icon-btn" id="music-min" aria-label="Minimize" title="Minimize">−</button>
             <button type="button" class="music-icon-btn" id="music-max" aria-label="Expand" title="Expand" hidden>+</button>
-            <button type="button" class="music-icon-btn music-x" id="music-close" aria-label="Close panel" title="Close panel">×</button>
+            <button type="button" class="music-icon-btn music-x" id="music-close" aria-label="Close panel" title="Hide list (music keeps playing)">×</button>
           </div>
+        </div>
+        <div class="music-mini-row" id="music-mini-row" hidden>
+          <button type="button" class="btn-chip ghost music-mini-ctl" id="music-mini-prev" title="Previous">‹</button>
+          <button type="button" class="btn-chip ghost music-mini-ctl" id="music-mini-next" title="Next">›</button>
+          <span class="music-mini-title" id="music-mini-title">Playing…</span>
         </div>
         <div class="music-panel-body" id="music-panel-body">
           <div class="music-controls">
             <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
             <button type="button" class="btn-chip ghost" id="music-next">Next</button>
             <button type="button" class="btn-chip ghost" id="music-shuffle" aria-pressed="false" title="Shuffle queue">Shuffle</button>
+            <button type="button" class="btn-chip ghost" id="music-dj" aria-pressed="false" title="DJ Vox comments over the bed (free)">DJ Vox</button>
             <a class="btn-chip btn-suno" id="music-suno-link" href="go-suno.html" title="Suno queue only">Suno only</a>
           </div>
+          <p class="music-dj-status" id="music-dj-status" hidden></p>
           <div class="music-search-wrap">
             <input
               type="search"
@@ -222,7 +229,7 @@
             <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
-          <p class="music-hint">One player · one song at a time · search the queue</p>
+          <p class="music-hint">One radio · Relics · Bio · 2D · 3D · drag the box · minimize keeps the song</p>
         </div>
       </div>
     </div>
@@ -386,11 +393,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=87-live-telephantim"></script>
+  <script type="module" src="scenes.js?v=89-one-radio"></script>
   <script type="module" src="relics-cms.js?v=87-live-telephantim"></script>
   <script type="module" src="bio.js?v=87-live-telephantim"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
-  <script type="module" src="music.js?v=88-bg-keep"></script>
+  <script type="module" src="music.js?v=89-one-radio"></script>
   <script type="module" src="personality.js?v=real-speak-3"></script>
   <script type="module" src="mjolnir.js?v=87-live-telephantim"></script>
 </body>

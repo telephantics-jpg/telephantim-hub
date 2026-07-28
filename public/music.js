@@ -66,10 +66,17 @@ let listFilter = "";
 let firstOpenShufflePending = true;
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
+/** Drag-placed music panel box */
+const MUSIC_PANEL_POS_KEY = "telephantim-music-panel-pos-v1";
 /** Mid-song + "wanted playing" across tab hide / lock (cleared when browser dies) */
 const MUSIC_PERSIST_KEY = "telephantim-music-bg-v1";
+const DJ_PREF_KEY = "telephantim-dj-vox-on";
 let musicBtnPos = null; // { x, y } top-left of button
 let musicBtnDrag = null;
+let musicPanelPos = null; // { x, y } top-left of panel
+let musicPanelDrag = null;
+/** @type {null | ReturnType<typeof createDjRadio>} */
+let djRadio = null;
 /** true only when user deliberately paused (controls / lock-screen Pause) */
 let userPaused = false;
 let mediaSessionApi = null;
@@ -501,9 +508,12 @@ function loadTrack(autoPlayHint) {
     if (autoPlayHint) {
       userPaused = false;
       audio.play().catch(() => {});
+      // Spotify-style Vox intro for this track (song already started)
+      setTimeout(() => notifyDjTrackChange(), 120);
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
     saveMusicPersist();
+    updateMusicChrome();
   } else if (frame && audio) {
     // Spotify / YouTube embed only — pause native audio fully
     try {
@@ -788,9 +798,81 @@ function clampMusicBtnPos(x, y, btn) {
   };
 }
 
+function loadMusicPanelPos() {
+  try {
+    const raw = localStorage.getItem(MUSIC_PANEL_POS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.x === "number" && typeof p?.y === "number") return p;
+  } catch (_) {}
+  return null;
+}
+
+function saveMusicPanelPos(pos) {
+  try {
+    if (!pos) localStorage.removeItem(MUSIC_PANEL_POS_KEY);
+    else localStorage.setItem(MUSIC_PANEL_POS_KEY, JSON.stringify(pos));
+  } catch (_) {}
+}
+
+function clampMusicPanelPos(x, y, panel) {
+  const w = panel?.offsetWidth || 360;
+  const h = panel?.offsetHeight || 200;
+  const pad = 8;
+  const maxX = Math.max(pad, window.innerWidth - w - pad);
+  const maxY = Math.max(pad, window.innerHeight - h - pad);
+  return {
+    x: Math.min(maxX, Math.max(pad, x)),
+    y: Math.min(maxY, Math.max(pad, y)),
+  };
+}
+
+function applyMusicPanelPos() {
+  const panel = $("music-player");
+  if (!panel) return;
+  if (musicPanelPos) {
+    const p = clampMusicPanelPos(musicPanelPos.x, musicPanelPos.y, panel);
+    musicPanelPos = p;
+    panel.classList.add("is-placed");
+    panel.classList.remove("is-anchored");
+    panel.style.setProperty("--music-panel-left", `${p.x}px`);
+    panel.style.setProperty("--music-panel-top", `${p.y}px`);
+    panel.style.left = `${p.x}px`;
+    panel.style.top = `${p.y}px`;
+    panel.style.bottom = "auto";
+    panel.style.right = "auto";
+    panel.style.transform = "none";
+  } else if (musicBtnPos) {
+    // Follow chip if panel not independently placed
+    const btn = $("btn-music");
+    const pw = panel.offsetWidth || 360;
+    const ph = panel.offsetHeight || 220;
+    let px = musicBtnPos.x + (btn?.offsetWidth || 160) / 2 - pw / 2;
+    let py = musicBtnPos.y - ph - 12;
+    if (py < 8) py = musicBtnPos.y + (btn?.offsetHeight || 48) + 12;
+    px = Math.min(window.innerWidth - pw - 8, Math.max(8, px));
+    panel.classList.add("is-anchored");
+    panel.classList.remove("is-placed");
+    panel.style.setProperty("--music-panel-left", `${px}px`);
+    panel.style.setProperty("--music-panel-top", `${py}px`);
+    panel.style.left = `${px}px`;
+    panel.style.top = `${py}px`;
+    panel.style.bottom = "auto";
+    panel.style.transform = "none";
+  } else {
+    panel.classList.remove("is-placed", "is-anchored");
+    panel.style.removeProperty("--music-panel-left");
+    panel.style.removeProperty("--music-panel-top");
+    panel.style.left = "";
+    panel.style.top = "";
+    panel.style.bottom = "";
+    panel.style.right = "";
+    panel.style.transform = "";
+  }
+}
+
 function applyMusicBtnPos() {
   const btn = $("btn-music");
-  const panel = $("music-player");
   if (!btn) return;
   if (musicBtnPos) {
     const p = clampMusicBtnPos(musicBtnPos.x, musicBtnPos.y, btn);
@@ -802,22 +884,6 @@ function applyMusicBtnPos() {
     btn.style.top = `${p.y}px`;
     btn.style.bottom = "auto";
     btn.style.transform = "none";
-    // Panel sits above the button when open
-    if (panel) {
-      const pw = panel.offsetWidth || 360;
-      const ph = panel.offsetHeight || 280;
-      let px = p.x + (btn.offsetWidth || 160) / 2 - pw / 2;
-      let py = p.y - ph - 12;
-      if (py < 8) py = p.y + (btn.offsetHeight || 48) + 12;
-      px = Math.min(window.innerWidth - pw - 8, Math.max(8, px));
-      panel.classList.add("is-anchored");
-      panel.style.setProperty("--music-panel-left", `${px}px`);
-      panel.style.setProperty("--music-panel-top", `${py}px`);
-      panel.style.left = `${px}px`;
-      panel.style.top = `${py}px`;
-      panel.style.bottom = "auto";
-      panel.style.transform = "none";
-    }
   } else {
     btn.classList.remove("is-placed");
     btn.style.removeProperty("--music-btn-left");
@@ -826,16 +892,84 @@ function applyMusicBtnPos() {
     btn.style.top = "";
     btn.style.bottom = "";
     btn.style.transform = "";
-    if (panel) {
-      panel.classList.remove("is-anchored");
-      panel.style.removeProperty("--music-panel-left");
-      panel.style.removeProperty("--music-panel-top");
-      panel.style.left = "";
-      panel.style.top = "";
-      panel.style.bottom = "";
-      panel.style.transform = "";
-    }
   }
+  // Panel position is independent when dragged; else anchors to chip
+  applyMusicPanelPos();
+}
+
+function wireMusicPanelDrag() {
+  const panel = $("music-player");
+  const handle = $("music-head");
+  if (!panel || !handle || panel.dataset.panelDragWired === "1") return;
+  panel.dataset.panelDragWired = "1";
+  musicPanelPos = loadMusicPanelPos();
+  applyMusicPanelPos();
+
+  const onMove = (e) => {
+    if (!musicPanelDrag) return;
+    const pt = e.touches ? e.touches[0] : e;
+    if (!pt) return;
+    const dx = pt.clientX - musicPanelDrag.startX;
+    const dy = pt.clientY - musicPanelDrag.startY;
+    if (!musicPanelDrag.moved && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+      musicPanelDrag.moved = true;
+      panel.classList.add("is-dragging");
+      if (!musicPanelPos) {
+        const r = panel.getBoundingClientRect();
+        musicPanelPos = { x: r.left, y: r.top };
+        musicPanelDrag.originX = r.left;
+        musicPanelDrag.originY = r.top;
+      }
+    }
+    if (!musicPanelDrag.moved) return;
+    e.preventDefault?.();
+    musicPanelPos = clampMusicPanelPos(
+      musicPanelDrag.originX + dx,
+      musicPanelDrag.originY + dy,
+      panel,
+    );
+    applyMusicPanelPos();
+  };
+
+  const onUp = () => {
+    if (!musicPanelDrag) return;
+    if (musicPanelDrag.moved) {
+      saveMusicPanelPos(musicPanelPos);
+    }
+    panel.classList.remove("is-dragging");
+    musicPanelDrag = null;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+  };
+
+  handle.addEventListener("pointerdown", (e) => {
+    // Don't drag from action buttons
+    if (e.target?.closest?.("button, a, input")) return;
+    if (e.button != null && e.button !== 0) return;
+    const r = panel.getBoundingClientRect();
+    musicPanelDrag = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: musicPanelPos ? musicPanelPos.x : r.left,
+      originY: musicPanelPos ? musicPanelPos.y : r.top,
+      moved: false,
+    };
+    try {
+      handle.setPointerCapture?.(e.pointerId);
+    } catch (_) {}
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  });
+
+  handle.addEventListener("dblclick", (e) => {
+    if (e.target?.closest?.("button")) return;
+    e.preventDefault();
+    musicPanelPos = null;
+    saveMusicPanelPos(null);
+    applyMusicPanelPos();
+  });
 }
 
 function wireMusicBtnDrag() {
@@ -929,6 +1063,11 @@ function wireMusicBtnDrag() {
       musicBtnPos = clampMusicBtnPos(musicBtnPos.x, musicBtnPos.y, btn);
       applyMusicBtnPos();
     }
+    if (musicPanelPos) {
+      const panel = $("music-player");
+      musicPanelPos = clampMusicPanelPos(musicPanelPos.x, musicPanelPos.y, panel);
+      applyMusicPanelPos();
+    }
   });
 }
 
@@ -939,13 +1078,16 @@ function updateMusicChrome() {
   const body = $("music-panel-body");
   const minBtn = $("music-min");
   const maxBtn = $("music-max");
+  const miniRow = $("music-mini-row");
+  const miniTitle = $("music-mini-title");
   const playing = isAudioPlaying();
+  const cur = current();
 
   if (label) {
     if (!open && !playing) label.textContent = "♪ Play music";
     else if (open && !minimized) label.textContent = "♪ Hide list";
     else if (open && minimized) label.textContent = "♪ Expand";
-    else label.textContent = "♪ Playing"; // closed shell but still playing
+    else label.textContent = playing ? "♪ Playing" : "♪ Music";
   }
   if (btn) {
     btn.classList.toggle("on", open && !minimized);
@@ -953,10 +1095,10 @@ function updateMusicChrome() {
     btn.setAttribute("aria-expanded", open && !minimized ? "true" : "false");
     btn.title =
       open && !minimized
-        ? "Hide player · drag to move · double-click resets"
+        ? "Hide list · drag chip · double-click resets place"
         : playing
-          ? "Show player · drag to move · double-click resets"
-          : "Play music · drag to move · double-click resets place";
+          ? "Show radio · drag · music keeps going across Relics/Bio/2D/3D"
+          : "Play music · drag chip · double-click resets place";
   }
   if (panel) {
     panel.hidden = !open;
@@ -966,12 +1108,132 @@ function updateMusicChrome() {
   if (body) body.hidden = !!(open && minimized);
   if (minBtn) minBtn.hidden = !!(open && minimized);
   if (maxBtn) maxBtn.hidden = !(open && minimized);
+  if (miniRow) {
+    miniRow.hidden = !(open && minimized);
+  }
+  if (miniTitle) {
+    miniTitle.textContent = cur?.title
+      ? `${playing ? "♫" : "❚❚"} ${cur.title}`
+      : playing
+        ? "♫ Playing…"
+        : "Ready";
+  }
 
   document.body.classList.toggle("music-open", open && !minimized);
   document.body.classList.toggle("music-minimized", open && minimized);
   document.body.classList.toggle("music-playing", playing);
-  // Keep panel glued to dragged button
-  if (open) applyMusicBtnPos();
+  // Keep chip + panel placement (independent drag for the box)
+  if (open) {
+    applyMusicBtnPos();
+    applyMusicPanelPos();
+  }
+}
+
+/**
+ * Scene switches (Relics / Bio / 2D / 3D) must NEVER kill the radio.
+ * Same audio element lives on the hub parent — camp iframes stay muted for music.
+ */
+function onHubSceneChange() {
+  signalCampStopMusic();
+  if (wantBackgroundPlay()) {
+    softResumeMusic("scene-change");
+  }
+  // Re-assert camp silence a moment after iframe paints
+  setTimeout(() => signalCampStopMusic(), 400);
+  setTimeout(() => {
+    if (wantBackgroundPlay()) softResumeMusic("scene-change-late");
+  }, 600);
+  updateMusicChrome();
+}
+
+async function ensureDjRadio() {
+  if (djRadio) return djRadio;
+  try {
+    const mod = await import(`./hub-dj-radio.mjs?v=89-one-radio`);
+    djRadio = mod.createDjRadio({
+      getAudio: () => $("music-audio"),
+      getTracks: () =>
+        PLAYLIST.filter(isSunoTrack).map((t) => ({
+          id: t.songId || t.id,
+          title: t.title,
+          artist: t.artist,
+          src: t.url,
+        })),
+      getIndex: () => {
+        // Index within Suno-only view of playlist for DJ intros
+        const suno = PLAYLIST.filter(isSunoTrack);
+        const cur = current();
+        if (!cur || !isSunoTrack(cur)) return 0;
+        const i = suno.findIndex((t) => (t.songId || t.id) === (cur.songId || cur.id));
+        return i >= 0 ? i : 0;
+      },
+      getApiBase: () => {
+        try {
+          const h = (location.hostname || "").toLowerCase();
+          if (h === "localhost" || h === "127.0.0.1") {
+            return "http://127.0.0.1:8767";
+          }
+          return "https://telephanti.com";
+        } catch (_) {
+          return "https://telephanti.com";
+        }
+      },
+      // Hub owns next/prev + ended; DJ only speaks
+      advanceOnEnded: false,
+      isWantedOn: () => wantBackgroundPlay(),
+      setStatus: (msg) => {
+        const el = $("music-dj-status");
+        if (!el) return;
+        if (msg) {
+          el.hidden = false;
+          el.textContent = msg;
+        } else {
+          el.hidden = true;
+          el.textContent = "";
+        }
+      },
+      onUi: ({ enabled }) => {
+        const btn = $("music-dj");
+        if (btn) {
+          btn.classList.toggle("on", !!enabled);
+          btn.setAttribute("aria-pressed", enabled ? "true" : "false");
+          btn.textContent = enabled ? "DJ Vox · on" : "DJ Vox";
+        }
+      },
+    });
+    return djRadio;
+  } catch (err) {
+    console.warn("[music] DJ module failed", err);
+    return null;
+  }
+}
+
+async function setDjEnabled(on) {
+  const dj = await ensureDjRadio();
+  if (!dj) return;
+  dj.setEnabled(!!on);
+  try {
+    localStorage.setItem(DJ_PREF_KEY, on ? "1" : "0");
+  } catch (_) {}
+  if (on && userStarted && isSunoTrack(current())) {
+    try {
+      dj.onTrackChanged?.(null);
+    } catch (_) {}
+  }
+}
+
+function notifyDjTrackChange() {
+  if (!djRadio?.isEnabled?.()) return;
+  try {
+    djRadio.hush?.();
+    djRadio.onTrackChanged?.(null);
+  } catch (_) {}
+}
+
+function notifyDjSkip() {
+  try {
+    djRadio?.hush?.();
+  } catch (_) {}
 }
 
 function updateMusicButtonLabel() {
@@ -1046,13 +1308,18 @@ function toggleMinimize() {
 
 function next() {
   if (!PLAYLIST.length) return;
+  // Cancel old Vox immediately so Next feels instant
+  notifyDjSkip();
   index = (index + 1) % PLAYLIST.length;
-  loadTrack(true);
+  userPaused = false;
+  loadTrack(true); // notifies DJ after play starts
 }
 
 function prev() {
   if (!PLAYLIST.length) return;
+  notifyDjSkip();
   index = (index - 1 + PLAYLIST.length) % PLAYLIST.length;
+  userPaused = false;
   loadTrack(true);
 }
 
@@ -1082,12 +1349,13 @@ function playAllSuno(e) {
 
 function onAudioEnded() {
   // Continuous play through the queue — only after user started
-  if (!userStarted || !PLAYLIST.length) return;
+  if (!userStarted || userPaused || !PLAYLIST.length) return;
   next();
 }
 
 function wire() {
   wireMusicBtnDrag();
+  wireMusicPanelDrag();
   // Single bottom "Play music" chip — only control that starts sound by default
   $("btn-music")?.addEventListener("click", (e) => {
     // Ignore click that follows a drag
@@ -1123,10 +1391,18 @@ function wire() {
   $("music-close")?.addEventListener("click", () => setOpen(false));
   $("music-next")?.addEventListener("click", next);
   $("music-prev")?.addEventListener("click", prev);
+  $("music-mini-next")?.addEventListener("click", next);
+  $("music-mini-prev")?.addEventListener("click", prev);
   $("music-search")?.addEventListener("input", (e) => {
     listFilter = e.target?.value || "";
     renderList();
   });
+  $("music-dj")?.addEventListener("click", async () => {
+    const on = !($("music-dj")?.classList.contains("on"));
+    await setDjEnabled(on);
+  });
+  // Seamless radio across Relics / Bio / Luna 2D / Luna 3D
+  window.addEventListener("telephantim-scene", onHubSceneChange);
   // Catalog refresh on focus — never interrupt a live stream (preserve + soft-resume)
   window.addEventListener("focus", () => {
     if (wantBackgroundPlay() && isAudioPlaying()) {
@@ -1195,6 +1471,17 @@ function wire() {
   renderList();
   loadSunoCatalog();
   updateMusicChrome();
+
+  // Restore DJ preference (default on for hub radio vibes)
+  try {
+    const pref = localStorage.getItem(DJ_PREF_KEY);
+    const wantDj = pref == null ? true : pref === "1";
+    if (wantDj) {
+      setDjEnabled(true).catch(() => {});
+    }
+  } catch (_) {
+    setDjEnabled(true).catch(() => {});
+  }
 }
 
 if (document.readyState === "loading") {
