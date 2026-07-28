@@ -1161,7 +1161,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=92-vox-fix`);
+    const mod = await import(`./hub-dj-radio.mjs?v=93-cloud-only`);
     djRadio = mod.createDjRadio({
       getAudio: () => $("music-audio"),
       getTracks: () =>
@@ -1180,11 +1180,15 @@ async function ensureDjRadio() {
         return i >= 0 ? i : 0;
       },
       getApiBase: () => {
+        // Cloud-first: live sites always use Render (telephanti.com). PC not required.
         try {
           const h = (location.hostname || "").toLowerCase();
           const port = String(location.port || "");
+          if (h.includes("telephantim") || h.includes("telephanti") || h.includes("github.io") || h.includes("onrender")) {
+            return "https://telephanti.com";
+          }
           if (h === "localhost" || h === "127.0.0.1") {
-            // Hub 8765 has no DJ route — always hit Luna free town
+            // Optional local Luna only when developing on this machine
             if (port === "8767") return "";
             return "http://127.0.0.1:8767";
           }

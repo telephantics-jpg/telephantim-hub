@@ -191,12 +191,18 @@ export function createDjRadio(api = {}) {
     try {
       const h = (location.hostname || "").toLowerCase();
       const port = String(location.port || "");
-      if (h === "localhost" || h === "127.0.0.1") {
-        if (port === "8767") return ""; // same-origin Luna
-        return "http://127.0.0.1:8767"; // hub / other local → Luna DJ
-      }
-      if (h.includes("telephantim") || h.includes("github.io")) {
+      // Live / Pages / Render static always → telephanti.com (PC off)
+      if (
+        h.includes("telephantim") ||
+        h.includes("github.io") ||
+        h.includes("onrender") ||
+        (h.includes("telephanti") && port === "")
+      ) {
         return "https://telephanti.com";
+      }
+      if (h === "localhost" || h === "127.0.0.1") {
+        if (port === "8767") return ""; // same-origin local Luna
+        return "http://127.0.0.1:8767"; // local hub → local Luna only when developing
       }
     } catch (_) {}
     return "https://telephanti.com";
@@ -218,24 +224,40 @@ export function createDjRadio(api = {}) {
     };
     const base = djApiBase();
     const url = `${base}/api/firmament/dj/drop`;
-    const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), 25000) : null;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        cache: "no-store",
-        mode: "cors",
-        signal: ctrl?.signal,
-      });
-      if (!res.ok) {
-        const t = await res.text().catch(() => "");
-        throw new Error(`DJ drop HTTP ${res.status} ${t.slice(0, 80)}`);
+    // Render free tier may cold-start (~30–60s) — retry once after wake ping
+    const attempt = async (ms) => {
+      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), ms) : null;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          cache: "no-store",
+          mode: "cors",
+          signal: ctrl?.signal,
+        });
+        if (!res.ok) {
+          const t = await res.text().catch(() => "");
+          throw new Error(`DJ drop HTTP ${res.status} ${t.slice(0, 80)}`);
+        }
+        return res.json();
+      } finally {
+        if (timer) clearTimeout(timer);
       }
-      return res.json();
-    } finally {
-      if (timer) clearTimeout(timer);
+    };
+    try {
+      return await attempt(45000);
+    } catch (err1) {
+      try {
+        status("Waking free cloud brain…");
+        // Nudge Luna / Render awake (no body needed)
+        await fetch(`${base}/api/health`, { cache: "no-store", mode: "cors" }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 2500));
+        return await attempt(60000);
+      } catch (err2) {
+        throw err2 || err1;
+      }
     }
   }
 

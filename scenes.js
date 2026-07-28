@@ -33,7 +33,13 @@ function lunaCampBase() {
       // Default local split: hub → Luna
       return "http://127.0.0.1:8767";
     }
-    if (h.includes("telephantim") || h.includes("github.io")) {
+    // Live hub / Pages / Render static → always cloud Luna (your PC off is fine)
+    if (
+      h.includes("telephantim") ||
+      h.includes("github.io") ||
+      h.includes("onrender") ||
+      h.includes("telephanti")
+    ) {
       return "https://telephanti.com";
     }
   } catch (_) {}

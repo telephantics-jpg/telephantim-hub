@@ -1,0 +1,32 @@
+Telephantix cloud (no PC required)
+==================================
+
+When your computer is OFF, use the live sites only:
+
+  Hub (relics · bio · radio · Vox UI):
+    https://telephantim.com/?v=92-vox-fix
+
+  Camp brain + 2D/3D + DJ TTS (Render free):
+    https://telephanti.com
+
+How it wires together (nothing local):
+  - telephantim.com  = static hub (GitHub Pages / Render static)
+  - 2D/3D tabs       = iframe → https://telephanti.com/firmament/…?hub=1
+  - DJ Vox           = POST → https://telephanti.com/api/firmament/dj/drop
+  - Free edge-tts    = runs on telephanti.com Render box
+
+You do NOT need:
+  - 127.0.0.1:8765
+  - 127.0.0.1:8767
+  - Ollama on your PC
+  - A second paid server
+
+Notes:
+  - Render free can "sleep" after idle. First open may take 30–60s.
+    Vox client pings /api/health and retries once to wake it.
+  - Music keeps playing in the browser tab until you close the browser
+    (not your PC — the cloud serves files; audio still plays in the device browser).
+
+Deploy:
+  - Hub: push telephantim-hub master + gh-pages (auto static)
+  - Camp: push telephanti-luna main → Render redeploys telephanti.com
