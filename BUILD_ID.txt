@@ -1,1 +1,1 @@
-v93-cloud-only
+v94-mobile-compact

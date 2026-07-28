@@ -190,7 +190,31 @@ function dboxMinKey(id) {
   return `telephantim-dbox-collapsed-${id}`;
 }
 
-function setDboxCollapsed(id, collapsed) {
+/** True while user is typing in a field (music search, admin, etc.) — don't steal focus with big chat bubbles */
+export function isTextFieldFocused() {
+  try {
+    const el = document.activeElement;
+    if (!el || el === document.body) return false;
+    const tag = (el.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+    if (el.isContentEditable) return true;
+    if (el.closest?.("input, textarea, select, [contenteditable='true'], .music-search, .music-player")) {
+      // Only count actual editable controls inside music panel
+      if (el.closest?.("input, textarea, select, [contenteditable='true']")) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function isMobileViewport() {
+  try {
+    return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+  } catch (_) {
+    return (window.innerWidth || 900) <= 720;
+  }
+}
+
+function setDboxCollapsed(id, collapsed, opts = {}) {
   const b = boxes[id];
   if (!b?.root) return;
   b.root.classList.toggle("collapsed", !!collapsed);
@@ -202,9 +226,11 @@ function setDboxCollapsed(id, collapsed) {
     btn.title = collapsed ? "Expand bubble" : "Minimize bubble";
   }
   if (!collapsed) b.root.classList.remove("has-new");
-  try {
-    localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
-  } catch (_) {}
+  if (!opts.skipPersist) {
+    try {
+      localStorage.setItem(dboxMinKey(id), collapsed ? "1" : "0");
+    } catch (_) {}
+  }
 }
 
 function wireDboxMinimize() {
@@ -214,8 +240,13 @@ function wireDboxMinimize() {
     const id = btn.getAttribute("data-dbox-min") === "caduceus" ? "caduceus" : "mjolnir";
     let collapsed = false;
     try {
-      if (localStorage.getItem(dboxMinKey(id)) === "1") collapsed = true;
-    } catch (_) {}
+      const saved = localStorage.getItem(dboxMinKey(id));
+      if (saved === "1") collapsed = true;
+      else if (saved === "0") collapsed = false;
+      else if (isMobileViewport()) collapsed = true; // mobile default: chips only, save screen
+    } catch (_) {
+      if (isMobileViewport()) collapsed = true;
+    }
     setDboxCollapsed(id, collapsed);
     btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -254,6 +285,17 @@ export function showInBox(persona, text, meta, power, opts = {}) {
   if (b.meta) b.meta.textContent = meta || "word of power";
   if (b.power && power != null) b.power.textContent = `PWR ${power}`;
   if (text && text !== "…") stickyText[id] = text;
+
+  // Typing in a text field (music search, etc.) → never expand big chat over the keys
+  // Mobile: stay chip-sized unless user already expanded
+  const typing = !opts.forceExpand && isTextFieldFocused();
+  const preferCompact = typing || (isMobileViewport() && !opts.forceExpand);
+  if (preferCompact && !b.root.classList.contains("collapsed")) {
+    // Soft-collapse for this line only if they didn't lock expanded... 
+    // Only force collapse when typing so we don't fight a deliberate expand mid-Talk
+    if (typing) setDboxCollapsed(id, true, { skipPersist: true });
+  }
+
   b.root.classList.add("show", "pulse");
   const collapsed = b.root.classList.contains("collapsed");
   // Soft ping when minimized — mind is still talking, stage stays clear
@@ -278,7 +320,12 @@ export function showInBox(persona, text, meta, power, opts = {}) {
     return;
   }
   // Expanded: hold long enough to read; don't flash-switch
-  const hold = speechHoldMs(text, opts);
+  // On mobile, shorter hold so stage stays usable
+  const hold = speechHoldMs(text, {
+    ...opts,
+    maxMs: isMobileViewport() ? 28000 : opts.maxMs || 48000,
+    minMs: isMobileViewport() ? 9000 : opts.minMs || 12000,
+  });
   hideTimers[id] = setTimeout(() => {
     b.root.classList.remove("active-speaker", "show");
   }, hold);
@@ -704,6 +751,11 @@ function scheduleAutoTalk() {
   clearTimeout(autoTalkTimer);
   autoTalkTimer = setTimeout(async () => {
     try {
+      // Never auto-open talk while typing in a field (music search / forms)
+      if (isTextFieldFocused()) {
+        scheduleAutoTalk();
+        return;
+      }
       if (!busy && brainsOnline && document.visibilityState === "visible") {
         await banter(
           "one short friendly exchange — gift power and healing, keep it brief",

@@ -1037,6 +1037,97 @@ body.scene-external .scene-frame {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ===== Mobile: save vertical space for 3D + music (phone-first) ===== */
+@media (max-width: 720px) {
+  .dialogue-layer {
+    /* Keep bubbles from covering full stage */
+    pointer-events: none;
+  }
+  .dbox {
+    width: min(72vw, 240px);
+    max-width: 240px;
+    padding: 0.4rem 0.48rem 0.38rem;
+    border-radius: 12px;
+  }
+  .dbox-text {
+    font-size: 0.72rem;
+    line-height: 1.32;
+    max-height: 7.5em;
+  }
+  .dbox.collapsed,
+  .dbox.docked {
+    /* Thin chips — Talk still readable via expand */
+    max-width: min(46vw, 9.5rem);
+    padding: 0.32rem 0.4rem 0.32rem 0.48rem;
+  }
+  .dbox.collapsed .dbox-title,
+  .dbox.docked .dbox-title {
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+  }
+  .float-actions {
+    bottom: calc(var(--sheet-peek) + 4.6rem + var(--safe-bottom));
+    gap: 0.3rem;
+  }
+  .float-actions .btn-chip {
+    min-height: 40px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.78rem;
+  }
+  /* Music panel: less list height so stage + keys fit */
+  .music-player {
+    width: min(96vw, 360px);
+  }
+  .music-player.is-minimized {
+    width: min(92vw, 300px);
+  }
+  .music-track-list {
+    max-height: min(28vh, 9.5rem);
+  }
+  .music-stage.has-audio,
+  .music-stage:has(#music-audio:not([hidden])) {
+    min-height: 0;
+  }
+  .music-audio {
+    max-height: 2.4rem;
+  }
+  .music-controls {
+    flex-wrap: wrap;
+    gap: 0.28rem;
+  }
+  .music-controls .btn-chip {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.72rem;
+    min-height: 36px;
+  }
+  .music-hint {
+    font-size: 0.62rem;
+    margin-top: 0.3rem;
+  }
+  .music-dj-status {
+    font-size: 0.65rem;
+    max-height: 2.4em;
+    overflow: hidden;
+  }
+  body.scene-native .brand p {
+    display: none; /* free a row on phone */
+  }
+  .topbar {
+    padding: 0.4rem 0.55rem;
+  }
+}
+
+/* Extra-small phones */
+@media (max-width: 380px) {
+  .dbox {
+    width: min(78vw, 210px);
+  }
+  .world-tab {
+    min-width: 2.4rem;
+    padding: 0.36rem 0.45rem;
+  }
+}
 @media (max-width: 520px) {
   .dbox {
     width: min(52vw, 210px);
