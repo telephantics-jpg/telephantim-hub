@@ -66,8 +66,15 @@ let listFilter = "";
 let firstOpenShufflePending = true;
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
+/** Mid-song + "wanted playing" across tab hide / lock (cleared when browser dies) */
+const MUSIC_PERSIST_KEY = "telephantim-music-bg-v1";
 let musicBtnPos = null; // { x, y } top-left of button
 let musicBtnDrag = null;
+/** true only when user deliberately paused (controls / lock-screen Pause) */
+let userPaused = false;
+let mediaSessionApi = null;
+let bgKeepAliveInstalled = false;
+let lastSoftResumeAt = 0;
 
 function $(id) {
   return document.getElementById(id);
@@ -234,20 +241,21 @@ async function loadSunoCatalog() {
       allSunoTracks = [...orderedSunoTracks];
       // Default queue = full Suno list first so new admin adds show at top
       mode = mode || "all";
+      // Preserve current track while playing — never reshuffle on catalog refresh
       if (shuffleOn) {
-        applyShuffle(false);
+        applyShuffle(!!userStarted);
       } else {
         rebuildPlaylist();
       }
       catalogLoaded = true;
       // First visit this session: shuffle so the same songs aren't always first
-      if (firstOpenShufflePending && allSunoTracks.length > 1) {
+      if (firstOpenShufflePending && allSunoTracks.length > 1 && !userStarted) {
         shuffleOn = true;
         applyShuffle(false);
         index = Math.floor(Math.random() * allSunoTracks.length);
         // Don't clear flag here — setOpen also reshuffles once on first open for a fresh order
       } else if (allSunoTracks.length && !shuffleOn) {
-        // Ordered mode — start at top of catalog
+        // Ordered mode — start at top of catalog only before first play
         if (!userStarted) index = 0;
       } else if (index >= PLAYLIST.length) {
         index = 0;
@@ -255,8 +263,25 @@ async function loadSunoCatalog() {
       updateSunoChip();
       updateShuffleChip();
       renderList();
-      if (userStarted) loadTrack(false);
-      else if (sub && allSunoTracks.length) {
+      // Already playing: keep same song + position (do not restart)
+      if (userStarted) {
+        const audio = $("music-audio");
+        const cur = current();
+        const same =
+          audio &&
+          cur &&
+          isSunoTrack(cur) &&
+          audio.src &&
+          (audio.src === cur.url || (cur.songId && audio.src.includes(cur.songId)));
+        if (same && !audio.paused) {
+          updateMediaSessionMeta(true);
+        } else if (!userPaused) {
+          loadTrack(false);
+          softResumeMusic("catalog-refresh");
+        } else {
+          loadTrack(false);
+        }
+      } else if (sub && allSunoTracks.length) {
         sub.textContent = shuffleOn
           ? `${allSunoTracks.length} songs · shuffled · tap Play`
           : `${allSunoTracks.length} songs · search or tap a title`;
@@ -456,21 +481,29 @@ function loadTrack(autoPlayHint) {
 
   if (t.type === "audio" && audio && frame) {
     // Native Suno mp3 — no iframe (prevents double playback)
+    prepAudioElement(audio);
     try {
       frame.removeAttribute("src");
     } catch (_) {}
     frame.hidden = true;
+    // Keep element in layout tree for background playback (opacity 0 ok if needed)
     audio.hidden = false;
     if (stage) {
       stage.classList.add("has-audio");
       stage.classList.remove("has-embed");
     }
-    if (audio.src !== t.url && !(audio.src && t.url && audio.src.endsWith(t.songId + ".mp3"))) {
+    const sameSrc =
+      audio.src === t.url ||
+      (audio.src && t.url && t.songId && audio.src.includes(String(t.songId)));
+    if (!sameSrc) {
       audio.src = t.url;
     }
     if (autoPlayHint) {
+      userPaused = false;
       audio.play().catch(() => {});
     }
+    updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
+    saveMusicPersist();
   } else if (frame && audio) {
     // Spotify / YouTube embed only — pause native audio fully
     try {
@@ -498,6 +531,232 @@ function loadTrack(autoPlayHint) {
 function isAudioPlaying() {
   const audio = $("music-audio");
   return !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
+}
+
+/** True while we want continuous radio until browser close or user pause */
+function wantBackgroundPlay() {
+  return !!(userStarted && !userPaused && PLAYLIST.length);
+}
+
+function prepAudioElement(audio) {
+  if (!audio) return;
+  try {
+    audio.setAttribute("playsinline", "");
+    audio.setAttribute("webkit-playsinline", "");
+    audio.playsInline = true;
+    // Keep decoding friendly for long sessions
+    if (!audio.getAttribute("preload") || audio.getAttribute("preload") === "none") {
+      // once user starts, allow auto so next tracks buffer
+    }
+  } catch (_) {}
+}
+
+function saveMusicPersist() {
+  if (!wantBackgroundPlay()) return;
+  try {
+    const audio = $("music-audio");
+    const cur = current();
+    if (!cur || !isSunoTrack(cur)) return;
+    sessionStorage.setItem(
+      MUSIC_PERSIST_KEY,
+      JSON.stringify({
+        on: true,
+        id: cur.songId || cur.id,
+        title: cur.title || "",
+        time: audio ? Number(audio.currentTime) || 0 : 0,
+        index,
+        shuffleOn,
+        t: Date.now(),
+      }),
+    );
+  } catch (_) {}
+}
+
+function softResumeMusic(why) {
+  if (!wantBackgroundPlay()) return;
+  const now = Date.now();
+  if (now - lastSoftResumeAt < 400) return;
+  lastSoftResumeAt = now;
+  const audio = $("music-audio");
+  const cur = current();
+  if (!audio || !cur || !isSunoTrack(cur)) return;
+  const dur = Number(audio.duration) || 0;
+  const atEnd =
+    !!audio.ended ||
+    (dur > 2 && Number.isFinite(dur) && audio.currentTime >= dur - 0.35 && audio.paused);
+  if (atEnd) {
+    next();
+    return;
+  }
+  // Already healthy — leave position alone
+  if (!audio.paused && !audio.ended && audio.readyState >= 2) {
+    updateMediaSessionMeta(true);
+    return;
+  }
+  try {
+    // Ensure src matches current track without rewinding if same file
+    const same =
+      audio.src &&
+      (audio.src === cur.url || (cur.songId && audio.src.includes(String(cur.songId))));
+    if (!same) {
+      audio.src = cur.url;
+    }
+    const p = audio.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+  } catch (_) {}
+  updateMediaSessionMeta(true);
+  try {
+    console.info("[telephantim-music] soft-resume", why, "t=", Math.floor(audio.currentTime || 0));
+  } catch (_) {}
+}
+
+function updateMediaSessionMeta(playing) {
+  if (!mediaSessionApi || typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+    return;
+  }
+  const cur = current();
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: (cur && cur.title) || "Telephantix",
+      artist: (cur && cur.artist) || "Telephantix",
+      album: "Telephantim Radio",
+      artwork: [
+        { src: "/media/icon-192.png", sizes: "192x192", type: "image/png" },
+        { src: "/media/icon-512.png", sizes: "512x512", type: "image/png" },
+      ].filter(() => true),
+    });
+  } catch (_) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: (cur && cur.title) || "Telephantix",
+        artist: (cur && cur.artist) || "Telephantix",
+        album: "Telephantim Radio",
+      });
+    } catch (__) {}
+  }
+  try {
+    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+  } catch (_) {}
+  try {
+    const audio = $("music-audio");
+    if (
+      audio &&
+      typeof navigator.mediaSession.setPositionState === "function" &&
+      Number(audio.duration) > 0
+    ) {
+      navigator.mediaSession.setPositionState({
+        duration: Number(audio.duration),
+        playbackRate: Number(audio.playbackRate) || 1,
+        position: Math.min(Number(audio.currentTime) || 0, Number(audio.duration)),
+      });
+    }
+  } catch (_) {}
+}
+
+function installMediaSession() {
+  if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+    mediaSessionApi = null;
+    return;
+  }
+  const ms = navigator.mediaSession;
+  const bind = (action, fn) => {
+    try {
+      ms.setActionHandler(action, (details) => {
+        try {
+          fn(details);
+        } catch (_) {}
+      });
+    } catch (_) {}
+  };
+  bind("play", () => {
+    userPaused = false;
+    softResumeMusic("ms-play");
+  });
+  bind("pause", () => {
+    userPaused = true;
+    try {
+      $("music-audio")?.pause();
+    } catch (_) {}
+    updateMediaSessionMeta(false);
+  });
+  bind("stop", () => {
+    userPaused = true;
+    userStarted = false;
+    stopAllMedia();
+    updateMediaSessionMeta(false);
+  });
+  bind("nexttrack", () => {
+    userPaused = false;
+    next();
+  });
+  bind("previoustrack", () => {
+    userPaused = false;
+    prev();
+  });
+  bind("seekbackward", (d) => {
+    const a = $("music-audio");
+    if (!a) return;
+    const sec = Math.max(5, Number(d?.seekOffset) || 10);
+    a.currentTime = Math.max(0, (a.currentTime || 0) - sec);
+    saveMusicPersist();
+  });
+  bind("seekforward", (d) => {
+    const a = $("music-audio");
+    if (!a) return;
+    const sec = Math.max(5, Number(d?.seekOffset) || 10);
+    const dur = Number(a.duration) || 0;
+    a.currentTime = Math.min(dur || 1e9, (a.currentTime || 0) + sec);
+    saveMusicPersist();
+  });
+  bind("seekto", (d) => {
+    const a = $("music-audio");
+    if (!a || typeof d?.seekTime !== "number") return;
+    a.currentTime = Math.max(0, d.seekTime);
+    saveMusicPersist();
+  });
+  mediaSessionApi = ms;
+}
+
+/**
+ * Keep Suno radio alive in background tabs / lock screen until browser closes
+ * or the user pauses. Never reshuffles on unlock.
+ */
+function installBackgroundKeepAlive() {
+  if (bgKeepAliveInstalled) return;
+  bgKeepAliveInstalled = true;
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      saveMusicPersist();
+      // Do NOT pause — let the OS media session keep the stream
+      return;
+    }
+    setTimeout(() => softResumeMusic("visible"), 80);
+    setTimeout(() => softResumeMusic("visible-late"), 500);
+  });
+
+  window.addEventListener("pageshow", (e) => {
+    setTimeout(() => softResumeMusic(e.persisted ? "bfcache" : "pageshow"), 80);
+  });
+
+  // Background tick: advance at end, soft-resume if OS stalled us
+  setInterval(() => {
+    if (!wantBackgroundPlay()) return;
+    const a = $("music-audio");
+    if (!a) return;
+    if (!a.paused && a.currentTime > 0) {
+      saveMusicPersist();
+      updateMediaSessionMeta(true);
+    }
+    if (a.ended) {
+      next();
+      return;
+    }
+    // While tab is hidden, fight silent OS pauses
+    if (document.hidden && a.paused && !a.ended) {
+      softResumeMusic("bg-tick");
+    }
+  }, 2800);
 }
 
 function loadMusicBtnPos() {
@@ -868,28 +1127,69 @@ function wire() {
     listFilter = e.target?.value || "";
     renderList();
   });
-  // After admin adds songs in another tab, refresh catalog when you come back
+  // Catalog refresh on focus — never interrupt a live stream (preserve + soft-resume)
   window.addEventListener("focus", () => {
+    if (wantBackgroundPlay() && isAudioPlaying()) {
+      softResumeMusic("focus-playing");
+      // Quiet refresh later so admin adds land without killing the song
+      setTimeout(() => {
+        if (catalogLoaded) loadSunoCatalog();
+      }, 2500);
+      return;
+    }
     if (open || catalogLoaded) loadSunoCatalog();
+    else softResumeMusic("focus");
   });
   $("music-shuffle")?.addEventListener("click", toggleShuffle);
   $("music-suno-link")?.addEventListener("click", playAllSuno);
 
   const audio = $("music-audio");
   if (audio) {
+    prepAudioElement(audio);
     audio.addEventListener("ended", onAudioEnded);
-    audio.addEventListener("play", updateMusicChrome);
-    audio.addEventListener("pause", updateMusicChrome);
+    audio.addEventListener("play", () => {
+      userPaused = false;
+      updateMusicChrome();
+      updateMediaSessionMeta(true);
+      saveMusicPersist();
+    });
+    audio.addEventListener("pause", () => {
+      updateMusicChrome();
+      // Background / lock: browser may pause us — fight it if we still want radio
+      if (document.hidden && wantBackgroundPlay()) {
+        setTimeout(() => softResumeMusic("hidden-pause"), 180);
+        return;
+      }
+      // Visible pause that sticks = user (native controls)
+      setTimeout(() => {
+        if (!audio.paused || audio.ended || document.hidden) return;
+        if (wantBackgroundPlay() || userStarted) {
+          userPaused = true;
+          updateMediaSessionMeta(false);
+        }
+      }, 160);
+    });
+    audio.addEventListener("timeupdate", () => {
+      if (Math.floor(audio.currentTime || 0) % 5 === 0) {
+        try {
+          updateMediaSessionMeta(!audio.paused);
+        } catch (_) {}
+      }
+    });
     audio.addEventListener("error", () => {
-      if (userStarted && isSunoTrack(current()) && PLAYLIST.length > 1) {
+      if (userStarted && !userPaused && isSunoTrack(current()) && PLAYLIST.length > 1) {
         setTimeout(next, 400);
       }
     });
   }
 
+  installMediaSession();
+  installBackgroundKeepAlive();
+
   // Cold start: silent, no embed/audio attached
   stopAllMedia();
   userStarted = false;
+  userPaused = false;
   open = false;
   minimized = false;
   renderList();
@@ -916,6 +1216,8 @@ window.TelephantimMusic = {
   playAllSuno,
   loadSunoCatalog,
   toggleShuffle,
+  softResumeMusic,
+  wantBackgroundPlay,
   get shuffleOn() {
     return shuffleOn;
   },
@@ -924,6 +1226,12 @@ window.TelephantimMusic = {
   },
   get open() {
     return open;
+  },
+  get userStarted() {
+    return userStarted;
+  },
+  get userPaused() {
+    return userPaused;
   },
   get minimized() {
     return minimized;
