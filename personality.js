@@ -78,7 +78,11 @@ function setBrainPill(mode, label) {
   brainPill.dataset.mode = mode;
 }
 
-async function playBanterLines(lines, metaPulse) {
+/** True only while user-started Talk (btn) is running — ambient never sets this */
+let talkSessionOpen = false;
+
+async function playBanterLines(lines, metaPulse, opts = {}) {
+  const expandTalk = !!(opts.expandTalk || talkSessionOpen);
   let pMj = 1;
   let pCad = 1;
   let bond = 1;
@@ -92,7 +96,12 @@ async function playBanterLines(lines, metaPulse) {
     let meta = pid === "mjolnir" ? "power · courage" : "healing · balance";
     if (metaPulse) meta = pid === "mjolnir" ? "power · pulse" : "healing · pulse";
     setActivePersona(pid);
-    showInBox(pid, text, meta, line.power != null ? line.power : pid === "mjolnir" ? pMj : pCad);
+    // Talk summary: only expand bubbles if user opened Talk; ambient = chip ping only
+    showInBox(pid, text, meta, line.power != null ? line.power : pid === "mjolnir" ? pMj : pCad, {
+      forceExpand: expandTalk,
+      chipOnly: !expandTalk,
+      fromTalk: true,
+    });
     if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${pMj}`;
     if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${pCad}`;
     if (bondPill) bondPill.textContent = `Bond ${bond}`;
@@ -100,8 +109,14 @@ async function playBanterLines(lines, metaPulse) {
   }
   await wait(2500);
   for (const id of ["mjolnir", "caduceus"]) {
-    boxes[id]?.root?.classList.remove("active-speaker", "has-new", "show");
+    // Ambient: leave chips if they had pings; full Talk: clear expanded stage after
+    if (expandTalk) {
+      boxes[id]?.root?.classList.remove("active-speaker", "has-new", "show");
+    } else {
+      boxes[id]?.root?.classList.remove("active-speaker");
+    }
   }
+  if (expandTalk) talkSessionOpen = false;
 }
 
 /** Cached offline sayings live in relic-sayings.js (warmed into localStorage) */
@@ -286,19 +301,35 @@ export function showInBox(persona, text, meta, power, opts = {}) {
   if (b.power && power != null) b.power.textContent = `PWR ${power}`;
   if (text && text !== "…") stickyText[id] = text;
 
-  // Typing in a text field (music search, etc.) → never expand big chat over the keys
-  // Mobile: stay chip-sized unless user already expanded
-  const typing = !opts.forceExpand && isTextFieldFocused();
-  const preferCompact = typing || (isMobileViewport() && !opts.forceExpand);
-  if (preferCompact && !b.root.classList.contains("collapsed")) {
-    // Soft-collapse for this line only if they didn't lock expanded... 
-    // Only force collapse when typing so we don't fight a deliberate expand mid-Talk
-    if (typing) setDboxCollapsed(id, true, { skipPersist: true });
+  const typing = isTextFieldFocused();
+  // Individual thought (relic press / chip tap): expand THIS bubble to front
+  // Talk summary ambient: chipOnly — do NOT open big bubbles if Talk wasn't up
+  // User Talk button: forceExpand
+  if (opts.chipOnly || (opts.fromTalk && !opts.forceExpand && !talkSessionOpen)) {
+    if (!b.root.classList.contains("collapsed")) {
+      setDboxCollapsed(id, true, { skipPersist: true });
+    }
+  } else if (opts.forceExpand && !typing) {
+    setDboxCollapsed(id, false);
+  } else if (typing && !opts.forceExpand) {
+    // Never expand over keyboard / music search
+    if (!b.root.classList.contains("collapsed")) {
+      setDboxCollapsed(id, true, { skipPersist: true });
+    }
   }
 
   b.root.classList.add("show", "pulse");
+  // Bring active thought to front
+  if (opts.forceExpand || !opts.chipOnly) {
+    b.root.classList.add("active-speaker");
+    b.root.style.zIndex = "12";
+    const other = id === "mjolnir" ? "caduceus" : "mjolnir";
+    if (boxes[other]?.root) {
+      boxes[other].root.style.zIndex = "9";
+    }
+  }
+
   const collapsed = b.root.classList.contains("collapsed");
-  // Soft ping when minimized — mind is still talking, stage stays clear
   if (collapsed) {
     b.root.classList.add("has-new", "pulse");
   } else {
@@ -307,20 +338,15 @@ export function showInBox(persona, text, meta, power, opts = {}) {
   setTimeout(() => b.root.classList.remove("pulse"), 450);
   clearTimeout(hideTimers[id]);
   if (opts.sticky) {
-    // Stay until next speech / banter end — don't auto-hide
     hideTimers[id] = null;
     return;
   }
-  // Collapsed chips stay while the mind is active (don't vanish mid-banter)
   if (collapsed) {
     hideTimers[id] = setTimeout(() => {
       b.root.classList.remove("active-speaker");
-      // keep .show so the chip remains until banter ends / user hides
     }, speechHoldMs(text, opts));
     return;
   }
-  // Expanded: hold long enough to read; don't flash-switch
-  // On mobile, shorter hold so stage stays usable
   const hold = speechHoldMs(text, {
     ...opts,
     maxMs: isMobileViewport() ? 28000 : opts.maxMs || 48000,
@@ -547,8 +573,8 @@ export function speakPhrase(persona, event = "press") {
   const gen = ++speechGen[id];
   const fallback = pickFreshPhrase(id, ev);
   setActivePersona(id);
-  // Soft thinking — single final line lands once (never a prompt leak)
-  showInBox(id, "…", meta, null, { onlyIfGen: gen, thinking: true });
+  // Individual thought: open THIS bubble to the front (not the dual Talk summary)
+  showInBox(id, "…", meta, null, { onlyIfGen: gen, thinking: true, forceExpand: true });
 
   // Short scene seed only — never send "Reply ONLY as…" (that was echoing into the bubble)
   const seed = sceneSeed(id, ev === "press" ? "grab" : ev);
@@ -560,7 +586,7 @@ export function speakPhrase(persona, event = "press") {
     if (!line || looksLikePromptLeak(line) || !isStrongLine(line)) {
       line = fallback;
     }
-    showInBox(id, line, meta, null, { onlyIfGen: gen, sticky: true });
+    showInBox(id, line, meta, null, { onlyIfGen: gen, sticky: true, forceExpand: true });
   };
 
   // Give free minds a real window; fall back to quality cached saying (not a prompt)
@@ -617,8 +643,16 @@ export async function battleQuip(attackerKind) {
 export async function banter(topic, rounds, opts) {
   if (busy) return null;
   busy = true;
-  showInBox("mjolnir", "…", "power · courage");
-  showInBox("caduceus", "…", "healing · balance");
+  // User pressed Talk → open summary. Ambient auto-talk → chips only (opts.ambient).
+  const ambient = !!opts?.ambient;
+  talkSessionOpen = !ambient;
+  if (ambient) {
+    showInBox("mjolnir", "…", "power · courage", null, { chipOnly: true });
+    showInBox("caduceus", "…", "healing · balance", null, { chipOnly: true });
+  } else {
+    showInBox("mjolnir", "…", "power · courage", null, { forceExpand: true, fromTalk: true });
+    showInBox("caduceus", "…", "healing · balance", null, { forceExpand: true, fromTalk: true });
+  }
 
   const usePulse =
     opts?.pulse === true ||
@@ -666,7 +700,7 @@ export async function banter(topic, rounds, opts) {
             })),
           ].slice(0, nRounds + 2);
         }
-        await playBanterLines(lines, !!headline);
+        await playBanterLines(lines, !!headline, { expandTalk: !ambient });
         return fm;
       }
     } catch (_) {}
@@ -689,7 +723,7 @@ export async function banter(topic, rounds, opts) {
       const lines = data.lines || [];
       if (lines.length) {
         setBrainPill("cloud", "Relics awake");
-        await playBanterLines(lines, !!(data.pulse?.text));
+        await playBanterLines(lines, !!(data.pulse?.text), { expandTalk: !ambient });
         if (data.power) {
           if (boxes.mjolnir.power) boxes.mjolnir.power.textContent = `PWR ${data.power.mjolnir}`;
           if (boxes.caduceus.power) boxes.caduceus.power.textContent = `PWR ${data.power.caduceus}`;
@@ -718,22 +752,23 @@ export async function banter(topic, rounds, opts) {
             name: l.id === "mjolnir" ? "Mjolnir" : "Caduceus",
           }));
         }
-        await playBanterLines(lines, false);
+        await playBanterLines(lines, false, { expandTalk: !ambient });
         return { ok: true, brains: true, provider: "native", lines };
       }
     } catch (_) {}
 
     // 4) Cached native sayings — long dynamic multi-turn (always works offline)
     setBrainPill("script", "Relics ready");
-    await offlineBanterShow(usePulse ? headline : null, nRounds);
+    await offlineBanterShow(usePulse ? headline : null, nRounds, { expandTalk: !ambient });
     return null;
   } finally {
     busy = false;
+    if (!ambient) talkSessionOpen = false;
   }
 }
 
 /** Multi-round offline duel from cached sayings bank (local, free, dynamic) */
-async function offlineBanterShow(headline, rounds) {
+async function offlineBanterShow(headline, rounds, opts = {}) {
   const lines = buildOfflineBanter(rounds || 8, { headline: headline || null });
   await playBanterLines(
     lines.map((l) => ({
@@ -741,7 +776,8 @@ async function offlineBanterShow(headline, rounds) {
       text: l.t,
       name: l.id === "mjolnir" ? "Mjolnir" : "Caduceus",
     })),
-    !!headline
+    !!headline,
+    { expandTalk: !!opts.expandTalk }
   );
 }
 
@@ -751,7 +787,7 @@ function scheduleAutoTalk() {
   clearTimeout(autoTalkTimer);
   autoTalkTimer = setTimeout(async () => {
     try {
-      // Never auto-open talk while typing in a field (music search / forms)
+      // Never auto-open Talk summary — ambient = chip pings only
       if (isTextFieldFocused()) {
         scheduleAutoTalk();
         return;
@@ -760,7 +796,7 @@ function scheduleAutoTalk() {
         await banter(
           "one short friendly exchange — gift power and healing, keep it brief",
           2,
-          { pulse: false }
+          { pulse: false, ambient: true }
         );
       }
     } catch (_) {}
@@ -768,15 +804,38 @@ function scheduleAutoTalk() {
   }, 4 * 60 * 1000 + Math.random() * 3 * 60 * 1000); // ~4–7 min
 }
 
+// User Talk button → open full dual summary. Ambient never does this alone.
 banterBtn?.addEventListener("click", () =>
   banter(
     "longer lively talk between hammer and staff — several rounds, natural banter, gift power and healing, bond climbs",
     8,
-    { pulse: Math.random() < 0.25 }
+    { pulse: Math.random() < 0.25, ambient: false }
   )
 );
 
 wireDboxMinimize();
+// Tap collapsed chip = open that individual thought to the front (not dual Talk)
+for (const id of ["mjolnir", "caduceus"]) {
+  const root = boxes[id]?.root;
+  if (!root || root.dataset.chipOpenWired) continue;
+  root.dataset.chipOpenWired = "1";
+  root.addEventListener("click", (e) => {
+    if (e.target?.closest?.("[data-dbox-min]")) return;
+    if (!root.classList.contains("collapsed") && !root.classList.contains("docked")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDboxCollapsed(id, false);
+    root.classList.add("show", "active-speaker");
+    root.style.zIndex = "12";
+    const other = id === "mjolnir" ? "caduceus" : "mjolnir";
+    if (boxes[other]?.root) boxes[other].root.style.zIndex = "9";
+    root.classList.remove("has-new");
+    // Refresh text if we have sticky thought
+    if (boxes[id]?.text && stickyText[id]) {
+      boxes[id].text.textContent = stickyText[id];
+    }
+  });
+}
 // Stage starts clean — bubbles only appear on Talk / grab
 warmSayingsCache();
 refreshBrainPill();
