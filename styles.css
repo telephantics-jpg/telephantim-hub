@@ -47,6 +47,17 @@ a { color: inherit; text-decoration: none; }
 }
 .scene-fallback[hidden] { display: none !important; }
 body.scene-native .scene-fallback { display: none !important; }
+/* Soft escape hatch over 2D/3D when iframe is black / Luna down */
+.scene-fallback.is-soft {
+  z-index: 125;
+  opacity: 0.92;
+}
+body.scene-external .scene-frame {
+  z-index: 2;
+  background: #05070c;
+  display: block !important;
+  visibility: visible !important;
+}
 
 /* Compact 3-tab world bar — always on top (hub + over Luna iframe), mobile-safe */
 .world-switch {

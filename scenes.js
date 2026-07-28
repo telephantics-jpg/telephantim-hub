@@ -4,14 +4,34 @@
  */
 
 /**
- * Camp URLs — same origin when unified server (one process).
- * Fallback: live telephanti.com.
+ * Camp URLs:
+ * - Local hub (8765) → Luna free town on 8767 (separate process)
+ * - Local unified (already on 8767 with firmament) → same origin
+ * - Live telephantim.com → telephanti.com
  */
 function lunaCampBase() {
   try {
     const h = (location.hostname || "").toLowerCase();
+    const port = String(location.port || "");
+    const path = String(location.pathname || "");
+    // Explicit override for dev: ?luna=http://127.0.0.1:8767
+    try {
+      const q = new URLSearchParams(location.search || "");
+      const o = (q.get("luna") || "").trim().replace(/\/$/, "");
+      if (o && /^https?:\/\//i.test(o)) return o;
+    } catch (_) {}
     if (h === "localhost" || h === "127.0.0.1") {
-      return location.origin;
+      // Hub AI server is 8765 and has no /firmament — point at Luna
+      if (port === "8765" || port === "8766" || port === "") {
+        // Empty port only if not actually serving camp (rare); prefer 8767 for hub
+        if (port === "8765" || port === "8766") return "http://127.0.0.1:8767";
+      }
+      // Already on Luna port → same origin (START_TOWN_LOCAL)
+      if (port === "8767" || path.includes("firmament")) {
+        return location.origin;
+      }
+      // Default local split: hub → Luna
+      return "http://127.0.0.1:8767";
     }
     if (h.includes("telephantim") || h.includes("github.io")) {
       return "https://telephanti.com";
@@ -20,7 +40,15 @@ function lunaCampBase() {
   return "https://telephanti.com";
 }
 
-const LUNA = lunaCampBase();
+/** Resolve camp base every time (not once at import — port/override can change). */
+function campUrls() {
+  const base = lunaCampBase().replace(/\/$/, "");
+  return {
+    base,
+    play: `${base}/firmament/play?hub=1`,
+    three: `${base}/firmament/3d?hub=1`,
+  };
+}
 
 const SCENES = {
   telephantim: {
@@ -44,7 +72,8 @@ const SCENES = {
     label: "Luna Camp 2D",
     short: "2D",
     hint: "Luna Camp 2D",
-    url: `${LUNA}/firmament/play?hub=1`,
+    // url filled live via campUrls()
+    urlKey: "play",
     mode: "external",
   },
   "luna-3d": {
@@ -52,10 +81,20 @@ const SCENES = {
     label: "Luna Camp 3D",
     short: "3D",
     hint: "Luna Camp 3D",
-    url: `${LUNA}/firmament/3d?hub=1`,
+    urlKey: "three",
     mode: "external",
   },
 };
+
+function sceneUrl(scene) {
+  if (!scene) return null;
+  if (scene.url) return scene.url;
+  if (scene.urlKey) {
+    const u = campUrls();
+    return scene.urlKey === "three" ? u.three : u.play;
+  }
+  return null;
+}
 
 const STORAGE_KEY = "telephantim-scene";
 
@@ -107,13 +146,25 @@ function updateChrome(scene) {
   });
 }
 
+function sceneUrlKeyRewrite(sceneId) {
+  const base = "http://127.0.0.1:8767";
+  if (sceneId === "luna-3d") return `${base}/firmament/3d?hub=1`;
+  return `${base}/firmament/play?hub=1`;
+}
+
 function setScene(id, { persist = true, fromHash = false } = {}) {
   const sceneId = normalizeScene(id);
   const scene = SCENES[sceneId];
   const prev = current;
   current = sceneId;
 
-  const isExternal = !!scene.url;
+  let want = sceneUrl(scene);
+  // Hub (8765) never has /firmament — always use Luna 8767 locally
+  if (want && /:8765\/|:8766\//.test(want)) {
+    want = sceneUrlKeyRewrite(sceneId);
+  }
+
+  const isExternal = !!want;
   const isBio = scene.mode === "bio";
   const isRelics = sceneId === "telephantim";
 
@@ -132,23 +183,41 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   const frame = $("scene-frame");
   const fallback = $("scene-fallback");
   const bioPage = $("bio-page");
+  const fallbackOpen = $("scene-fallback-open");
 
   if (bioPage) bioPage.hidden = !isBio;
 
-  if (scene.url && frame) {
-    // Load once per camp URL — keep warm when switching away (no reload flash)
-    const want = scene.url;
-    if (frame.getAttribute("data-src") !== want) {
+  if (want && frame) {
+    const prevSrc = frame.getAttribute("data-src") || frame.src || "";
+    const deadHub = /:8765\/|:8766\//.test(prevSrc);
+    if (frame.getAttribute("data-src") !== want || deadHub || !frame.src) {
       frame.setAttribute("data-src", want);
       frame.src = want;
+      try {
+        console.info("[telephantim] load camp", want);
+      } catch (_) {}
     }
     frame.hidden = false;
+    frame.removeAttribute("hidden");
     frame.title = scene.label;
-    if (fallback) fallback.hidden = true;
+    if (fallbackOpen) {
+      fallbackOpen.href = want.replace(/\?hub=1/, "").replace(/&hub=1/, "") || want;
+      fallbackOpen.textContent =
+        sceneId === "luna-3d" ? "Open 3D full page (8767)" : "Open 2D full page (8767)";
+      fallbackOpen.target = "_blank";
+      fallbackOpen.rel = "noopener";
+    }
+    // Soft link so user can escape a black frame if Luna is down
+    if (fallback) {
+      fallback.hidden = false;
+      fallback.classList.add("is-soft");
+    }
   } else if (frame) {
-    // Hide only — do NOT clear src (keeps 2D/3D ready for next visit)
     frame.hidden = true;
-    if (fallback) fallback.hidden = true;
+    if (fallback) {
+      fallback.hidden = true;
+      fallback.classList.remove("is-soft");
+    }
   }
 
   updateChrome(scene);
@@ -160,7 +229,6 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   }
   if (!fromHash) writeHash(sceneId);
 
-  // Skip redundant events when re-selecting same scene
   if (prev !== sceneId) {
     window.dispatchEvent(
       new CustomEvent("telephantim-scene", {
