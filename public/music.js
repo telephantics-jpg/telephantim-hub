@@ -182,7 +182,7 @@ function sunoFromCatalog(rows) {
 function catalogUrls() {
   const bust = Date.now();
   // Always hit local server first (admin saves land here)
-  const urls = [`/api/suno-catalog?v=${bust}`];
+  const urls = [`/api/suno-catalog?v=${bust}&n=${bust}`];
   const api = (typeof window !== "undefined" && window.TELEPHANTIM_API != null
     ? String(window.TELEPHANTIM_API)
     : ""
@@ -192,8 +192,9 @@ function catalogUrls() {
     host = (location.hostname || "").toLowerCase();
   } catch (_) {}
   const isLocal = host === "localhost" || host === "127.0.0.1";
-  // On this PC, never pull a dead remote catalog over the admin-saved one
+  // On this PC, never pull a stale remote (telephantim-ai) over the local catalog
   if (api && !isLocal) urls.push(`${api}/api/suno-catalog?v=${bust}`);
+  // Local file last — same-origin after /api
   urls.push(`${SUNO_CATALOG_URL}?v=${bust}`);
   return urls;
 }
@@ -248,13 +249,17 @@ async function loadSunoCatalog() {
       allSunoTracks = [...orderedSunoTracks];
       // Default queue = full Suno list first so new admin adds show at top
       mode = mode || "all";
-      // Preserve current track while playing — never reshuffle on catalog refresh
+      // Always rebuild so sunoCount matches latest catalog (no stuck 140 UI)
       if (shuffleOn) {
         applyShuffle(!!userStarted);
       } else {
         rebuildPlaylist();
       }
+      sunoCount = allSunoTracks.length;
       catalogLoaded = true;
+      try {
+        console.info("[vox] catalog", rows.length, "tracks →", allSunoTracks.length, "from", url);
+      } catch (_) {}
       // First visit this session: shuffle so the same songs aren't always first
       if (firstOpenShufflePending && allSunoTracks.length > 1 && !userStarted) {
         shuffleOn = true;
@@ -1161,7 +1166,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=93-cloud-only`);
+    const mod = await import(`./hub-dj-radio.mjs?v=98-vox-truth`);
     djRadio = mod.createDjRadio({
       getAudio: () => $("music-audio"),
       getTracks: () =>
@@ -1275,8 +1280,8 @@ function updateMusicButtonLabel() {
 
 /**
  * Show / hide the player shell.
- * First open from "Play music" starts playback; later open only shows the panel.
- * Closing does NOT stop audio once the user has started it.
+ * Sound starts ONLY when opts.play === true (Play music chip / explicit call).
+ * Opening the shell alone never autoplays. Closing does NOT stop audio once started.
  */
 function setOpen(v, opts) {
   open = !!v;
@@ -1297,7 +1302,8 @@ function setOpen(v, opts) {
         firstOpenShufflePending = false;
       }
 
-      const wantPlay = opts?.play !== false;
+      // Explicit only — never default-on (prevents accidental autoplay)
+      const wantPlay = opts?.play === true;
       const audio = $("music-audio");
       const cur = current();
       const already =
@@ -1310,11 +1316,8 @@ function setOpen(v, opts) {
           (audio.src === cur.url ||
             (cur.songId && audio.src.includes(cur.songId)))
         );
-      // First time user opens the chip → start sound. Re-open while already
-      // playing → just show UI. Never autoplay without this path.
       if (wantPlay && !already) loadTrack(true);
       else if (userStarted) loadTrack(false);
-      else if (wantPlay) loadTrack(true);
       else renderList();
     });
   }
@@ -1333,7 +1336,8 @@ function setMinimized(v) {
 
 function toggleMinimize() {
   if (!open) {
-    setOpen(true);
+    // Show shell only — never start sound without Play music
+    setOpen(true, { play: false });
     return;
   }
   setMinimized(!minimized);
@@ -1366,7 +1370,7 @@ function playAllSuno(e) {
     if (shuffleOn) applyShuffle(false);
     else rebuildPlaylist();
     index = 0;
-    setOpen(true);
+    setOpen(true, { play: true });
     loadTrack(true);
     updateSunoChip();
     updateShuffleChip();
@@ -1499,12 +1503,15 @@ function wire() {
   installMediaSession();
   installBackgroundKeepAlive();
 
-  // Cold start: silent, no embed/audio attached
+  // Cold start: silent, no embed/audio attached — never auto-resume across reloads
   stopAllMedia();
   userStarted = false;
   userPaused = false;
   open = false;
   minimized = false;
+  try {
+    sessionStorage.removeItem(MUSIC_PERSIST_KEY);
+  } catch (_) {}
   renderList();
   loadSunoCatalog();
   updateMusicChrome();

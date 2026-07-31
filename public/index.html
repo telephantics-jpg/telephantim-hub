@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="styles.css?v=94-mobile-compact" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
-<body class="scene-native" data-scene="telephantim">
+<body class="scene-bio" data-scene="bio">
   <div class="flash" id="flash"></div>
 
   <!-- Full-screen scene host: Luna 2D / Luna 3D load here; Telephantim uses native stage below -->
@@ -41,7 +41,7 @@
   </div>
 
   <!-- Beacons-style Bio: your video/image bg (fixed) + scrollable quote & links -->
-  <section class="bio-page" id="bio-page" hidden aria-label="Bio">
+  <section class="bio-page" id="bio-page" aria-label="Bio">
     <div class="bio-media" aria-hidden="true">
       <video
         id="bio-video"
@@ -98,8 +98,8 @@
 
   <!-- Compact world picker — Relics · Bio · 2D · 3D -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
-    <button type="button" class="world-tab active" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
-    <button type="button" class="world-tab" data-scene="bio" title="Bio — video or photo background (Beacons-style)">Bio</button>
+    <button type="button" class="world-tab" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
+    <button type="button" class="world-tab active" data-scene="bio" title="Bio — video or photo background (Beacons-style)" aria-current="true">Bio</button>
     <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
     <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
   </nav>
@@ -393,11 +393,11 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=93-cloud-only"></script>
+  <script type="module" src="scenes.js?v=97-bio-land"></script>
   <script type="module" src="relics-cms.js?v=87-live-telephantim"></script>
   <script type="module" src="bio.js?v=87-live-telephantim"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
-  <script type="module" src="music.js?v=93-cloud-only"></script>
+  <script type="module" src="music.js?v=98-vox-truth"></script>
   <script type="module" src="personality.js?v=95-thought-vs-talk"></script>
   <script type="module" src="mjolnir.js?v=87-live-telephantim"></script>
 </body>

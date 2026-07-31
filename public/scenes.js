@@ -104,7 +104,10 @@ function sceneUrl(scene) {
 
 const STORAGE_KEY = "telephantim-scene";
 
-let current = "telephantim";
+/** Public landing on telephantim.com — Bio so visitors see Relics / 2D / 3D tabs. */
+const DEFAULT_SCENE = "bio";
+
+let current = DEFAULT_SCENE;
 
 function $(id) {
   return document.getElementById(id);
@@ -112,25 +115,34 @@ function $(id) {
 
 function normalizeScene(id) {
   if (id && SCENES[id]) return id;
-  return "telephantim";
+  return DEFAULT_SCENE;
 }
 
 function readHash() {
   const h = (location.hash || "").replace(/^#/, "").toLowerCase();
+  // Bare URL = Bio (landing) — notice 2D / 3D tabs immediately
+  if (!h) return DEFAULT_SCENE;
   if (h === "luna" || h === "camp" || h === "luna2d" || h === "2d") return "luna-2d";
   if (h === "luna3d" || h === "3d") return "luna-3d";
-  if (h === "relics" || h === "hub" || h === "home") return "telephantim";
+  if (h === "relics" || h === "hub" || h === "home" || h === "telephantim") return "telephantim";
   if (h === "bio" || h === "beacons" || h === "links" || h === "quote") return "bio";
-  // Ignore unknown hashes (e.g. #socials) — stay on current/relics
-  if (h && !SCENES[h]) return "telephantim";
+  // Ignore unknown hashes (e.g. #socials) — land on Bio
+  if (h && !SCENES[h]) return DEFAULT_SCENE;
   return normalizeScene(h);
 }
 
 function writeHash(id) {
   const path = location.pathname + location.search;
-  const next = id === "telephantim" ? path : `${path}#${id}`;
+  // Bio is the public landing — bare URL means Bio (no # needed)
+  const next =
+    id === "bio"
+      ? path
+      : `${path}#${id === "telephantim" ? "relics" : id}`;
   const cur = location.pathname + location.search + (location.hash || "");
-  if (cur === next || (id === "telephantim" && !location.hash && location.pathname + location.search === path)) {
+  if (
+    cur === next ||
+    (id === "bio" && !location.hash && location.pathname + location.search === path)
+  ) {
     return;
   }
   // replaceState only — never assign location / never full navigation
@@ -303,12 +315,11 @@ function wire() {
     if (e.target.closest?.(".world-tab")) e.preventDefault();
   });
 
+  // Bare telephantim.com → always Bio (do not restore last tab; visitors must see 2D/3D).
+  // Deep links (#relics, #luna-2d, #luna-3d, #bio) still win.
   let start = readHash();
   if (!location.hash) {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && SCENES[saved]) start = saved;
-    } catch (_) {}
+    start = DEFAULT_SCENE;
   }
   setScene(start, { persist: true, fromHash: !!location.hash });
 }
