@@ -14,14 +14,14 @@ export const BIO = {
   /** "video" | "image" | "auto" (try video, fall back to image) */
   mode: "video",
 
-  /** Same clip as Relics stage background */
-  video: "media/bg.mp4",
+  /** Bio background (own file — Relics stage keeps media/bg.mp4) */
+  video: "media/bio-bg.mp4",
   image: "media/bg.jpg",
   poster: "media/bg-poster.jpg",
 
   quote:
-    "Power without healing is a storm that only breaks. Healing without power is a hymn no one can hear. Hold both.",
-  quoteBy: "Telephantim",
+    "I'm The Arcane Verse, known online as Telephantix—a soul who once drove the long roads as an OTR trucker and worked in a laboratory, now rooted in Western Pennsylvania and weaving technology, music, mystical symbols, and quiet truth-seeking into everything I create. Caduceus, ancient echoes, and the gentle pull of “as above, so below” live alongside my experiments with AI, art, and the hope of building something kind and real.\n\nI have poured earnest effort into crowdfunding and tips across platforms, believing community support could open a freer path forward, yet nothing ever arrives in my accounts—only silence where the flow should be. Still I remain hopeful, determined to keep offering what light I can.\n\nMy telephantim.com (and the space around telephantix.com) is simply my own open ground—a quiet break free from beacons.ai—where relics of power and healing, original music, AI play, and direct support can live without the middle layers, just pure connection and the chance for something authentic to grow.",
+  quoteBy: "Telephantix",
 
   /** Mute looping video (required for autoplay on phones) */
   muted: true,

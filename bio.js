@@ -4,8 +4,6 @@
 import { BIO } from "./bio-config.js";
 import { PROFILE, SUPPORT, FEATURED, SOCIALS, ICONS } from "./links.js";
 import { hydrateSiteContent } from "./load-site.js";
-import { applyRotatingQuote, scheduleQuoteRefresh } from "./quote-rotate.js";
-
 function $(id) {
   return document.getElementById(id);
 }
@@ -43,14 +41,27 @@ function setVideoBg(url, poster) {
     return;
   }
   video.hidden = false;
-  video.muted = BIO.muted !== false;
+  video.muted = true;
+  video.defaultMuted = true;
+  video.volume = 0;
   video.loop = true;
   video.playsInline = true;
   video.setAttribute("playsinline", "");
   video.setAttribute("webkit-playsinline", "");
+  video.setAttribute("muted", "muted");
   video.setAttribute("loop", "");
   if (poster) video.poster = poster;
   video.src = url;
+  const forceMute = () => {
+    try {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.volume = 0;
+    } catch (_) {}
+  };
+  forceMute();
+  video.addEventListener("volumechange", forceMute);
+  video.addEventListener("play", forceMute);
   const play = () => video.play().catch(() => {});
   const replay = () => {
     try {
@@ -88,10 +99,16 @@ function applyMedia() {
 }
 
 function renderQuote() {
-  applyRotatingQuote(
-    { textId: "bio-quote-text", byId: "bio-quote-by" },
-    { fallbackText: BIO.quote, fallbackBy: BIO.quoteBy },
-  );
+  // Bio first section: fixed personal history from CMS / bio-config (not the rotating bank)
+  const quoteEl = $("bio-quote-text");
+  const byEl = $("bio-quote-by");
+  const text = String(BIO.quote || "").trim();
+  const by = String(BIO.quoteBy || "Telephantix").trim();
+  if (quoteEl) {
+    quoteEl.textContent = text;
+    quoteEl.classList.add("bio-quote-story");
+  }
+  if (byEl) byEl.textContent = by ? `— ${by}` : "";
 }
 
 function renderProfile() {
@@ -230,8 +247,6 @@ async function wire() {
   renderLinks();
   applyMedia();
   window.addEventListener("telephantim-scene", onScene);
-  // Rotate quote every 2 hours while the tab stays open
-  scheduleQuoteRefresh(renderQuote);
 }
 
 if (document.readyState === "loading") {

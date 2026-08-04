@@ -17,6 +17,7 @@ import os
 import random
 import re
 import secrets
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -177,6 +178,149 @@ def _daily_cache_save() -> None:
 
 _daily_cache_load()
 
+# --- Visitor counter (own counts; independent of Google Analytics) ---
+VISITORS_FILE = ROOT / "data" / "visitors.json"
+_VISITORS_LOCK = threading.Lock()
+_VISITORS: dict = {
+    "totalPageviews": 0,
+    "uniqueVisitors": 0,
+    "today": {"date": "", "pageviews": 0, "unique": 0},
+    "bySite": {},
+    "known": {},  # visitorId -> firstSeen ISO (capped)
+}
+_KNOWN_MAX = 50000
+
+
+def _utc_day() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _visitors_load() -> None:
+    global _VISITORS
+    try:
+        if VISITORS_FILE.is_file():
+            data = json.loads(VISITORS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                _VISITORS.update(data)
+                if not isinstance(_VISITORS.get("today"), dict):
+                    _VISITORS["today"] = {"date": "", "pageviews": 0, "unique": 0}
+                if not isinstance(_VISITORS.get("bySite"), dict):
+                    _VISITORS["bySite"] = {}
+                if not isinstance(_VISITORS.get("known"), dict):
+                    _VISITORS["known"] = {}
+    except Exception as e:
+        print("[telephantim] visitors load failed:", e)
+
+
+def _visitors_save() -> None:
+    try:
+        VISITORS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        # Don't write the entire known map if huge — still keep unique count
+        payload = {
+            "totalPageviews": int(_VISITORS.get("totalPageviews") or 0),
+            "uniqueVisitors": int(_VISITORS.get("uniqueVisitors") or 0),
+            "today": dict(_VISITORS.get("today") or {}),
+            "bySite": dict(_VISITORS.get("bySite") or {}),
+            "known": dict(_VISITORS.get("known") or {}),
+            "updatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        VISITORS_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] visitors save failed:", e)
+
+
+def _visitors_public() -> dict:
+    with _VISITORS_LOCK:
+        today = _VISITORS.get("today") or {}
+        day = _utc_day()
+        if today.get("date") != day:
+            today = {"date": day, "pageviews": 0, "unique": 0}
+        return {
+            "ok": True,
+            "totalPageviews": int(_VISITORS.get("totalPageviews") or 0),
+            "uniqueVisitors": int(_VISITORS.get("uniqueVisitors") or 0),
+            "today": {
+                "date": today.get("date") or day,
+                "pageviews": int(today.get("pageviews") or 0),
+                "unique": int(today.get("unique") or 0),
+            },
+            "bySite": {
+                k: {
+                    "pageviews": int((v or {}).get("pageviews") or 0),
+                    "unique": int((v or {}).get("unique") or 0),
+                }
+                for k, v in (_VISITORS.get("bySite") or {}).items()
+                if isinstance(v, dict)
+            },
+            "server": "telephantim-ai",
+        }
+
+
+def record_visit(
+    visitor_id: str,
+    site: str = "telephantim",
+    path: str = "/",
+    is_new_session: bool = True,
+) -> dict:
+    """
+    Count a visit. Unique = first time we see this visitor_id.
+    Pageviews increment once per call when is_new_session is true
+    (client only POSTs once per browser session).
+    """
+    vid = re.sub(r"[^a-zA-Z0-9_\-:]", "", str(visitor_id or ""))[:64]
+    site_key = re.sub(r"[^a-z0-9_\-]", "", str(site or "telephantim").lower())[:32] or "telephantim"
+    day = _utc_day()
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    with _VISITORS_LOCK:
+        today = _VISITORS.get("today") or {}
+        if today.get("date") != day:
+            today = {"date": day, "pageviews": 0, "unique": 0}
+            _VISITORS["today"] = today
+
+        by = _VISITORS.setdefault("bySite", {})
+        site_stats = by.setdefault(site_key, {"pageviews": 0, "unique": 0})
+
+        known = _VISITORS.setdefault("known", {})
+        is_unique = False
+        if vid and vid not in known:
+            is_unique = True
+            known[vid] = now
+            _VISITORS["uniqueVisitors"] = int(_VISITORS.get("uniqueVisitors") or 0) + 1
+            today["unique"] = int(today.get("unique") or 0) + 1
+            site_stats["unique"] = int(site_stats.get("unique") or 0) + 1
+            # Cap known map so disk doesn't grow forever
+            if len(known) > _KNOWN_MAX:
+                # drop oldest half by value
+                items = sorted(known.items(), key=lambda kv: kv[1])
+                for k, _ in items[: len(items) // 2]:
+                    known.pop(k, None)
+
+        counted_pageview = False
+        if is_new_session:
+            _VISITORS["totalPageviews"] = int(_VISITORS.get("totalPageviews") or 0) + 1
+            today["pageviews"] = int(today.get("pageviews") or 0) + 1
+            site_stats["pageviews"] = int(site_stats.get("pageviews") or 0) + 1
+            counted_pageview = True
+
+        _VISITORS["today"] = today
+        by[site_key] = site_stats
+        _visitors_save()
+        return {
+            "ok": True,
+            "countedPageview": counted_pageview,
+            "isNewVisitor": is_unique,
+            "totalPageviews": int(_VISITORS.get("totalPageviews") or 0),
+            "uniqueVisitors": int(_VISITORS.get("uniqueVisitors") or 0),
+            "today": dict(today),
+            "path": str(path or "/")[:120],
+            "site": site_key,
+            "server": "telephantim-ai",
+        }
+
+
+_visitors_load()
+
 
 def _default_site_content() -> dict:
     """Minimal seed if data/site-content.json is missing."""
@@ -200,7 +344,7 @@ def _default_site_content() -> dict:
         "socials": [],
         "bio": {
             "mode": "video",
-            "video": "media/bg.mp4",
+            "video": "media/bio-bg.mp4",
             "image": "media/bg.jpg",
             "poster": "media/bg-poster.jpg",
             "quote": "",
@@ -1061,6 +1205,21 @@ class Handler(SimpleHTTPRequestHandler):
                 },
             )
             return
+        # --- Public visitor stats (no PII) ---
+        if path == "/api/visitors":
+            self._json(200, _visitors_public())
+            return
+        if path == "/api/admin/visitors":
+            if not self._is_admin():
+                self._json(401, {"ok": False, "error": "login_required"})
+                return
+            pub = _visitors_public()
+            with _VISITORS_LOCK:
+                known_n = len(_VISITORS.get("known") or {})
+            pub["knownStored"] = known_n
+            pub["admin"] = True
+            self._json(200, pub)
+            return
         # --- Admin session ---
         if path == "/api/admin/session":
             self._json(
@@ -1081,6 +1240,19 @@ class Handler(SimpleHTTPRequestHandler):
         data = self._read_json_body()
         if data is None:
             self._json(400, {"ok": False, "error": "bad json"})
+            return
+
+        # --- Public visit beacon (counts unique + pageviews) ---
+        if path == "/api/visit":
+            vid = str(data.get("visitorId") or data.get("id") or "").strip()
+            site = str(data.get("site") or "telephantim").strip()
+            path_hit = str(data.get("path") or data.get("page") or "/").strip()
+            is_new = data.get("session") is not False  # default true
+            if not vid:
+                # still allow anonymous pageview with ephemeral id
+                vid = "anon-" + secrets.token_hex(8)
+            result = record_visit(vid, site=site, path=path_hit, is_new_session=bool(is_new))
+            self._json(200, result)
             return
 
         # --- Admin auth + CMS writes (before heavy brain work) ---
@@ -1444,6 +1616,7 @@ def main() -> None:
     print(f"  Open:    http://127.0.0.1:{PORT}/")
     print(f"  Admin:   http://127.0.0.1:{PORT}/admin/")
     print(f"  Health:  http://127.0.0.1:{PORT}/api/status")
+    print(f"  Visits:  http://127.0.0.1:{PORT}/api/visitors")
     print(f"  Ollama:  {'YES' if models else 'NO — start Ollama app'}")
     if models:
         print(f"  Mjolnir mind:   {m_m}")

@@ -20,7 +20,7 @@
   <meta name="twitter:image" content="https://telephantim.com/media/share/og-banner.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/og-square.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/og-square.jpg" />
-  <link rel="stylesheet" href="styles.css?v=94-mobile-compact" />
+  <link rel="stylesheet" href="styles.css?v=v114-arcane-verse" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -66,6 +66,10 @@
           <cite id="bio-quote-by"></cite>
         </blockquote>
 
+        <p class="visitor-count" data-visitor-wrap hidden title="Site visitors">
+          <span data-visitor-count="unique">—</span> visitors
+        </p>
+
         <!-- Socials always in bio (top) — JS refreshes from CMS -->
         <p class="bio-links-label bio-socials-label">Socials</p>
         <div class="bio-socials-row" id="bio-socials" aria-label="Social links">
@@ -90,7 +94,7 @@
           </div>
         </article>
 
-        <p class="bio-hint">Drop media/bg.mp4 or media/bg.jpg · edit bio-config.js</p>
+        <p class="bio-hint">Bio video · media/bio-bg.mp4</p>
         <div class="bio-links" id="bio-links"></div>
       </div>
     </div>
@@ -384,6 +388,7 @@
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
   <script src="api-config.js?v=87-live-telephantim"></script>
   <script src="analytics.js?v=87-live-telephantim"></script>
+  <script src="visitors.js?v=v112-visitors"></script>
   <!-- Local Three.js (no CDN) so Relics still load offline -->
   <script type="importmap">
   {
@@ -395,7 +400,7 @@
   </script>
   <script type="module" src="scenes.js?v=97-bio-land"></script>
   <script type="module" src="relics-cms.js?v=87-live-telephantim"></script>
-  <script type="module" src="bio.js?v=87-live-telephantim"></script>
+  <script type="module" src="bio.js?v=v114-arcane-verse"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script type="module" src="music.js?v=98-vox-truth"></script>
   <script type="module" src="personality.js?v=95-thought-vs-talk"></script>

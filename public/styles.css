@@ -313,6 +313,15 @@ body.scene-bio .float-actions {
   font-weight: 600;
   color: #f2f0eb;
 }
+.bio-quote p.bio-quote-story {
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.58;
+  white-space: pre-wrap;
+  max-height: min(48vh, 22rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .bio-quote cite {
   display: block;
   margin-top: 0.65rem;
@@ -327,6 +336,18 @@ body.scene-bio .float-actions {
   color: #7a879c;
   max-width: 28rem;
   line-height: 1.35;
+}
+.visitor-count {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(186, 230, 253, 0.88);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+.visitor-count [data-visitor-count] {
+  color: #fde68a;
+  font-variant-numeric: tabular-nums;
 }
 .bio-links {
   width: 100%;

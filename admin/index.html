@@ -139,6 +139,7 @@
 
     <div class="tabs" id="tabs">
       <button type="button" data-tab="profile" class="active">Profile</button>
+      <button type="button" data-tab="stats">Visitors</button>
       <button type="button" data-tab="relics">Relics page</button>
       <button type="button" data-tab="bio">Bio page</button>
       <button type="button" data-tab="songs">Music catalog</button>
@@ -146,6 +147,30 @@
       <button type="button" data-tab="featured">Featured</button>
       <button type="button" data-tab="socials">Socials</button>
     </div>
+
+    <!-- VISITOR STATS -->
+    <section class="card tab-panel hidden" data-panel="stats">
+      <h2>Visitor counter</h2>
+      <p class="hint">Your own counts (not Google Analytics). Unique = first-time browser id · Pageviews = sessions.</p>
+      <div class="row" style="gap:12px;flex-wrap:wrap">
+        <div class="card" style="flex:1;min-width:140px;padding:12px;margin:0">
+          <div class="hint" style="margin:0">Unique visitors</div>
+          <div style="font-size:1.6rem;font-weight:800" id="st-unique">—</div>
+        </div>
+        <div class="card" style="flex:1;min-width:140px;padding:12px;margin:0">
+          <div class="hint" style="margin:0">Pageviews</div>
+          <div style="font-size:1.6rem;font-weight:800" id="st-views">—</div>
+        </div>
+        <div class="card" style="flex:1;min-width:140px;padding:12px;margin:0">
+          <div class="hint" style="margin:0">Unique today (UTC)</div>
+          <div style="font-size:1.6rem;font-weight:800" id="st-today">—</div>
+        </div>
+      </div>
+      <p class="hint" id="st-meta" style="margin-top:12px">Loading…</p>
+      <div class="actions" style="margin-top:10px">
+        <button type="button" id="btn-refresh-stats">Refresh</button>
+      </div>
+    </section>
 
     <!-- PROFILE -->
     <section class="card tab-panel" data-panel="profile">
@@ -576,6 +601,27 @@
       toast(msg || "Saved", "good");
     }
 
+    async function loadStats() {
+      try {
+        const st = await api("/api/admin/visitors");
+        const fmt = (n) => Number(n || 0).toLocaleString();
+        $("st-unique").textContent = fmt(st.uniqueVisitors);
+        $("st-views").textContent = fmt(st.totalPageviews);
+        $("st-today").textContent = fmt((st.today && st.today.unique) || 0);
+        const sites = st.bySite || {};
+        const bits = Object.keys(sites).map((k) => {
+          const s = sites[k] || {};
+          return k + ": " + fmt(s.unique) + " unique / " + fmt(s.pageviews) + " views";
+        });
+        $("st-meta").textContent =
+          "Day " + ((st.today && st.today.date) || "—") +
+          (bits.length ? " · " + bits.join(" · ") : "") +
+          (st.knownStored != null ? " · ids stored: " + fmt(st.knownStored) : "");
+      } catch (e) {
+        $("st-meta").textContent = "Stats unavailable: " + (e.message || "error");
+      }
+    }
+
     async function loadAll() {
       const [c, s] = await Promise.all([
         api("/api/content"),
@@ -586,7 +632,7 @@
         content.relics = {
           title: "Telephantim",
           hint: "Click a relic for a new phrase · drag to toss · Talk for a duel",
-          backgroundVideo: (content.bio && content.bio.video) || "media/bg.mp4",
+          backgroundVideo: (content.bio && content.bio.video) || "media/bio-bg.mp4",
           backgroundImage: (content.bio && content.bio.image) || "",
           quote: (content.bio && content.bio.quote) || "",
           quoteBy: (content.bio && content.bio.quoteBy) || "Telephantim",
@@ -598,6 +644,7 @@
       fillBio();
       fillRelics();
       renderLists();
+      loadStats().catch(() => {});
     }
 
     async function boot() {
@@ -662,6 +709,11 @@
 
     $("save-profile").addEventListener("click", () => saveContent("Profile saved").catch((e) => toast(e.message, "bad")));
     $("save-bio").addEventListener("click", () => saveContent("Bio saved").catch((e) => toast(e.message, "bad")));
+    $("btn-refresh-stats").addEventListener("click", () => {
+      loadStats()
+        .then(() => toast("Stats refreshed", "good"))
+        .catch((e) => toast(e.message || "Stats failed", "bad"));
+    });
     $("save-relics").addEventListener("click", () => saveContent("Relics page saved").catch((e) => toast(e.message, "bad")));
     $("save-support").addEventListener("click", () => saveContent("Support links saved").catch((e) => toast(e.message, "bad")));
     $("save-featured").addEventListener("click", () => saveContent("Featured saved").catch((e) => toast(e.message, "bad")));

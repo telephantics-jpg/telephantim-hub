@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-25T14:36:36Z",
+  "updatedAt": "2026-08-04T21:47:51Z",
   "profile": {
     "name": "Telephantix",
     "handle": "@telephantix",
-    "tagline": "Music \u00b7 AI \u00b7 Crowdfunding",
+    "tagline": "Music · AI · Crowdfunding",
     "avatar": "https://cdn.beacons.ai/user_content/gH8ZHlL6aqeSAOZ8y4thx8RoSXG3/profile_telephantix.png?t=1783265767591",
     "beacons": "https://beacons.ai/telephantix",
     "site": "https://telephantix.com",
@@ -58,8 +58,8 @@
   "featured": [
     {
       "id": "album1",
-      "title": "Telephantix \u2014 Album",
-      "subtitle": "YouTube Music \u00b7 explicit lyrics",
+      "title": "Telephantix — Album",
+      "subtitle": "YouTube Music · explicit lyrics",
       "url": "https://music.youtube.com/playlist?list=OLAK5uy_nOw1iUh26P4Zj_Odt1SjaLloUo7C9j4FY&si=okOT2S_QAeNOEAbY",
       "icon": "music"
     },
@@ -72,8 +72,8 @@
     },
     {
       "id": "spotify",
-      "title": "Spotify \u2014 Telephantix",
-      "subtitle": "Album \u00b7 6 songs",
+      "title": "Spotify — Telephantix",
+      "subtitle": "Album · 6 songs",
       "url": "https://open.spotify.com/album/0TQgbKYS4r0fDmciMoiqKt?si=BIq_EokSSIOCVIru08AvlQ",
       "icon": "spotify"
     },
@@ -125,31 +125,31 @@
   ],
   "bio": {
     "mode": "video",
-    "video": "media/bg.mp4",
+    "video": "media/bio-bg.mp4",
     "image": "media/bg.jpg",
     "poster": "media/bg-poster.jpg",
-    "quote": "Power without healing is a storm that only breaks. Healing without power is a hymn no one can hear. Hold both.",
-    "quoteBy": "Telephantim",
+    "quote": "I'm The Arcane Verse, known online as Telephantix—a soul who once drove the long roads as an OTR trucker and worked in a laboratory, now rooted in Western Pennsylvania and weaving technology, music, mystical symbols, and quiet truth-seeking into everything I create. Caduceus, ancient echoes, and the gentle pull of “as above, so below” live alongside my experiments with AI, art, and the hope of building something kind and real.\n\nI have poured earnest effort into crowdfunding and tips across platforms, believing community support could open a freer path forward, yet nothing ever arrives in my accounts—only silence where the flow should be. Still I remain hopeful, determined to keep offering what light I can.\n\nMy telephantim.com (and the space around telephantix.com) is simply my own open ground—a quiet break free from beacons.ai—where relics of power and healing, original music, AI play, and direct support can live without the middle layers, just pure connection and the chance for something authentic to grow.",
+    "quoteBy": "Telephantix",
     "muted": true
   },
   "albums": [
     {
       "id": "spotify-album",
-      "title": "Telephantix \u2014 Spotify Album",
+      "title": "Telephantix — Spotify Album",
       "artist": "Telephantix",
       "type": "spotify",
       "embedId": "album/0TQgbKYS4r0fDmciMoiqKt"
     },
     {
       "id": "yt-album-1",
-      "title": "Telephantix Album \u2014 YouTube Music",
+      "title": "Telephantix Album — YouTube Music",
       "artist": "Telephantix",
       "type": "youtube",
       "listId": "OLAK5uy_nOw1iUh26P4Zj_Odt1SjaLloUo7C9j4FY"
     },
     {
       "id": "yt-album-2",
-      "title": "What Isn't Is \u2014 YouTube Music",
+      "title": "What Isn't Is — YouTube Music",
       "artist": "Telephantix",
       "type": "youtube",
       "listId": "OLAK5uy_mCCAwPfN9jMXE9khpgsYFzA1xeei_i4NI"
@@ -176,7 +176,7 @@
   },
   "relics": {
     "title": "Telephantim",
-    "hint": "Click a relic for a new phrase \u00b7 drag to toss \u00b7 Talk for a duel",
+    "hint": "Click a relic for a new phrase · drag to toss · Talk for a duel",
     "backgroundVideo": "media/bg.mp4",
     "backgroundImage": "media/bg.jpg",
     "quote": "Power without healing is a storm that only breaks. Healing without power is a hymn no one can hear. Hold both.",
