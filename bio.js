@@ -50,8 +50,11 @@ function setVideoBg(url, poster) {
   video.setAttribute("webkit-playsinline", "");
   video.setAttribute("muted", "muted");
   video.setAttribute("loop", "");
+  video.setAttribute("autoplay", "");
+  // Cache-bust so phones don't keep a stale Mind-Over-Hell clip
+  const bust = String(url).includes("?") ? url : `${url}?v=mjolnir-bio-bg`;
   if (poster) video.poster = poster;
-  video.src = url;
+  video.src = bust;
   const forceMute = () => {
     try {
       video.muted = true;
@@ -62,7 +65,10 @@ function setVideoBg(url, poster) {
   forceMute();
   video.addEventListener("volumechange", forceMute);
   video.addEventListener("play", forceMute);
-  const play = () => video.play().catch(() => {});
+  const play = () => {
+    forceMute();
+    return video.play().catch(() => {});
+  };
   const replay = () => {
     try {
       video.currentTime = 0;
@@ -71,6 +77,17 @@ function setVideoBg(url, poster) {
   };
   video.onended = replay;
   video.addEventListener("loadeddata", play, { once: true });
+  video.addEventListener("canplay", play, { once: true });
+  // Mobile Safari: unlock muted loop on first tap if autoplay was blocked
+  if (!video.__bioUnlockBound) {
+    video.__bioUnlockBound = true;
+    const unlock = () => {
+      forceMute();
+      play();
+    };
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    window.addEventListener("touchstart", unlock, { passive: true });
+  }
   video.addEventListener(
     "error",
     () => {
