@@ -3,12 +3,12 @@ BACKGROUND MEDIA (Relics stage + Bio page)
 
 Current clips:
   • media/bg.mp4 — Relics stage 3D background
-  • media/bio-bg.mp4 — Bio tab (Mjolnir lightning loop, mobile-friendly ~7MB)
+  • media/bio-bg.mp4 — Bio tab (Caduceus + dual dragons, portrait loop)
   • media/bio-bg-poster.jpg — Bio poster while video loads
 
 Used as:
   • Relics stage 3D background (Mjolnir + Caduceus stay interactive on top)
-  • Bio tab full-screen Beacons-style background (Mjolnir loop)
+  • Bio tab full-screen Beacons-style background (your dragon Caduceus loop)
 
 Put / replace files HERE:
 
