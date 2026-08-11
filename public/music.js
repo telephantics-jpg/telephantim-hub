@@ -1166,7 +1166,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=98-vox-truth`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v118-vox-sauce`);
     djRadio = mod.createDjRadio({
       getAudio: () => $("music-audio"),
       getTracks: () =>
