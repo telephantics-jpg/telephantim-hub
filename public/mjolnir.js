@@ -1,12 +1,36 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+// Bloom stack is optional — if postprocessing 404s, relics still render (no black stage)
+let EffectComposer = null;
+let RenderPass = null;
+let UnrealBloomPass = null;
+let OutputPass = null;
+let bloomAvailable = false;
+try {
+  ({ EffectComposer } = await import("three/addons/postprocessing/EffectComposer.js"));
+  ({ RenderPass } = await import("three/addons/postprocessing/RenderPass.js"));
+  ({ UnrealBloomPass } = await import("three/addons/postprocessing/UnrealBloomPass.js"));
+  ({ OutputPass } = await import("three/addons/postprocessing/OutputPass.js"));
+  bloomAvailable = !!(EffectComposer && RenderPass && UnrealBloomPass && OutputPass);
+} catch (err) {
+  console.warn("[relics] bloom postprocessing unavailable — plain WebGL render", err?.message || err);
+  bloomAvailable = false;
+}
 
 const wrap = document.getElementById("canvas-wrap");
 const flashEl = document.getElementById("flash");
+if (!wrap) {
+  console.error("[relics] #canvas-wrap missing — Mjolnir/Caduceus cannot mount");
+}
+// Surface boot status on the relics pill
+function setRelicsStatus(msg, ok = true) {
+  const pill = document.getElementById("brain-pill");
+  if (!pill) return;
+  pill.textContent = msg;
+  pill.style.borderColor = ok ? "" : "rgba(248,113,113,0.65)";
+  pill.style.color = ok ? "" : "#fecaca";
+}
 
 function stageSize() {
   const w = Math.max(1, wrap?.clientWidth || window.innerWidth);
@@ -76,7 +100,8 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-wrap.appendChild(renderer.domElement);
+if (wrap) wrap.appendChild(renderer.domElement);
+else console.error("[relics] cannot mount WebGL canvas");
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -639,11 +664,25 @@ function updateSparks(dt) {
   sparkGeo.attributes.position.needsUpdate = true;
 }
 
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(sw0, sh0), 0.5, 0.4, 0.85);
-composer.addPass(bloom);
-composer.addPass(new OutputPass());
+let composer = null;
+let bloom = { strength: 0.5, setSize() {} };
+if (bloomAvailable) {
+  try {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    bloom = new UnrealBloomPass(new THREE.Vector2(sw0, sh0), 0.5, 0.4, 0.85);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+  } catch (err) {
+    console.warn("[relics] composer init failed", err);
+    composer = null;
+  }
+}
+function renderStage() {
+  if (composer) composer.render();
+  else renderer.render(scene, camera);
+}
+setRelicsStatus(composer ? "Relics ready" : "Relics ready · lite", true);
 
 function fitCameraDefault() {
   const mobile = isMobile();
@@ -1138,12 +1177,15 @@ window.addEventListener("keydown", (e) => {
 
 function resize() {
   const { w, h } = stageSize();
+  if (w < 2 || h < 2) return;
   camera.aspect = w / h;
   camera.fov = isMobile() ? 28 : 34;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h, false);
-  composer.setSize(w, h);
-  bloom.setSize(w, h);
+  try {
+    composer?.setSize?.(w, h);
+    bloom?.setSize?.(w, h);
+  } catch (_) {}
   controls.enablePan = !isMobile();
   // Keep look target centered between both relics
   controls.target.set(0, 1.05, 0);
@@ -1159,12 +1201,13 @@ fitCameraDefault();
 const clock = new THREE.Clock();
 let auraTimer = 0;
 let snakeTimer = 0;
-/** Pause WebGL when Luna Camp (or other external scene) fills the screen */
-let sceneActive = true;
+/** Pause WebGL when Bio / Luna fills the screen — boot is Bio, so start paused */
+let sceneActive =
+  document.body?.dataset?.scene === "telephantim" ||
+  document.body?.classList?.contains("scene-native");
 
-window.addEventListener("telephantim-scene", (e) => {
-  const d = e.detail || {};
-  sceneActive = d.active !== false && d.scene === "telephantim";
+function activateRelicsScene(on) {
+  sceneActive = !!on;
   if (stageBgVideo) {
     if (sceneActive) stageBgVideo.play().catch(() => {});
     else stageBgVideo.pause();
@@ -1173,7 +1216,29 @@ window.addEventListener("telephantim-scene", (e) => {
     try {
       clock.getDelta(); // reset dt spike after pause
     } catch (_) {}
+    // Stage was visibility:hidden on Bio — force real canvas size + both relics framed
+    requestAnimationFrame(() => {
+      resize();
+      fitCameraDefault();
+      renderStage();
+    });
+    setTimeout(() => {
+      resize();
+      fitCameraDefault();
+    }, 80);
+    setTimeout(() => {
+      resize();
+      fitCameraDefault();
+    }, 320);
   }
+}
+
+window.addEventListener("telephantim-scene", (e) => {
+  const d = e.detail || {};
+  const on =
+    d.scene === "telephantim" ||
+    (d.active === true && (d.scene == null || d.scene === "telephantim"));
+  activateRelicsScene(on);
 });
 
 function animate() {
@@ -1279,9 +1344,19 @@ function animate() {
   lightningGroup.position.copy(fxAt.position);
   stormLight.position.copy(fxAt.position);
   stormLight.position.y += 1.2;
-  composer.render();
+  renderStage();
 }
 
 // Soft opening spark only — rare bonks later
-setTimeout(() => strike(hammer), 700);
+setTimeout(() => {
+  if (sceneActive) strike(hammer);
+}, 700);
 animate();
+
+// If user lands on #relics / hash telephantim before modules finished, re-sync
+try {
+  const h = (location.hash || "").replace(/^#/, "").toLowerCase();
+  if (h === "relics" || h === "telephantim" || h === "hub" || h === "home") {
+    activateRelicsScene(true);
+  }
+} catch (_) {}

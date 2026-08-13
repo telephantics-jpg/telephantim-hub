@@ -256,7 +256,16 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   }
 
   if (isRelics) {
+    // Always tell relics engine it's the active scene (even on first paint)
+    window.dispatchEvent(
+      new CustomEvent("telephantim-scene", {
+        detail: { scene: "telephantim", active: true, prev, force: true },
+      })
+    );
     window.dispatchEvent(new Event("resize"));
+    // Double-kick after CSS unhides the stage (visibility was hidden on Bio)
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
   }
 }
 
