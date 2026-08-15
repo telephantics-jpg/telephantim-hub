@@ -14,7 +14,7 @@ export const BIO = {
   /** "video" | "image" | "auto" (try video, fall back to image) */
   mode: "video",
 
-  /** Bio background (own file — Relics stage keeps media/bg.mp4) */
+  /** Bio background — Mjolnir lightning loop (Relics stage keeps media/bg.mp4) */
   video: "media/bio-bg.mp4",
   image: "media/bio-bg-poster.jpg",
   poster: "media/bio-bg-poster.jpg",

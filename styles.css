@@ -221,33 +221,33 @@ body.scene-bio .float-actions {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Portrait clip: keep dragon heads + caduceus crown in frame (not bottom half) */
-  object-position: center 18%;
+  /* Square Mjolnir loop — keep hammer head + strap centered */
+  object-position: center center;
 }
 .bio-image {
   background-size: cover;
-  background-position: center 18%;
+  background-position: center center;
   background-repeat: no-repeat;
   background-color: #0a0c14;
 }
-/* Desktop / landscape: crop favors upper third even more */
+/* Landscape: still center the square so lightning and head stay in frame */
 @media (min-aspect-ratio: 1/1) {
   .bio-video,
   .bio-image {
-    object-position: center 12%;
+    object-position: center center;
   }
   .bio-image {
-    background-position: center 12%;
+    background-position: center center;
   }
 }
-/* Phone portrait: slight top bias so horns/light rays stay visible */
+/* Phone portrait: center crop (sides trim, hammer stays) */
 @media (max-width: 899px) and (max-aspect-ratio: 1/1) {
   .bio-video,
   .bio-image {
-    object-position: center 22%;
+    object-position: center center;
   }
   .bio-image {
-    background-position: center 22%;
+    background-position: center center;
   }
 }
 .bio-image.has-media {
