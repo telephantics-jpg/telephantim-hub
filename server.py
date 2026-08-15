@@ -986,13 +986,109 @@ def grow_power(persona_id: str, amount: int = 1) -> int:
     return POWER[persona_id]
 
 
+_PROMPT_LEAK_RE = re.compile(
+    r"(?:"
+    r"reply\s+only\s+as|"
+    r"stay\s+in\s+character|"
+    r"write\s+\d+\s*[–\-]\s*\d+\s+(?:vivid\s+)?sentences|"
+    r"\d+\s*[–\-]\s*\d+\s+lively\s+spoken\s+sentences|"
+    r"no\s+ai\s*/?\s*tech|"
+    r"no\s+stage\s+directions|"
+    r"imbue\s+the\s+wielder|"
+    r"spoken\s+words\s+only|"
+    r"speak\s+first\s+as\s+yourself|"
+    r"dual\s+relic\s+banter|"
+    r"not\s+a\s+slogan|"
+    r"no\s+tech\s+talk|"
+    r"as\s+an\s+ai"
+    r")",
+    re.I,
+)
+
+
+def looks_like_prompt_leak(text: str) -> bool:
+    t = (text or "").strip()
+    if not t:
+        return True
+    if _PROMPT_LEAK_RE.search(t) and len(t) < 560:
+        return True
+    if re.search(r"power\s+\d+/99", t, re.I) and re.search(r"bond\s+\d+/99", t, re.I):
+        return True
+    if re.match(r"(?i)^topic:", t) and "bond" in t.lower():
+        return True
+    if re.search(r"(?i)\bgift power\b", t) and re.search(r"(?i)\bgift healing\b", t):
+        return True
+    return False
+
+
+def polish_speech(text: str, max_len: int = 700) -> str:
+    """Keep spoken relic words; drop director/prompt echo."""
+    t = (text or "").strip()
+    if not t:
+        return ""
+    t = re.sub(r"\*[^*]{0,80}\*", "", t)
+    t = re.sub(r"```[\s\S]*?```", "", t)
+    t = re.sub(r"^Reply ONLY as[^.!?]{0,160}[.!?]\s*", "", t, flags=re.I)
+    t = re.sub(r"^As (?:Mjolnir|Caduceus|Thor)[,:]?\s*", "", t, flags=re.I)
+    t = re.sub(r"^Topic:\s*[^.!?\n]{0,180}[.!]?\s*", "", t, flags=re.I)
+    t = re.sub(
+        r"^(?:Stay in character|No (?:tech talk|stage directions)|Spoken words only)[^.!?\n]{0,80}[.!]?\s*",
+        "",
+        t,
+        flags=re.I,
+    )
+    t = re.sub(r"^(?:Gift|Offer)\s+(?:POWER|HEALING)\.\s*", "", t, flags=re.I)
+    t = re.sub(r"\s+", " ", t).strip()
+    if looks_like_prompt_leak(t):
+        return ""
+    if len(t) > max_len:
+        t = t[: max_len - 1].rsplit(" ", 1)[0] + "…"
+    return t
+
+
+def scene_user_cue(persona_id: str, event: str = "grab", extra: str = "") -> str:
+    """Situational cue only — identity lives in the system prompt."""
+    extra = (extra or "").strip()
+    if extra and not looks_like_prompt_leak(extra) and len(extra) < 280:
+        return extra
+    who = "Caduceus" if persona_id == "caduceus" else "Mjolnir"
+    other = "Mjolnir" if persona_id == "caduceus" else "Caduceus"
+    ev = (event or "grab").lower()
+    if ev in ("toss", "fling"):
+        return f"{who} was just tossed across the map. {other} is watching. The wielder is laughing."
+    if ev in ("bonk", "spar"):
+        return f"{who} just clinked into {other} — a playful bonk. The wielder is right here."
+    if ev == "react":
+        return f"{other} just spoke. The wielder is still holding {who}."
+    return f"The wielder just gripped {who}. {other} is nearby."
+
+
+def banter_opener_cue(persona_id: str, topic: str = "", pulse_text: str = "") -> str:
+    who = "Caduceus" if persona_id == "caduceus" else "Mjolnir"
+    scene = (topic or "").strip()
+    if not scene or looks_like_prompt_leak(scene):
+        scene = "The wielder is on the map. Hammer and staff riff like old friends."
+    pulse = ""
+    if pulse_text:
+        pulse = f" Something about “{pulse_text[:120]}” drifted past."
+    return f"{scene} {who} speaks first.{pulse}".strip()
+
+
+def banter_reply_cue(persona_id: str, other_name: str, other_text: str) -> str:
+    said = polish_speech(other_text, max_len=320) or "…"
+    return f'{other_name} said: "{said}"'
+
+
 def speak(persona_id: str, user_msg: str, model: str | None, models: list[str]) -> tuple[str, str, str | None]:
     persona = PERSONAS[persona_id]
     system = persona["system"]
     prefer = MODEL_MJOLNIR if persona_id == "mjolnir" else MODEL_CADUCEUS
     resolved = resolve_model(prefer, models) or model
+    cue = (user_msg or "").strip()
+    if looks_like_prompt_leak(cue):
+        cue = scene_user_cue(persona_id, "grab")
     # Inject living memory so they truly continue the conversation
-    full_user = f"{memory_context(persona_id)}\n\nYour cue now:\n{user_msg}"
+    full_user = f"{memory_context(persona_id)}\n\nWhat just happened:\n{cue}"
 
     def try_xai() -> tuple[str, str, str | None] | None:
         if not XAI_API_KEY:
@@ -1036,8 +1132,11 @@ def speak(persona_id: str, user_msg: str, model: str | None, models: list[str]) 
     for fn in order:
         hit = fn()
         if hit:
-            return hit
-    return offline(persona_id, "chat"), "offline", None
+            text, provider, model_name = hit
+            cleaned = polish_speech(text)
+            if cleaned:
+                return cleaned, provider, model_name
+    return polish_speech(offline(persona_id, "chat")) or offline(persona_id, "chat"), "offline", None
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -1387,7 +1486,7 @@ class Handler(SimpleHTTPRequestHandler):
         models = ollama_models()
         m_default = resolve_model(MODEL_MJOLNIR, models)
 
-        if path == "/api/chat":
+        if path in ("/api/chat", "/api/hub/chat", "/api/relics/chat"):
             persona_id = str(data.get("persona") or "mjolnir").lower()
             if persona_id in ("hammer", "thor", "mjolnir"):
                 persona_id = "mjolnir"
@@ -1397,43 +1496,17 @@ class Handler(SimpleHTTPRequestHandler):
                 persona_id = "mjolnir"
 
             event = str(data.get("event") or "chat").lower()
-            user_msg = str(data.get("message") or "").strip()
+            user_msg = scene_user_cue(
+                persona_id,
+                event,
+                str(data.get("message") or "").strip(),
+            )
             fact = random.choice(TRUE_FACTS)
 
             # Grow on every touch — grab/toss level faster
             bump = 2 if event in ("grab", "toss", "strike") else 1
             grow_power(persona_id, bump)
             pwr = POWER[persona_id]
-            bond = POWER["bond"]
-            imbue = (
-                "IMBUE the wielder with POWER: strength, courage, lightning edge"
-                if persona_id == "mjolnir"
-                else "IMBUE the wielder with HEALING: vitality, recovery, balance"
-            )
-
-            if not user_msg:
-                if event == "grab":
-                    user_msg = (
-                        f"The user just grabbed you. Power {pwr}/99, bond {bond}/99. "
-                        f"React and {imbue}. {fact}"
-                    )
-                elif event == "toss":
-                    user_msg = (
-                        f"The user just tossed you. Power {pwr}/99. "
-                        f"React and boast how you evolve. {fact}"
-                    )
-                elif event == "strike":
-                    user_msg = (
-                        f"Power surged — you are now {pwr}/99. One sharp line. {imbue}. {fact}"
-                    )
-                else:
-                    user_msg = f"Greet briefly at power {pwr}/99. {imbue}. {fact}"
-            else:
-                user_msg = (
-                    f"{user_msg}\n\n"
-                    f"(You are at power {pwr}/99, bond {bond}/99. {imbue}. "
-                    f"Optional true spice if it fits: {fact})"
-                )
 
             text, provider, model = speak(persona_id, user_msg, m_default, models)
             if not text:
@@ -1481,7 +1554,7 @@ class Handler(SimpleHTTPRequestHandler):
             fact = str(data.get("fact") or random.choice(TRUE_FACTS))
             topic = str(
                 data.get("topic")
-                or "a worthy visitor stands on your map, hoping to be imbued with power and healing"
+                or "The wielder is on the map. Hammer and staff riff like old friends."
             ).strip()
             # Living conversation — a bit longer by default
             rounds = max(3, min(7, int(data.get("rounds") or 5)))
@@ -1497,12 +1570,6 @@ class Handler(SimpleHTTPRequestHandler):
                     }
                 else:
                     pulse_item = pick_pulse_item()
-            pulse_hint = ""
-            if pulse_item and pulse_item.get("text"):
-                pulse_hint = (
-                    f" World-pulse scrap (DO NOT copy-paste; riff once like you noticed the feed, "
-                    f"then return to banter): “{pulse_item['text'][:160]}”."
-                )
 
             # Level up each banter session — they evolve together
             POWER["bond"] = min(99, POWER["bond"] + 2)
@@ -1516,13 +1583,13 @@ class Handler(SimpleHTTPRequestHandler):
                 order = ["caduceus", "mjolnir"]
 
             first = order[0]
-            seed = (
-                f"Topic: {topic}. Power {POWER[first]}/99. Bond {bond}/99. "
-                f"Talk to the other relic in 3-5 lively spoken sentences — warm, natural, a tad longer. "
-                f"Stay in character. No tech talk. No stage directions. "
-                f"{'Gift POWER.' if first == 'mjolnir' else 'Gift HEALING.'} "
-                f"Optional spice if natural: {fact}.{pulse_hint}"
+            seed = banter_opener_cue(
+                first,
+                topic,
+                pulse_item.get("text") if pulse_item else "",
             )
+            if fact and random.random() < 0.35:
+                seed = f"{seed} Something true in the air: {fact}"
             text, provider, model = speak(first, seed, m_default, models)
             if not text:
                 if pulse_item and pulse_item.get("text") and random.random() < 0.55:
@@ -1553,18 +1620,10 @@ class Handler(SimpleHTTPRequestHandler):
                 # Only sometimes re-nudge the pulse so it feels life-like, not every line
                 mid_pulse = ""
                 if pulse_item and pulse_item.get("text") and random.random() < 0.28:
-                    mid_pulse = (
-                        f" Optional half-glance at the pulse again (riff, don't quote): "
-                        f"“{pulse_item['text'][:120]}”."
-                    )
-                prompt = (
-                    f"{other['name']} just said: \"{other['text']}\"\n"
-                    f"Power {POWER[who]}/99. Bond {POWER['bond']}/99. "
-                    f"Answer them in 3-5 lively spoken sentences. Riff off their words. "
-                    f"Sound alive — not a slogan chip. No stage directions. No tech talk. "
-                    f"{'Offer POWER.' if who == 'mjolnir' else 'Offer HEALING.'}"
-                    f"{mid_pulse}"
-                )
+                    mid_pulse = f' Something about “{pulse_item["text"][:120]}” drifted past.'
+                prompt = banter_reply_cue(who, other["name"], other["text"])
+                if mid_pulse:
+                    prompt = f"{prompt}{mid_pulse}"
                 text, provider, model = speak(who, prompt, m_default, models)
                 if not text:
                     if mid_pulse and pulse_item:

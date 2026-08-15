@@ -36,17 +36,30 @@ function mapAgent(id) {
 export function looksLikePromptLeak(text) {
   const t = String(text || "").trim();
   if (!t) return true;
-  if (/^Reply ONLY as\b/i.test(t)) return true;
-  if (/\bReply ONLY as\b/i.test(t) && t.length < 520) return true;
-  if (/\bWrite 2[–\-]4 vivid sentences\b/i.test(t)) return true;
-  if (/\bNo AI\/tech\/camp meta\b/i.test(t)) return true;
-  if (/\bStorm monologue time\b/i.test(t)) return true;
-  if (/\bWhat else is rattling around that skull\b/i.test(t)) return true;
-  if (/\bThe Wielder just GRABBED you\b/i.test(t) && /React to the grip/i.test(t)) return true;
-  if (/\bas an AI\b/i.test(t)) return true;
-  if (/\bGift POWER\b/i.test(t) && /\bGift HEALING\b/i.test(t)) return true;
-  if (/\bNo camp meta, no seeds\b/i.test(t)) return true;
+  const low = t.toLowerCase();
+  if (/^reply only as\b/i.test(t)) return true;
+  if (/\breply only as\b/i.test(t) && t.length < 560) return true;
+  if (/\bwrite\s+\d+\s*[–\-]\s*\d+\s+(?:vivid\s+)?sentences\b/i.test(t)) return true;
+  if (/\b\d+\s*[–\-]\s*\d+\s+lively\s+spoken\s+sentences\b/i.test(t)) return true;
+  if (/\bno ai\/?tech(?:\/camp)?\s+meta\b/i.test(t)) return true;
+  if (/\bstorm monologue time\b/i.test(t)) return true;
+  if (/\bwhat else is rattling around that skull\b/i.test(t)) return true;
+  if (/\bthe wielder just grabbed you\b/i.test(t) && /react to the grip/i.test(t)) return true;
+  if (/\bas an ai\b/i.test(low)) return true;
+  if (/\bgift power\b/i.test(t) && /\bgift healing\b/i.test(t)) return true;
+  if (/\bno camp meta, no seeds\b/i.test(t)) return true;
   if (/\bother characters monologuing\b/i.test(t)) return true;
+  if (/\bstay in character\b/i.test(low)) return true;
+  if (/\bno stage directions\b/i.test(low)) return true;
+  if (/\bspoken words only\b/i.test(low)) return true;
+  if (/\bimbue the wielder\b/i.test(low)) return true;
+  if (/\bspeak first as yourself\b/i.test(low)) return true;
+  if (/\bdual relic banter\b/i.test(low)) return true;
+  if (/\bnot a slogan\b/i.test(low) && /\bnot a wall\b/i.test(low)) return true;
+  if (/\boffer power\b/i.test(low) && /\bno (?:tech|stage)\b/i.test(low)) return true;
+  if (/^topic:\s*/i.test(t) && /bond\s+\d+\/99/i.test(t)) return true;
+  if (/power\s+\d+\/99/i.test(t) && /bond\s+\d+\/99/i.test(t)) return true;
+  if (/\bno tech talk\b/i.test(low) && /\b(gift|offer)\s+(power|healing)\b/i.test(low)) return true;
   return false;
 }
 
@@ -65,9 +78,13 @@ export function polishSpeech(text, { maxLen = 480 } = {}) {
 
   // Drop leading director scraps
   t = t
-    .replace(/^Reply ONLY as[^.]{0,120}\.\s*/i, "")
+    .replace(/^Reply ONLY as[^.!?]{0,160}[.!?]\s*/i, "")
     .replace(/^As (Mjolnir|Caduceus|Thor)[,:]?\s*/i, "")
     .replace(/^(Okay[,.]?\s+|So[,.]?\s+)/i, "")
+    .replace(/^Topic:\s*[^.!?\n]{0,180}[.!]?\s*/i, "")
+    .replace(/^(?:Stay in character|No (?:tech talk|stage directions)|Spoken words only)[^.!?\n]{0,80}[.!]?\s*/gi, "")
+    .replace(/^(?:Gift|Offer)\s+(?:POWER|HEALING)\.\s*/i, "")
+    .replace(/^Write \d+[–\-]\d+ [^.!?\n]{0,80}[.!]?\s*/i, "")
     .trim();
 
   // Drop common camp boilerplate blocks
@@ -159,7 +176,7 @@ export async function freeMindsBanter(topic, rounds = 4) {
         rounds: Math.max(2, Math.min(4, rounds || 4)),
         topic:
           topic ||
-          "Wielder is here. Dual relic banter: power and healing, witty and warm. Stay in character only.",
+          "The wielder is on the map. Hammer and staff riff like old friends.",
         visitor_name: "Wielder",
       }),
       signal: ctrl.signal,
@@ -207,28 +224,27 @@ export async function freeMindsBanter(topic, rounds = 4) {
 export function sceneSeed(persona, event = "grab") {
   const isCad = persona === "caduceus";
   const who = isCad ? "Caduceus" : "Mjolnir";
-  const gift = isCad ? "healing and balance" : "power and courage";
   const ev = String(event || "grab").toLowerCase();
 
   if (ev === "toss" || ev === "fling") {
     return isCad
-      ? `You (${who}) were just tossed across the map. One playful loyal reaction to the Wielder about the flight — gift ${gift}. Spoken words only.`
-      : `You (${who}) were just flung across the sky. One bold loyal reaction to the Wielder — gift ${gift}. Spoken words only.`;
+      ? `${who} was just tossed across the map. Mjolnir is watching. The wielder is laughing.`
+      : `${who} was just flung across the sky. Caduceus is watching. The wielder is laughing.`;
   }
   if (ev === "bonk" || ev === "spar") {
     return isCad
-      ? `Playful bonk with the hammer. Tease them lightly, include the Wielder, gift ${gift}. Spoken words only — no stage directions.`
-      : `Playful bonk with the staff. Laugh, include the Wielder, gift ${gift}. Spoken words only — no stage directions.`;
+      ? `${who} just clinked into Mjolnir — a playful bonk. The wielder is right here.`
+      : `${who} just clinked into Caduceus — a playful bonk. The wielder is right here.`;
   }
   if (ev === "react") {
     return isCad
-      ? `Your partner Mjolnir just spoke. Answer them and the Wielder — gift ${gift}. Spoken words only.`
-      : `Your partner Caduceus just spoke. Answer them and the Wielder — gift ${gift}. Spoken words only.`;
+      ? `Mjolnir just spoke. The wielder is still holding ${who}.`
+      : `Caduceus just spoke. The wielder is still holding ${who}.`;
   }
   // grab / press / default
   return isCad
-    ? `The Wielder just gripped you. React as yourself — warm, witty, mythic. Gift ${gift}. Two to four spoken sentences. No instructions, no "as an AI".`
-    : `The Wielder just gripped you. React as yourself — bold, warm, mythic. Gift ${gift}. Two to four spoken sentences. No instructions, no "as an AI".`;
+    ? `The wielder just gripped ${who}. Mjolnir is nearby.`
+    : `The wielder just gripped ${who}. Caduceus is nearby.`;
 }
 
 /** One-shot line via free agent chat (secure public endpoint, no keys). */

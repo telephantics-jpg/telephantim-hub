@@ -370,33 +370,11 @@ def _hub_chat_sync(data: dict) -> dict:
     else:
         persona_id = "mjolnir"
     event = str(data.get("event") or "chat").lower()
-    user_msg = str(data.get("message") or "").strip()
+    user_msg = thub.scene_user_cue(persona_id, event, str(data.get("message") or "").strip())
 
-    fact = random.choice(thub.TRUE_FACTS)
     bump = 2 if event in ("grab", "toss", "strike") else 1
     thub.grow_power(persona_id, bump)
     pwr = thub.POWER[persona_id]
-    bond = thub.POWER["bond"]
-    imbue = (
-        "IMBUE the wielder with POWER: strength, courage, lightning edge"
-        if persona_id == "mjolnir"
-        else "IMBUE the wielder with HEALING: vitality, recovery, balance"
-    )
-    if not user_msg:
-        if event == "grab":
-            user_msg = f"The user just grabbed you. Power {pwr}/99, bond {bond}/99. React and {imbue}. {fact}"
-        elif event == "toss":
-            user_msg = f"The user just tossed you. Power {pwr}/99. React and boast how you evolve. {fact}"
-        elif event == "strike":
-            user_msg = f"Power surged — you are now {pwr}/99. One sharp line. {imbue}. {fact}"
-        else:
-            user_msg = f"Greet briefly at power {pwr}/99. {imbue}. {fact}"
-    else:
-        user_msg = (
-            f"{user_msg}\n\n"
-            f"(You are at power {pwr}/99, bond {bond}/99. {imbue}. "
-            f"Optional true spice if it fits: {fact})"
-        )
     text, provider, model = thub.speak(persona_id, user_msg, m_default, models)
     if not text:
         text = thub.offline(
@@ -440,7 +418,7 @@ def _hub_banter_sync(data: dict) -> dict:
     fact = str(data.get("fact") or random.choice(thub.TRUE_FACTS))
     topic = str(
         data.get("topic")
-        or "a worthy visitor stands on your map, hoping to be imbued with power and healing"
+        or "The wielder is on the map. Hammer and staff riff like old friends."
     ).strip()
     rounds = max(3, min(7, int(data.get("rounds") or 5)))
     pulse_item = None
@@ -453,11 +431,6 @@ def _hub_banter_sync(data: dict) -> dict:
             }
         else:
             pulse_item = thub.pick_pulse_item()
-    pulse_hint = ""
-    if pulse_item and pulse_item.get("text"):
-        pulse_hint = (
-            f" World-pulse scrap (DO NOT copy-paste; riff once): “{pulse_item['text'][:160]}”."
-        )
     thub.POWER["bond"] = min(99, thub.POWER["bond"] + 2)
     thub.POWER["mjolnir"] = min(99, thub.POWER["mjolnir"] + 1)
     thub.POWER["caduceus"] = min(99, thub.POWER["caduceus"] + 1)
@@ -467,12 +440,13 @@ def _hub_banter_sync(data: dict) -> dict:
     if random.random() < 0.5:
         order = ["caduceus", "mjolnir"]
     first = order[0]
-    seed = (
-        f"Topic: {topic}. Power {thub.POWER[first]}/99. Bond {bond}/99. "
-        f"Talk to the other relic in 3-5 lively spoken sentences. "
-        f"{'Gift POWER.' if first == 'mjolnir' else 'Gift HEALING.'} "
-        f"Optional spice: {fact}.{pulse_hint}"
+    seed = thub.banter_opener_cue(
+        first,
+        topic,
+        pulse_item.get("text") if pulse_item else "",
     )
+    if fact and random.random() < 0.35:
+        seed = f"{seed} Something true in the air: {fact}"
     text, provider, model = thub.speak(first, seed, m_default, models)
     if not text:
         text = thub.offline(first, "banter", thub.POWER[first])
@@ -498,14 +472,10 @@ def _hub_banter_sync(data: dict) -> dict:
             thub.POWER["bond"] = min(99, thub.POWER["bond"] + 1)
         mid_pulse = ""
         if pulse_item and pulse_item.get("text") and random.random() < 0.28:
-            mid_pulse = f" Optional half-glance at pulse: “{pulse_item['text'][:120]}”."
-        prompt = (
-            f"{other['name']} just said: \"{other['text']}\"\n"
-            f"Power {thub.POWER[who]}/99. Bond {thub.POWER['bond']}/99. "
-            f"Answer them in 3-5 lively spoken sentences. "
-            f"{'Offer POWER.' if who == 'mjolnir' else 'Offer HEALING.'}"
-            f"{mid_pulse}"
-        )
+            mid_pulse = f' Something about “{pulse_item["text"][:120]}” drifted past.'
+        prompt = thub.banter_reply_cue(who, other["name"], other["text"])
+        if mid_pulse:
+            prompt = f"{prompt}{mid_pulse}"
         text, provider, model = thub.speak(who, prompt, m_default, models)
         if not text:
             text = thub.offline(who, "banter", thub.POWER[who])

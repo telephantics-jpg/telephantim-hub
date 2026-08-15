@@ -6,7 +6,7 @@
  *   4) Scripted dual duel
  * Characters never mention tech.
  */
-import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from "./native-brain.js";
+import { nativeBanter, nativeSpeak, ensureNativeBrain, getNativeStatus } from "./native-brain.js?v=v119-spoken-only";
 import {
   freeMindsBanter,
   freeMindsSpeak,
@@ -14,7 +14,8 @@ import {
   sceneSeed,
   looksLikePromptLeak,
   isStrongLine,
-} from "./free-minds.js";
+  polishSpeech,
+} from "./free-minds.js?v=v119-spoken-only";
 import {
   pickWord as pickCachedWord,
   pickInteractLine,
@@ -89,7 +90,8 @@ async function playBanterLines(lines, metaPulse, opts = {}) {
   for (const line of lines) {
     const pid =
       line.persona === "caduceus" || line.id === "caduceus" ? "caduceus" : "mjolnir";
-    const text = line.text || line.t || "";
+    const text = polishSpeech(line.text || line.t || "");
+    if (!text || looksLikePromptLeak(text) || !isStrongLine(text)) continue;
     if (pid === "mjolnir") pMj = Math.min(99, pMj + 1);
     else pCad = Math.min(99, pCad + 1);
     bond = Math.min(99, bond + 1);
@@ -422,31 +424,11 @@ async function refreshPower() {
 }
 
 function interactPrompt(id, event, extra) {
-  if (extra && String(extra).trim().length > 12) return String(extra).slice(0, 900);
-  const isCad = id === "caduceus";
-  const name = isCad ? "Caduceus, living staff with twin snakes" : "Mjolnir, living hammer of thunder";
-  const gift = isCad
-    ? "HEALING (vitality, balance, aftercare, wit)"
-    : "POWER (courage, strength, clean lightning)";
-  const voice = isCad
-    ? "Voice: sly, warm, poetic but clear, a little funny. Never preachy."
-    : "Voice: bold, warm, cocky in a kind way, clear. Never cruel.";
-  const ev = String(event || "touch");
-  const beat =
-    ev === "grab"
-      ? "The Wielder just GRABBED you. React to the grip. Make them feel chosen, not handled."
-      : ev === "toss" || ev === "fling"
-        ? "The Wielder just TOSSED you across the map. Playful flight reaction — still loyal, still useful."
-        : ev === "bonk" || ev === "spar"
-          ? "A PLAYFUL bonk just happened with the other relic. Spar energy, not real fight. Include the Wielder."
-          : ev === "react"
-            ? "Your partner relic just spoke. Answer them AND the Wielder — keep the dual vibe alive."
-            : "The Wielder is with you on the Telephantim map.";
-  return (
-    `Reply ONLY as ${name}. ${beat} ` +
-    `Write 2–4 vivid sentences (not a slogan, not a wall of text). Gift ${gift}. ${voice} ` +
-    `Speak to the Wielder directly. No AI/tech/camp meta/seeds/other characters monologuing.`
-  );
+  // Scene only — never a director prompt (those leak into native / Ollama speech).
+  if (extra && String(extra).trim().length > 12 && !looksLikePromptLeak(extra)) {
+    return String(extra).slice(0, 280);
+  }
+  return sceneSeed(id === "caduceus" ? "caduceus" : "mjolnir", event || "grab");
 }
 
 /**
@@ -500,11 +482,11 @@ export async function speak(persona, event, message, opts = {}) {
         body: JSON.stringify({
           persona: id,
           event: event || "chat",
-          message: message || prompt,
+          message: message || seed,
         }),
       });
-      let line = (data.text && String(data.text).trim().length > 30 ? data.text : null) || cached;
-      if (looksLikePromptLeak(line)) line = cached;
+      let line = polishSpeech(data.text || "");
+      if (!line || !isStrongLine(line) || looksLikePromptLeak(line)) line = cached;
       if (gen === speechGen[id]) {
         showInBox(id, line, meta, data.power, { onlyIfGen: gen, sticky: true });
       }
@@ -529,8 +511,8 @@ export async function speak(persona, event, message, opts = {}) {
         if (!opts.quiet) setBrainPill("native", String(msg || "").slice(0, 22));
       });
       if (m !== "none") {
-        const text = await nativeSpeak(id, prompt);
-        if (text && text.length > 30 && gen === speechGen[id]) {
+        const text = polishSpeech(await nativeSpeak(id, seed));
+        if (text && isStrongLine(text) && !looksLikePromptLeak(text) && gen === speechGen[id]) {
           setBrainPill("native", "Local mind");
           showInBox(id, text, meta, null, { onlyIfGen: gen, sticky: true });
           return { text, provider: m };
@@ -671,8 +653,9 @@ export async function banter(topic, rounds, opts) {
   }
 
   const topicLine =
-    topic ||
-    "lively multi-round talk between hammer and staff — longer natural exchange, gift power and healing, banter and bond";
+    topic && !looksLikePromptLeak(topic)
+      ? topic
+      : "The wielder is on the map. Hammer and staff riff like old friends.";
 
   // Default longer talks (8 lines) — free minds / native / cached offline
   const nRounds = Math.max(4, Math.min(12, rounds || 8));
@@ -794,7 +777,7 @@ function scheduleAutoTalk() {
       }
       if (!busy && brainsOnline && document.visibilityState === "visible") {
         await banter(
-          "one short friendly exchange — gift power and healing, keep it brief",
+          "A quiet beat on the map. Hammer and staff trade one friendly line.",
           2,
           { pulse: false, ambient: true }
         );
@@ -807,7 +790,7 @@ function scheduleAutoTalk() {
 // User Talk button → open full dual summary. Ambient never does this alone.
 banterBtn?.addEventListener("click", () =>
   banter(
-    "longer lively talk between hammer and staff — several rounds, natural banter, gift power and healing, bond climbs",
+    "The wielder asked you both to talk. Hammer and staff riff like old friends.",
     8,
     { pulse: Math.random() < 0.25, ambient: false }
   )
