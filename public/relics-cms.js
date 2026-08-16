@@ -35,7 +35,8 @@ function applyRelics(relics) {
 
   // Background video
   const video = $("stage-bg-video");
-  const src = (relics.backgroundVideo || "").trim();
+  let src = (relics.backgroundVideo || "").trim();
+  if (src && !/[?&]v=/.test(src)) src = `${src}?v=mjolnir-sky-relics`;
   if (video && src && video.getAttribute("src") !== src && video.src !== new URL(src, location.href).href) {
     video.src = src;
     video.load();

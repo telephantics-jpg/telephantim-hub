@@ -2,7 +2,7 @@ BACKGROUND MEDIA (Relics stage + Bio page)
 ==========================================
 
 Current clips:
-  • media/bg.mp4 — Relics stage 3D background
+  • media/bg.mp4 — Relics stage 3D background (same Mjolnir lightning loop)
   • media/bio-bg.mp4 — Bio tab (Mjolnir lightning loop, square)
   • media/bio-bg-poster.jpg — Bio poster while video loads
 
