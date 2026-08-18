@@ -2650,7 +2650,13 @@ body.scene-studio .music-chrome #btn-studio {
   max-height: 180px;
   overflow: auto;
 }
+.stu-lib-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
 .stu-lib-item {
+  flex: 1 1 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2672,6 +2678,27 @@ body.scene-studio .music-chrome #btn-studio {
 .stu-lib-item small {
   color: #94a3b8;
   font-weight: 600;
+}
+.stu-lib-icon {
+  flex: 0 0 auto;
+  min-width: 2.2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.stu-lib-icon:hover {
+  border-color: rgba(167, 139, 250, 0.5);
+}
+.stu-lib-icon.danger:hover,
+.btn-chip.danger:hover {
+  border-color: rgba(248, 113, 113, 0.7);
+  color: #fecaca;
+}
+.btn-chip.danger {
+  border-color: rgba(248, 113, 113, 0.35);
 }
 .stu-create-btn:disabled {
   opacity: 0.55;
