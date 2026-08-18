@@ -1109,12 +1109,50 @@ function updateMusicChrome() {
     panel.hidden = !open;
     panel.classList.toggle("open", open);
     panel.classList.toggle("is-minimized", open && minimized);
+    // Restore full size when expanding (clear sticky layout)
+    if (open && !minimized) {
+      try {
+        panel.style.removeProperty("height");
+        panel.style.removeProperty("max-height");
+        panel.style.removeProperty("width");
+      } catch (_) {}
+    }
   }
-  if (body) body.hidden = !!(open && minimized);
-  if (minBtn) minBtn.hidden = !!(open && minimized);
-  if (maxBtn) maxBtn.hidden = !(open && minimized);
+  if (body) {
+    const collapse = !!(open && minimized);
+    body.hidden = collapse;
+    if (!collapse) {
+      try {
+        body.removeAttribute("hidden");
+        body.style.removeProperty("display");
+        body.style.removeProperty("height");
+        body.style.removeProperty("max-height");
+        body.style.removeProperty("overflow");
+      } catch (_) {}
+    }
+  }
+  if (minBtn) {
+    minBtn.hidden = !!(open && minimized);
+    if (!minimized) {
+      try { minBtn.removeAttribute("hidden"); } catch (_) {}
+    }
+  }
+  if (maxBtn) {
+    maxBtn.hidden = !(open && minimized);
+    if (open && minimized) {
+      try {
+        maxBtn.removeAttribute("hidden");
+        maxBtn.style.display = "inline-flex";
+      } catch (_) {}
+    } else {
+      try { maxBtn.style.removeProperty("display"); } catch (_) {}
+    }
+  }
   if (miniRow) {
     miniRow.hidden = !(open && minimized);
+    if (open && minimized) {
+      try { miniRow.removeAttribute("hidden"); } catch (_) {}
+    }
   }
   if (miniTitle) {
     miniTitle.textContent = cur?.title

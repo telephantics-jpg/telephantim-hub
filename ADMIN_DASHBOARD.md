@@ -7,17 +7,11 @@ Your own control panel to edit **telephantim.com** without hand-editing code eve
 | Tab | Edits |
 |-----|--------|
 | **Profile** | Name, handle, tagline, avatar, Beacons / site URLs |
-| **Relics page** | Background video/image, stage quote, title, hint |
-| **Bio page** | Quote, bio background video/image |
-| **Music catalog** | Add/rename/remove songs, replace full catalog, albums |
 | **Pay / Support** | PayPal, Cash App, Venmo, GoFundMe, coffee links |
 | **Featured** | Albums, Luna, highlight buttons |
 | **Socials** | Instagram, X, Facebook, Threads, etc. |
-
-### Background video tip
-- Drop an `.mp4` into `telephantix-demo/media/` (e.g. `media/my-bg.mp4`)
-- In admin → **Relics page** (or Bio) set path: `media/my-bg.mp4`
-- Or paste a public `https://…/file.mp4` URL
+| **Bio quote** | Quote text + attribution |
+| **Songs** | Add / remove Suno tracks on the hub player |
 
 ## How it works
 

@@ -4,3 +4,7 @@ _parse_blocks2.py
 __pycache__/
 .DS_Store
 Thumbs.db
+
+media/studio-gen/*.wav
+media/studio-gen/*.mp3
+

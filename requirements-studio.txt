@@ -1,0 +1,19 @@
+# Free open-source AI music for Studio tab
+#
+# Vocals + up to 10-min songs (recommended for visitors):
+#   Install ACE-Step separately (does NOT share this venv):
+#     git clone --depth 1 https://github.com/ACE-Step/ACE-Step-1.5.git %USERPROFILE%\ACE-Step-1.5
+#     cd %USERPROFILE%\ACE-Step-1.5 && uv sync
+#     then run: telephantix-demo\START_ACE_STEP.bat
+#   Hub proxies via studio_acestep.py → http://127.0.0.1:8001
+#
+# Instrumental fallback (Meta MusicGen) — install into the same Python as server.py:
+#   pip install -r requirements-studio.txt
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+torch>=2.1.0
+torchaudio>=2.1.0
+transformers>=4.31.0
+accelerate>=0.20.0
+scipy>=1.10.0
+soundfile>=0.12.0
