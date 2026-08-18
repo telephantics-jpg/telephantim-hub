@@ -154,14 +154,40 @@ def start_job_async(
 
 def _run(job_id: str, prompt: str, lyrics: str, seconds: float, tags: str) -> None:
     _set(job_id, status="submitting")
+    # fal-ai/ace-step (tags+lyrics) first; fall back to prompt-to-audio
     body = {
         "tags": (tags or prompt)[:400],
         "lyrics": lyrics,
         "duration": float(seconds),
         "number_of_steps": 27,
     }
-    # Prefer prompt endpoint shape when available — tags field is required on fal-ai/ace-step
-    submit = _http("POST", "https://queue.fal.run/fal-ai/ace-step", body, timeout=60.0)
+    submit = None
+    last_err = None
+    for endpoint, payload in (
+        ("fal-ai/ace-step", body),
+        (
+            "fal-ai/ace-step/prompt-to-audio",
+            {
+                "prompt": prompt[:500],
+                "instrumental": lyrics.strip() in ("", "[inst]", "[instrumental]"),
+                "duration": float(seconds),
+                "number_of_steps": 27,
+            },
+        ),
+    ):
+        try:
+            submit = _http("POST", f"https://queue.fal.run/{endpoint}", payload, timeout=60.0)
+            _set(job_id, fal_endpoint=endpoint)
+            break
+        except Exception as e:
+            last_err = e
+            continue
+    if not submit:
+        raise RuntimeError(
+            f"fal ACE blocked ({last_err}). "
+            "Key may be valid but account needs credits — add balance at https://fal.ai/dashboard/billing "
+            "then retry. (ACE-Step ≈ $0.0002/sec)"
+        )
     req_id = str(submit.get("request_id") or submit.get("requestId") or "").strip()
     if not req_id:
         raise RuntimeError(f"fal no request_id: {str(submit)[:300]}")
