@@ -1057,15 +1057,34 @@ function studioApi(path) {
 let createInFlight = false;
 let activePollToken = 0;
 
+function studioApiHostLabel() {
+  const b = studioApiBase();
+  if (!b) return "local hub";
+  try {
+    return new URL(b).host;
+  } catch (_) {
+    return b;
+  }
+}
+
 async function refreshSunoStatus(root) {
   const el = root?.querySelector?.("#stu-suno-status") || $("stu-suno-status");
   try {
     const r = await fetch(studioApi("/api/studio/suno-status"));
+    if (!r.ok) {
+      if (el) {
+        el.textContent = `Song API offline (${studioApiHostLabel()} · ${r.status}) — Create uses free type-beat`;
+        el.dataset.ready = "0";
+        el.dataset.apiDown = "1";
+      }
+      return;
+    }
     const j = await r.json();
     const ace = j.acestep || {};
     const fal = j.fal || {};
     const mg = j.musicgen || {};
     if (el) {
+      el.dataset.apiDown = "0";
       if (ace.ok) {
         el.textContent = ace.warming
           ? `ACE-Step warming (first-run model download) · vocals soon`
@@ -1090,7 +1109,11 @@ async function refreshSunoStatus(root) {
       }
     }
   } catch (_) {
-    if (el) el.textContent = "Free type-beat mode";
+    if (el) {
+      el.textContent = `Can't reach ${studioApiHostLabel()} — free type-beat mode for guests`;
+      el.dataset.ready = "0";
+      el.dataset.apiDown = "1";
+    }
   }
 }
 
@@ -1141,9 +1164,23 @@ async function musicgenGenerate(root) {
         instrumental: !wantVocals,
       }),
     });
+    if (!r.ok) {
+      const msg = `Song API ${r.status} at ${studioApiHostLabel()} — rendering free type-beat instead`;
+      if (statusEl) statusEl.textContent = msg;
+      showToast(msg);
+      await renderFullSongWav();
+      return;
+    }
     const j = await r.json();
     if (!j.ok || !j.job_id) {
       const msg = j.hint || j.error || "Song engine unavailable";
+      // Guests: don't dead-end — fall back to in-browser type-beat
+      if (studioApiBase() || statusEl?.dataset?.apiDown === "1") {
+        showToast(`${msg} — free type-beat fallback`);
+        if (statusEl) statusEl.textContent = "Free type-beat render…";
+        await renderFullSongWav();
+        return;
+      }
       showToast(msg);
       if (statusEl) statusEl.textContent = msg;
       return;
@@ -1159,13 +1196,19 @@ async function musicgenGenerate(root) {
       statusEl.textContent =
         provider === "ace-step"
           ? `ACE-Step generating${j.vocals ? " + vocals" : ""}…`
-          : `${provider} generating (instrumental fallback)…`;
+          : provider === "fal-ace-step"
+            ? `Cloud vocals generating…`
+            : `${provider} generating…`;
     }
     await pollSongJob(j.job_id, statusEl, secs, myToken, root);
   } catch (err) {
     console.error(err);
-    showToast("Song generate error — is the hub up?");
-    if (statusEl) statusEl.textContent = "error";
+    const msg = `Can't reach ${studioApiHostLabel()} — free type-beat instead`;
+    showToast(msg);
+    if (statusEl) statusEl.textContent = msg;
+    try {
+      await renderFullSongWav();
+    } catch (_) {}
   } finally {
     if (myToken === activePollToken) createInFlight = false;
     if (createBtn) createBtn.disabled = false;

@@ -1,0 +1,39 @@
+Revive telephantim-ai (fixes guest “is the hub up?”)
+=====================================================
+
+Diagnosis (2026-08-18):
+  https://telephantim-ai.onrender.com/api/status  →  404 Not Found
+  Live Studio points TELEPHANTIM_API at that host, so guests can’t Create vocals.
+
+Fix on Render (you click — ~5 min)
+-----------------------------------
+1. https://dashboard.render.com
+2. Look for service **telephantim-ai**
+   - If missing / suspended: New → Web Service
+3. Connect repo: telephantics-jpg/telephantim-hub
+4. Settings:
+   - Branch: master
+   - Runtime: Python
+   - Build:  pip install -r requirements.txt || true
+   - Start:  python server.py
+   - Instance: Free is OK for API glue (not for GPU vocals)
+5. Env vars (optional but good):
+   - PORT=10000          (Render sets this; server.py should honor PORT)
+   - FAL_KEY=…           (guest vocals while PC off — from fal.ai)
+   - FAL_ACE_MAX_SECONDS=120
+6. Deploy → wait Live
+7. Prove:
+   https://telephantim-ai.onrender.com/api/status
+   must return JSON with "server":"telephantim-ai"
+   https://telephantim-ai.onrender.com/api/studio/suno-status
+   must return JSON (not 404)
+8. Hard refresh https://telephantim.com/#studio
+   Status should NOT say “Can't reach telephantim-ai…”
+
+Local still works anytime
+-------------------------
+  START_STUDIO_LOCAL.bat
+  → http://127.0.0.1:8765/#studio
+
+Until Render is live, Create on the public site falls back to free in-browser type-beat
+(instead of the old “is the hub up?” dead-end).
