@@ -680,11 +680,12 @@ function studioShellHtml(fullPage) {
             </div>
             <div class="stu-song-actions-row">
               <a class="btn-chip ghost" id="stu-song-download" href="#" download>⬇ Download</a>
-              <button type="button" class="btn-chip ghost" id="stu-song-keep" title="Keep this song in the library">📌 Keep</button>
+              <button type="button" class="btn-chip ghost" id="stu-song-keep" title="Save a title for this song">💾 Save as…</button>
+              <button type="button" class="btn-chip ghost danger" id="stu-song-delete" title="Delete this song file">🗑 Delete</button>
             </div>
           </div>
           <div class="stu-library" id="stu-library">
-            <p class="stu-section-label">Your songs <span class="stu-muted">re-open anytime · scrub · repeat</span></p>
+            <p class="stu-section-label">Your songs <span class="stu-muted">play · save · delete</span></p>
             <div class="stu-library-list" id="stu-library-list"></div>
           </div>
         </section>
@@ -891,8 +892,10 @@ function wireStudioControls(root) {
     void sunoOrFreeGenerate(root);
   });
   on("stu-song-keep", () => {
-    showToast("Kept — re-open anytime under Your songs");
-    void refreshSongLibrary(root);
+    void saveCurrentSong(root);
+  });
+  on("stu-song-delete", () => {
+    void deleteCurrentSong(root);
   });
   wireSongPlayerControls(root);
   void refreshSongLibrary(root);
@@ -1309,6 +1312,109 @@ function bindSongResult(url, meta = {}) {
   } catch (_) {}
 }
 
+function currentSongFileName() {
+  try {
+    const last = JSON.parse(localStorage.getItem("txStudioLastSong") || "null");
+    if (last?.url) return String(last.url).split("/").pop();
+  } catch (_) {}
+  const dl = $("stu-song-download");
+  if (dl?.getAttribute("download")) return dl.getAttribute("download");
+  if (dl?.href) return String(dl.href).split("/").pop();
+  return "";
+}
+
+async function saveCurrentSong(root) {
+  const name = currentSongFileName();
+  if (!name) {
+    showToast("Nothing to save — Create or pick a song first");
+    return;
+  }
+  let currentTitle = name;
+  try {
+    const last = JSON.parse(localStorage.getItem("txStudioLastSong") || "null");
+    if (last?.name) currentTitle = last.name;
+  } catch (_) {}
+  const title = window.prompt("Save song as (title):", currentTitle);
+  if (title == null) return;
+  const trimmed = String(title).trim();
+  if (!trimmed) {
+    showToast("Title can’t be empty");
+    return;
+  }
+  try {
+    const r = await fetch(studioApi("/api/studio/library-save"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, title: trimmed }),
+    });
+    const j = await r.json();
+    if (!j.ok) {
+      showToast(j.error || "Save failed");
+      return;
+    }
+    try {
+      const last = JSON.parse(localStorage.getItem("txStudioLastSong") || "{}");
+      last.name = trimmed;
+      localStorage.setItem("txStudioLastSong", JSON.stringify(last));
+    } catch (_) {}
+    showToast(`Saved · ${trimmed}`);
+    void refreshSongLibrary(root);
+  } catch (err) {
+    console.error(err);
+    showToast("Save failed — is the hub up?");
+  }
+}
+
+async function deleteSongByName(name, root, { confirmMsg } = {}) {
+  const safe = String(name || "").split("/").pop();
+  if (!safe) return false;
+  if (!window.confirm(confirmMsg || `Delete “${safe}”? This removes the file.`)) return false;
+  try {
+    const r = await fetch(studioApi("/api/studio/library-delete"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: safe }),
+    });
+    const j = await r.json();
+    if (!j.ok) {
+      showToast(j.error || "Delete failed");
+      return false;
+    }
+    // Clear player if we deleted the active track
+    try {
+      const last = JSON.parse(localStorage.getItem("txStudioLastSong") || "null");
+      if (last?.url && String(last.url).endsWith(safe)) {
+        localStorage.removeItem("txStudioLastSong");
+        const audio = $("stu-gen-audio");
+        if (audio) {
+          audio.pause();
+          audio.removeAttribute("src");
+          audio.removeAttribute("data-src");
+          audio.load();
+        }
+        const actions = $("stu-song-actions");
+        if (actions) actions.hidden = true;
+      }
+    } catch (_) {}
+    showToast("Deleted");
+    void refreshSongLibrary(root);
+    return true;
+  } catch (err) {
+    console.error(err);
+    showToast("Delete failed — is the hub up?");
+    return false;
+  }
+}
+
+async function deleteCurrentSong(root) {
+  const name = currentSongFileName();
+  if (!name) {
+    showToast("Nothing to delete");
+    return;
+  }
+  await deleteSongByName(name, root);
+}
+
 async function refreshSongLibrary(root) {
   const list = root?.querySelector?.("#stu-library-list") || $("stu-library-list");
   if (!list) return;
@@ -1324,23 +1430,57 @@ async function refreshSongLibrary(root) {
       .slice(0, 24)
       .map((t) => {
         const title = (t.title || t.name || t.id || "song").replace(/[<>&]/g, "");
-        const dur = t.duration_sec ? `${Math.round(t.duration_sec / 60)}m` : "";
+        const fileName = (t.name || "").replace(/[<>&]/g, "");
+        const dur = t.duration_sec ? `${Math.round(Number(t.duration_sec) / 60)}m` : "";
         const url = t.url || "";
-        return `<button type="button" class="stu-lib-item" data-url="${url}" data-name="${title}" title="${title}">
-          <span>♪ ${title}</span><small>${dur}</small>
-        </button>`;
+        return `<div class="stu-lib-row" data-url="${url}" data-name="${fileName}" data-title="${title}">
+          <button type="button" class="stu-lib-item" title="Play ${title}">
+            <span>♪ ${title}</span><small>${dur}</small>
+          </button>
+          <button type="button" class="stu-lib-icon" data-act="save" title="Rename / save title">💾</button>
+          <button type="button" class="stu-lib-icon danger" data-act="delete" title="Delete song">🗑</button>
+        </div>`;
       })
       .join("");
-    list.querySelectorAll(".stu-lib-item").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const url = btn.getAttribute("data-url");
-        const name = btn.getAttribute("data-name") || "song";
+    list.querySelectorAll(".stu-lib-row").forEach((row) => {
+      const url = row.getAttribute("data-url");
+      const fileName = row.getAttribute("data-name") || "";
+      const title = row.getAttribute("data-title") || fileName || "song";
+      row.querySelector(".stu-lib-item")?.addEventListener("click", () => {
         if (!url) return;
-        // Re-open only — never kicks off a new generation
-        bindSongResult(url, { name });
-        showToast(`Playing saved · ${name}`);
+        bindSongResult(url, { name: title });
+        showToast(`Playing · ${title}`);
         const statusEl = $("stu-suno-status");
-        if (statusEl) statusEl.textContent = `Playing saved · ${name}`;
+        if (statusEl) statusEl.textContent = `Playing · ${title}`;
+      });
+      row.querySelector('[data-act="save"]')?.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        const next = window.prompt("Save song as (title):", title);
+        if (next == null) return;
+        const trimmed = String(next).trim();
+        if (!trimmed) return;
+        try {
+          const rr = await fetch(studioApi("/api/studio/library-save"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: fileName, title: trimmed }),
+          });
+          const jj = await rr.json();
+          if (!jj.ok) {
+            showToast(jj.error || "Save failed");
+            return;
+          }
+          showToast(`Saved · ${trimmed}`);
+          void refreshSongLibrary(root);
+        } catch (_) {
+          showToast("Save failed");
+        }
+      });
+      row.querySelector('[data-act="delete"]')?.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        await deleteSongByName(fileName, root, {
+          confirmMsg: `Delete “${title}”? This removes the audio file.`,
+        });
       });
     });
   } catch (_) {
