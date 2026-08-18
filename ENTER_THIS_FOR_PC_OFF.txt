@@ -1,0 +1,70 @@
+PC OFF · phone + internet songs (guests never sign up)
+======================================================
+
+You sign up TWICE (once each). Visitors/phone need ZERO accounts.
+
+────────────────────────────────────────
+A) Get FAL_KEY  (~2 min)
+────────────────────────────────────────
+1. Open: https://fal.ai/dashboard/keys
+2. Sign up / log in (Google is fine)
+3. Create key → COPY it (looks like: fal_xxxxxxxx… or a long uuid-style key)
+
+────────────────────────────────────────
+B) Revive Render AI  (~5 min)  ← currently 404
+────────────────────────────────────────
+1. Open: https://dashboard.render.com
+2. If "telephantim-ai" exists → open it → go to Environment (skip to C)
+3. If missing / dead:
+   New → Web Service
+   Connect: GitHub repo  telephantics-jpg/telephantim-hub
+   Enter EXACTLY:
+
+   Name:            telephantim-ai
+   Region:          Oregon (US West)   [or closest]
+   Branch:          master
+   Runtime:         Python 3
+   Build Command:   pip install -r requirements.txt
+   Start Command:   python server.py
+   Instance type:   Free
+
+4. Create Web Service → wait until status = Live
+5. Prove in browser (must be JSON, not 404):
+   https://telephantim-ai.onrender.com/api/health
+   https://telephantim-ai.onrender.com/api/studio/suno-status
+
+────────────────────────────────────────
+C) Paste the key (Environment)
+────────────────────────────────────────
+Render → telephantim-ai → Environment → Add:
+
+  Key:    FAL_KEY
+  Value:  <paste your fal key>
+
+  Key:    FAL_ACE_MAX_SECONDS
+  Value:  120
+
+Save → Manual Deploy → Deploy latest commit
+(Wait for Live again — free tier can take 1–3 min cold start)
+
+────────────────────────────────────────
+D) Phone / live test
+────────────────────────────────────────
+1. Hard refresh: https://telephantim.com/#studio
+2. Status should say something like:
+     Cloud vocals ready (fal) · guests OK while PC off
+   NOT "Can't reach telephantim-ai…"
+3. ✦ Create a short song (1–2 min first)
+4. Phone: same URL, same Wi‑Fi or cellular — PC can be OFF
+
+────────────────────────────────────────
+Cost note
+────────────────────────────────────────
+fal is pay-per-song (fits a small budget). Guests never see a signup.
+Local ACE on your PC stays free when you want 10‑min tracks at home.
+
+────────────────────────────────────────
+If Render URL is different
+────────────────────────────────────────
+If Render gives you a different host (e.g. telephantim-ai-xxxx.onrender.com),
+tell me that URL and I’ll point api-config at it.
