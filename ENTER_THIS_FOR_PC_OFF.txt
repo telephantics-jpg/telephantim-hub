@@ -4,11 +4,17 @@ PC OFF · phone + internet songs (guests never sign up)
 You sign up TWICE (once each). Visitors/phone need ZERO accounts.
 
 ────────────────────────────────────────
-A) Get FAL_KEY  (~2 min)
+A) Get FAL_KEY + add a little balance  (~3 min)
 ────────────────────────────────────────
 1. Open: https://fal.ai/dashboard/keys
 2. Sign up / log in (Google is fine)
-3. Create key → COPY it (looks like: fal_xxxxxxxx… or a long uuid-style key)
+3. Create key → COPY it (looks like: uuid:hexsecret)
+4. IMPORTANT — ACE-Step needs credits or API returns 403:
+   https://fal.ai/dashboard/billing  → add ~$5–10
+   Price ≈ $0.0002 per second of audio (~$0.012 for a 1‑min song)
+
+Your key is already saved locally in telephantix-demo\.env (gitignored).
+Still paste the SAME key into Render (step C) for phone/live with PC off.
 
 ────────────────────────────────────────
 B) Revive Render AI  (~5 min)  ← currently 404
