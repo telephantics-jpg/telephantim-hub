@@ -1,5 +1,5 @@
-// Live guests → free Cloudflare tunnel to Stood's PC (ACE-Step vocals).
-// PC must stay on with hub + ACE + cloudflared. Localhost still same-origin.
+// Live guests + phone → Cloudflare tunnel → Stood PC ACE-Step (free, no visitor signup).
+// Keep PC on: hub :8765 + ACE :8001 + this cloudflared process.
 (function () {
   var h = "";
   try { h = (location.hostname || "").toLowerCase(); } catch (_) {}
@@ -8,7 +8,7 @@
     window.TELEPHANTIM_API = "";
     window.TELEPHANTIM_UNIFIED = true;
   } else {
-    window.TELEPHANTIM_API = "https://cho-lip-steam-due.trycloudflare.com";
+    window.TELEPHANTIM_API = "https://chairman-summit-endless-building.trycloudflare.com";
     window.TELEPHANTIM_UNIFIED = true;
   }
 })();
