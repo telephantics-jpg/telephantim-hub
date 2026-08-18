@@ -1616,6 +1616,13 @@ class Handler(SimpleHTTPRequestHandler):
                 ace = acestep_available()
             except Exception as e:
                 ace = {"ok": False, "error": str(e)}
+            try:
+                from studio_fal import fal_available
+
+                fal = fal_available()
+            except Exception as e:
+                fal = {"ok": False, "error": str(e)}
+            vocals = bool(ace.get("ok") or fal.get("ok"))
             self._json(
                 200,
                 {
@@ -1626,8 +1633,12 @@ class Handler(SimpleHTTPRequestHandler):
                     "freeFallback": True,
                     "musicgen": mg,
                     "acestep": ace,
-                    "vocals": bool(ace.get("ok")),
-                    "maxSeconds": ace.get("maxSeconds") or 600,
+                    "fal": fal,
+                    "vocals": vocals,
+                    "guestCloud": bool(fal.get("ok")),
+                    "maxSeconds": (ace.get("maxSeconds") if ace.get("ok") else None)
+                    or (fal.get("maxSeconds") if fal.get("ok") else None)
+                    or 600,
                     "server": "telephantim-ai",
                 },
             )
@@ -1666,23 +1677,23 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json(200, {"ok": False, "error": str(e)})
             return
         if path.startswith("/api/studio/song-job/"):
-            # Unified poll: ACE-Step first, then MusicGen
+            # Unified poll: ACE-Step → fal cloud → MusicGen
             job_id = path.rsplit("/", 1)[-1].strip()
-            try:
-                from studio_acestep import get_job as ace_get
-
-                j = ace_get(job_id)
-                if j.get("ok") and j.get("status"):
-                    self._json(200, j)
-                    return
-            except Exception:
-                pass
-            try:
-                from studio_musicgen import get_job as mg_get
-
-                self._json(200, mg_get(job_id))
-            except Exception as e:
-                self._json(200, {"ok": False, "error": str(e)})
+            for getter in (
+                "studio_acestep.get_job",
+                "studio_fal.get_job",
+                "studio_musicgen.get_job",
+            ):
+                try:
+                    mod_name, fn_name = getter.rsplit(".", 1)
+                    mod = __import__(mod_name)
+                    j = getattr(mod, fn_name)(job_id)
+                    if j.get("ok") and j.get("status"):
+                        self._json(200, j)
+                        return
+                except Exception:
+                    continue
+            self._json(200, {"ok": False, "error": "unknown_job"})
             return
         if path.startswith("/api/studio/musicgen-job/"):
             jid = path.rsplit("/", 1)[-1]
@@ -2038,6 +2049,7 @@ class Handler(SimpleHTTPRequestHandler):
             if isinstance(client_ip, str) and "," in client_ip:
                 client_ip = client_ip.split(",", 1)[0].strip()
 
+            ace_err = None
             if not force_musicgen:
                 try:
                     from studio_acestep import start_job_async as ace_start, acestep_available
@@ -2058,15 +2070,15 @@ class Handler(SimpleHTTPRequestHandler):
                     if out.get("ok"):
                         self._json(200, out)
                         return
-                    # Rate-limited / busy — tell the visitor (don't silently fake vocals via MusicGen)
-                    if out.get("error") in ("rate_limited",) or not instrumental:
+                    # Rate-limited on local GPU — don't pile more jobs
+                    if out.get("error") == "rate_limited":
                         self._json(
                             200,
                             {
                                 **out,
                                 "ok": False,
                                 "hint": out.get("hint")
-                                or "Start ACE-Step (START_ACE_STEP.bat) for vocals + 10-min songs",
+                                or "Busy — wait for the current song, then Create again",
                                 "free": True,
                                 "vocals": True,
                             },
@@ -2075,10 +2087,50 @@ class Handler(SimpleHTTPRequestHandler):
                     ace_err = out
                 except Exception as e:
                     ace_err = {"ok": False, "error": str(e)}
+
+                # PC off / ACE offline → fal.ai cloud ACE-Step (needs FAL_KEY on Render)
+                try:
+                    from studio_fal import start_job_async as fal_start, fal_configured
+
+                    if fal_configured():
+                        out = fal_start(
+                            prompt or tags,
+                            lyrics=lyrics,
+                            seconds=min(float(secs), 120.0),
+                            instrumental=instrumental,
+                            tags=tags or prompt,
+                        )
+                        if out.get("ok"):
+                            out["fallbackFrom"] = "local-ace-step"
+                            self._json(200, out)
+                            return
+                        ace_err = out
+                except Exception as e:
+                    ace_err = {"ok": False, "error": str(e), "from": "fal"}
+
+                # Vocals requested but no GPU + no cloud key
+                if not instrumental:
+                    self._json(
+                        200,
+                        {
+                            "ok": False,
+                            "error": (ace_err or {}).get("error") if isinstance(ace_err, dict) else "vocals_offline",
+                            "hint": (
+                                "Guest vocals need either (1) Stood's PC on with ACE-Step, or "
+                                "(2) FAL_KEY set on telephantim-ai for cloud ACE. "
+                                "Meanwhile: play Your songs / type-beat."
+                            ),
+                            "aceError": ace_err,
+                            "free": True,
+                            "vocals": True,
+                            "guestCloud": False,
+                        },
+                    )
+                    return
             else:
                 ace_err = None
 
-            # Fallback: MusicGen stitch (instrumental only)
+            # Fallback: MusicGen stitch (instrumental only, local GPU when available)
             try:
                 from studio_musicgen import start_job_async as mg_start
 
@@ -2098,7 +2150,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "error": (ace_err or {}).get("error") if isinstance(ace_err, dict) else str(e),
                         "hint": (ace_err or {}).get("hint")
                         if isinstance(ace_err, dict)
-                        else "Start ACE-Step (START_ACE_STEP.bat) for vocals + 10-min songs",
+                        else "Start ACE-Step or set FAL_KEY for guest cloud vocals",
                         "detail": str(e),
                         "free": True,
                         "vocals": True,

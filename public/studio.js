@@ -1063,6 +1063,7 @@ async function refreshSunoStatus(root) {
     const r = await fetch(studioApi("/api/studio/suno-status"));
     const j = await r.json();
     const ace = j.acestep || {};
+    const fal = j.fal || {};
     const mg = j.musicgen || {};
     if (el) {
       if (ace.ok) {
@@ -1071,19 +1072,20 @@ async function refreshSunoStatus(root) {
           : `ACE-Step live · vocals · up to ${ace.maxSeconds || 600}s`;
         el.dataset.ready = "1";
         el.dataset.vocals = "1";
+      } else if (fal.ok) {
+        el.textContent = `Cloud vocals ready (fal) · guests OK while PC off · ≤${fal.maxSeconds || 120}s`;
+        el.dataset.ready = "1";
+        el.dataset.vocals = "1";
       } else if (mg.ok) {
-        el.textContent = mg.loaded
-          ? `MusicGen ready (instrumental) · ACE-Step offline`
-          : `MusicGen free · start ACE-Step for vocals / 10-min`;
+        el.textContent = "Instrumental only here · set FAL_KEY for guest vocals when PC off";
         el.dataset.ready = "1";
         el.dataset.vocals = "0";
       } else if (j.sunoConfigured) {
-        el.textContent = "Suno API ready · ACE-Step offline";
+        el.textContent = "Suno API ready · ACE / fal offline";
         el.dataset.ready = "0";
       } else {
-        el.textContent = ace.error
-          ? `Start ACE-Step for vocals (${String(ace.error).slice(0, 60)})`
-          : "Start ACE-Step (START_ACE_STEP.bat) for vocal songs";
+        el.textContent =
+          "Vocals: START_STUDIO_LOCAL.bat (PC on) or FAL_KEY on Render (PC off)";
         el.dataset.ready = "0";
       }
     }
