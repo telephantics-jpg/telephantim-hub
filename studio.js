@@ -658,13 +658,33 @@ function studioShellHtml(fullPage) {
             </label>
             <span class="tx-stu-suno-status" id="stu-suno-status">ready</span>
           </div>
-          <audio id="stu-gen-audio" controls class="tx-stu-gen-audio" style="width:100%;margin-top:10px;display:none"></audio>
-          <div class="stu-song-actions" id="stu-song-actions" hidden>
-            <a class="btn-chip ghost" id="stu-song-download" href="#" download>⬇ Download</a>
-            <button type="button" class="btn-chip ghost" id="stu-song-keep" title="Keep this song in the library">📌 Keep playing</button>
+          <div class="stu-player" id="stu-song-actions" hidden>
+            <audio id="stu-gen-audio" class="tx-stu-gen-audio" preload="metadata"></audio>
+            <div class="stu-player-row">
+              <button type="button" class="stu-player-btn" id="stu-audio-play" title="Play / pause">▶</button>
+              <button type="button" class="stu-player-btn ghost" id="stu-audio-back" title="Back 10 seconds">−10s</button>
+              <button type="button" class="stu-player-btn ghost" id="stu-audio-fwd" title="Forward 10 seconds">+10s</button>
+              <button type="button" class="stu-player-btn ghost" id="stu-audio-repeat" title="Repeat song" aria-pressed="false">↻</button>
+              <span class="stu-player-time" id="stu-audio-time">0:00 / 0:00</span>
+            </div>
+            <label class="stu-seek-wrap" title="Scrub to any part of the song">
+              <span class="stu-muted stu-seek-label">seek</span>
+              <input type="range" id="stu-audio-seek" class="stu-seek" min="0" max="0" step="0.1" value="0" />
+            </label>
+            <div class="stu-player-marks" id="stu-player-marks">
+              <button type="button" class="btn-chip ghost stu-mark" data-pct="0">start</button>
+              <button type="button" class="btn-chip ghost stu-mark" data-pct="0.25">¼</button>
+              <button type="button" class="btn-chip ghost stu-mark" data-pct="0.5">½</button>
+              <button type="button" class="btn-chip ghost stu-mark" data-pct="0.75">¾</button>
+              <button type="button" class="btn-chip ghost stu-mark" data-pct="1">end</button>
+            </div>
+            <div class="stu-song-actions-row">
+              <a class="btn-chip ghost" id="stu-song-download" href="#" download>⬇ Download</a>
+              <button type="button" class="btn-chip ghost" id="stu-song-keep" title="Keep this song in the library">📌 Keep</button>
+            </div>
           </div>
           <div class="stu-library" id="stu-library">
-            <p class="stu-section-label">Your songs <span class="stu-muted">re-open anytime</span></p>
+            <p class="stu-section-label">Your songs <span class="stu-muted">re-open anytime · scrub · repeat</span></p>
             <div class="stu-library-list" id="stu-library-list"></div>
           </div>
         </section>
@@ -874,6 +894,7 @@ function wireStudioControls(root) {
     showToast("Kept — re-open anytime under Your songs");
     void refreshSongLibrary(root);
   });
+  wireSongPlayerControls(root);
   void refreshSongLibrary(root);
   void refreshSunoStatus(root);
   // Restore last song path so refresh doesn't lose the file
@@ -1146,13 +1167,131 @@ async function musicgenGenerate(root) {
   }
 }
 
+function formatSongTime(sec) {
+  const s = Math.max(0, Number(sec) || 0);
+  const m = Math.floor(s / 60);
+  const r = Math.floor(s % 60);
+  return `${m}:${String(r).padStart(2, "0")}`;
+}
+
+function syncSongPlayerUi() {
+  const audio = $("stu-gen-audio");
+  const seek = $("stu-audio-seek");
+  const timeEl = $("stu-audio-time");
+  const playBtn = $("stu-audio-play");
+  if (!audio) return;
+  const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
+  const cur = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+  if (seek && !seek.matches(":active")) {
+    seek.max = dur > 0 ? String(dur) : "0";
+    seek.value = String(cur);
+  }
+  if (timeEl) timeEl.textContent = `${formatSongTime(cur)} / ${formatSongTime(dur)}`;
+  if (playBtn) playBtn.textContent = audio.paused ? "▶" : "❚❚";
+}
+
+function seekSongTo(seconds) {
+  const audio = $("stu-gen-audio");
+  if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+  const t = Math.max(0, Math.min(audio.duration, Number(seconds) || 0));
+  audio.currentTime = t;
+  syncSongPlayerUi();
+}
+
+function seekSongBy(deltaSec) {
+  const audio = $("stu-gen-audio");
+  if (!audio) return;
+  seekSongTo((audio.currentTime || 0) + deltaSec);
+}
+
+function seekSongPct(pct) {
+  const audio = $("stu-gen-audio");
+  if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+  const p = Math.max(0, Math.min(1, Number(pct) || 0));
+  // "end" mark lands just before the finish so repeat/play still works
+  const t = p >= 1 ? Math.max(0, audio.duration - 0.05) : audio.duration * p;
+  seekSongTo(t);
+}
+
+let songPlayerWired = false;
+function wireSongPlayerControls(root) {
+  if (songPlayerWired) return;
+  const scope = root || document;
+  const audio = scope.querySelector?.("#stu-gen-audio") || $("stu-gen-audio");
+  if (!audio) return;
+  songPlayerWired = true;
+
+  const playBtn = scope.querySelector?.("#stu-audio-play") || $("stu-audio-play");
+  const backBtn = scope.querySelector?.("#stu-audio-back") || $("stu-audio-back");
+  const fwdBtn = scope.querySelector?.("#stu-audio-fwd") || $("stu-audio-fwd");
+  const repeatBtn = scope.querySelector?.("#stu-audio-repeat") || $("stu-audio-repeat");
+  const seek = scope.querySelector?.("#stu-audio-seek") || $("stu-audio-seek");
+
+  playBtn?.addEventListener("click", () => {
+    if (!audio.src) return;
+    if (audio.paused) audio.play().catch(() => {});
+    else audio.pause();
+    syncSongPlayerUi();
+  });
+  backBtn?.addEventListener("click", () => seekSongBy(-10));
+  fwdBtn?.addEventListener("click", () => seekSongBy(10));
+  repeatBtn?.addEventListener("click", () => {
+    audio.loop = !audio.loop;
+    repeatBtn.setAttribute("aria-pressed", audio.loop ? "true" : "false");
+    repeatBtn.classList.toggle("on", audio.loop);
+    try {
+      localStorage.setItem("txStudioRepeat", audio.loop ? "1" : "0");
+    } catch (_) {}
+    showToast(audio.loop ? "Repeat on" : "Repeat off");
+  });
+  seek?.addEventListener("input", () => {
+    seekSongTo(Number(seek.value) || 0);
+  });
+  seek?.addEventListener("change", () => {
+    seekSongTo(Number(seek.value) || 0);
+  });
+
+  (scope.querySelectorAll?.(".stu-mark") || []).forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pct = Number(btn.getAttribute("data-pct"));
+      seekSongPct(pct);
+      showToast(`Jumped to ${btn.textContent.trim()}`);
+    });
+  });
+
+  audio.addEventListener("timeupdate", syncSongPlayerUi);
+  audio.addEventListener("loadedmetadata", syncSongPlayerUi);
+  audio.addEventListener("durationchange", syncSongPlayerUi);
+  audio.addEventListener("play", syncSongPlayerUi);
+  audio.addEventListener("pause", syncSongPlayerUi);
+  audio.addEventListener("ended", () => {
+    // If loop is off, snap UI to end — do not auto-start another generation
+    syncSongPlayerUi();
+  });
+
+  // Restore repeat preference
+  try {
+    if (localStorage.getItem("txStudioRepeat") === "1") {
+      audio.loop = true;
+      repeatBtn?.setAttribute("aria-pressed", "true");
+      repeatBtn?.classList.add("on");
+    }
+  } catch (_) {}
+}
+
 function bindSongResult(url, meta = {}) {
   const audio = $("stu-gen-audio");
   const actions = $("stu-song-actions");
   const dl = $("stu-song-download");
+  wireSongPlayerControls(document);
   if (audio && url) {
-    audio.src = url.startsWith("http") ? url : studioApi(url);
-    audio.style.display = "block";
+    const abs = url.startsWith("http") ? url : studioApi(url);
+    const prev = audio.getAttribute("data-src") || "";
+    if (prev !== abs) {
+      audio.setAttribute("data-src", abs);
+      audio.src = abs;
+      audio.load();
+    }
     audio.play().catch(() => {});
   }
   if (actions) actions.hidden = false;
@@ -1161,6 +1300,7 @@ function bindSongResult(url, meta = {}) {
     dl.href = abs;
     dl.download = meta.name || abs.split("/").pop() || "telephantix-song.wav";
   }
+  syncSongPlayerUi();
   try {
     localStorage.setItem(
       "txStudioLastSong",
