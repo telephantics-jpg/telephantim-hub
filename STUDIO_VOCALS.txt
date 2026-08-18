@@ -1,0 +1,52 @@
+Telephantix Studio — 10-min songs with vocals (visitor-facing)
+==============================================================
+
+What it is
+----------
+Open-source ACE-Step 1.5 on your RTX 4060 (free, MIT).
+Studio "✦ Create" asks for a prompt (+ optional lyrics), length up to 10 min,
+and generates a full song with vocals.
+
+Audio path (important)
+----------------------
+ACE writes under:  %USERPROFILE%\ACE-Step-1.5\.cache\acestep\tmp\api_audio\
+Hub copies to:     telephantix-demo\public\media\studio-gen\acestep-*.wav
+Browser plays:     /media/studio-gen/acestep-….wav
+
+We request WAV (not MP3) so export works even if the ACE process can't see ffmpeg.
+Verified: 30s vocal song → ~11 MB wav in studio-gen.
+
+Random website visitors
+-----------------------
+They hit your hub API. The hub proxies to the ACE-Step worker on this PC.
+
+1) Start the song worker (keep window open):
+     START_ACE_STEP.bat
+
+2) Start the hub (already usual):
+     python server.py   →  http://127.0.0.1:8765/#studio
+
+3) For visitors on telephantim.com (not just localhost):
+   - Tunnel the hub the same way you expose free minds / Ollama
+     (CONNECT_TELEPHANTIM.bat / _publish_tunnel.ps1), OR
+   - Point Render env ACESTEP_API_BASE at a public tunnel to :8001
+     (and optionally ACESTEP_API_KEY).
+
+When ACE-Step is offline, Create falls back to MusicGen instrumental stitch.
+
+Length / rate limits
+--------------------
+- Default max 600 seconds (10 min). Override: ACESTEP_MAX_SECONDS
+- Per-visitor concurrency: ACESTEP_RATE_PER_IP (default 2)
+
+First run
+---------
+uv sync + first generate downloads models from Hugging Face (one-time, big).
+4060 (8GB) uses turbo DiT + 0.6B LM (pt backend) — set in START_ACE_STEP.bat.
+
+API (hub)
+---------
+POST /api/studio/song-generate
+  { "prompt", "lyrics?", "seconds": 60..600, "instrumental": false }
+GET  /api/studio/song-job/<id>
+GET  /api/studio/acestep-status

@@ -78,6 +78,18 @@ HOST = os.getenv("TELEPHANTIM_HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT") or os.getenv("TELEPHANTIM_PORT") or "8765")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 XAI_API_KEY = (os.getenv("XAI_API_KEY") or os.getenv("GROK_API_KEY") or "").strip()
+# Optional Suno-compatible generate API (gcui-art/suno-api, sunoapi.org, MusicAPI, etc.)
+SUNO_API_KEY = (os.getenv("SUNO_API_KEY") or os.getenv("SUNOAPI_KEY") or "").strip()
+SUNO_API_BASE = (
+    os.getenv("SUNO_API_BASE") or os.getenv("SUNO_API_URL") or ""
+).strip().rstrip("/")
+# ACE-Step worker (local GPU or tunnel) — vocals + up to 10 min songs
+ACESTEP_API_BASE = (
+    os.getenv("ACESTEP_API_BASE") or os.getenv("ACESTEP_URL") or "http://127.0.0.1:8001"
+).strip().rstrip("/")
+# Jobs: id -> { status, tracks, error, prompt, at }
+_SUNO_JOBS: dict[str, dict] = {}
+_SUNO_JOBS_LOCK = threading.Lock()
 XAI_MODEL = os.getenv("XAI_MODEL") or os.getenv("GROK_MODEL") or "grok-3"
 XAI_URL = os.getenv("XAI_URL", "https://api.x.ai/v1/chat/completions")
 # Free cloud option (https://console.groq.com) — works on Render without your PC
@@ -477,6 +489,152 @@ def load_suno_catalog() -> list:
         except Exception as e:
             print("[telephantim] suno catalog load failed:", path, e)
     return []
+
+
+def suno_api_configured() -> bool:
+    return bool(SUNO_API_KEY and SUNO_API_BASE)
+
+
+def _http_json(method: str, url: str, body: dict | None = None, timeout: float = 90.0) -> dict:
+    data = None
+    headers = {"Accept": "application/json", "User-Agent": "TelephantimStudio/1.0"}
+    if SUNO_API_KEY:
+        headers["Authorization"] = f"Bearer {SUNO_API_KEY}"
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=headers, method=method.upper())
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read().decode("utf-8", errors="replace")
+        return json.loads(raw) if raw.strip() else {}
+
+
+def suno_start_generate(prompt: str, *, instrumental: bool = True, tags: str = "") -> dict:
+    """
+    Start a Suno-compatible generation.
+    Supports common shapes:
+      POST {base}/api/generate  { prompt, make_instrumental, tags }
+      POST {base}/generate
+    Returns { ok, job_id, clips? } or { ok:false, error }.
+    """
+    if not suno_api_configured():
+        return {"ok": False, "error": "suno_not_configured", "free": True}
+    prompt = (prompt or "").strip()[:800]
+    if not prompt:
+        return {"ok": False, "error": "empty_prompt"}
+    payload = {
+        "prompt": prompt,
+        "make_instrumental": bool(instrumental),
+        "instrumental": bool(instrumental),
+        "tags": (tags or "type beat, studio, dark, atmospheric")[:200],
+        "wait_audio": False,
+    }
+    errors: list[str] = []
+    for path in ("/api/generate", "/generate", "/api/v1/generate", "/api/custom_generate"):
+        url = f"{SUNO_API_BASE}{path}"
+        try:
+            data = _http_json("POST", url, payload, timeout=120.0)
+            # Normalize response shapes
+            clips = data.get("clips") or data.get("data") or data.get("songs") or []
+            if isinstance(data.get("id"), str) and not clips:
+                job_id = data["id"]
+            elif isinstance(clips, list) and clips:
+                job_id = str(clips[0].get("id") or clips[0].get("clip_id") or secrets.token_hex(8))
+            else:
+                job_id = str(data.get("job_id") or data.get("task_id") or secrets.token_hex(8))
+            with _SUNO_JOBS_LOCK:
+                _SUNO_JOBS[job_id] = {
+                    "status": "running",
+                    "prompt": prompt,
+                    "instrumental": instrumental,
+                    "tags": tags,
+                    "raw": data,
+                    "clips": clips if isinstance(clips, list) else [],
+                    "at": time.time(),
+                }
+            return {"ok": True, "job_id": job_id, "clips": clips if isinstance(clips, list) else [], "provider": "suno"}
+        except Exception as e:
+            errors.append(f"{path}: {e}")
+    return {"ok": False, "error": "suno_generate_failed", "detail": "; ".join(errors)[:400], "free": True}
+
+
+def suno_poll_job(job_id: str) -> dict:
+    """Poll Suno-compatible job / clip ids."""
+    job_id = str(job_id or "").strip()
+    if not job_id:
+        return {"ok": False, "error": "missing_job_id"}
+    with _SUNO_JOBS_LOCK:
+        cached = dict(_SUNO_JOBS.get(job_id) or {})
+    if not suno_api_configured():
+        return {"ok": False, "error": "suno_not_configured", "free": True, **cached}
+
+    # Try get-by-ids style endpoints
+    errors: list[str] = []
+    for path in (
+        f"/api/get?ids={job_id}",
+        f"/api/feed?ids={job_id}",
+        f"/api/clips?ids={job_id}",
+        f"/get?ids={job_id}",
+    ):
+        url = f"{SUNO_API_BASE}{path}"
+        try:
+            data = _http_json("GET", url, None, timeout=60.0)
+            clips = data if isinstance(data, list) else (data.get("clips") or data.get("data") or data.get("songs") or [])
+            if not isinstance(clips, list):
+                clips = []
+            ready = []
+            for c in clips:
+                if not isinstance(c, dict):
+                    continue
+                audio = c.get("audio_url") or c.get("audio_url_mp3") or c.get("url") or ""
+                status = str(c.get("status") or c.get("state") or "").lower()
+                if audio and ("complete" in status or "complete" in str(c).lower() or c.get("audio_url")):
+                    ready.append(c)
+                elif audio:
+                    ready.append(c)
+            status_out = "complete" if ready else ("running" if clips else cached.get("status") or "running")
+            with _SUNO_JOBS_LOCK:
+                _SUNO_JOBS[job_id] = {
+                    **(_SUNO_JOBS.get(job_id) or {}),
+                    "status": status_out,
+                    "clips": ready or clips,
+                    "polled_at": time.time(),
+                }
+            # Optionally append completed tracks to catalog
+            added = []
+            for c in ready:
+                audio = str(c.get("audio_url") or c.get("url") or "").strip()
+                title = str(c.get("title") or c.get("name") or "Suno Studio track").strip()
+                cid = str(c.get("id") or c.get("clip_id") or "").strip()
+                if not audio:
+                    continue
+                row = normalize_suno_track(
+                    {"id": cid or secrets.token_hex(8), "title": title, "audio_url": audio, "artist": "Suno · Studio"}
+                )
+                if row:
+                    cat = load_suno_catalog()
+                    if not any(str(t.get("id")) == str(row.get("id")) for t in cat):
+                        cat.append(row)
+                        save_suno_catalog(cat)
+                        added.append(row)
+            return {
+                "ok": True,
+                "job_id": job_id,
+                "status": status_out,
+                "clips": ready or clips,
+                "tracks": added,
+                "provider": "suno",
+            }
+        except Exception as e:
+            errors.append(f"{path}: {e}")
+    return {
+        "ok": True,
+        "job_id": job_id,
+        "status": cached.get("status") or "running",
+        "clips": cached.get("clips") or [],
+        "detail": "; ".join(errors)[:300] if errors else "",
+        "provider": "suno",
+    }
 
 
 def save_suno_catalog(tracks: list) -> list:
@@ -1304,6 +1462,139 @@ class Handler(SimpleHTTPRequestHandler):
                 },
             )
             return
+        if path == "/api/studio/suno-status":
+            mg = {}
+            ace = {}
+            try:
+                from studio_musicgen import musicgen_available
+
+                mg = musicgen_available()
+            except Exception as e:
+                mg = {"ok": False, "error": str(e)}
+            try:
+                from studio_acestep import acestep_available
+
+                ace = acestep_available()
+            except Exception as e:
+                ace = {"ok": False, "error": str(e)}
+            self._json(
+                200,
+                {
+                    "ok": True,
+                    "sunoConfigured": suno_api_configured(),
+                    "base": bool(SUNO_API_BASE),
+                    "hasKey": bool(SUNO_API_KEY),
+                    "freeFallback": True,
+                    "musicgen": mg,
+                    "acestep": ace,
+                    "vocals": bool(ace.get("ok")),
+                    "maxSeconds": ace.get("maxSeconds") or 600,
+                    "server": "telephantim-ai",
+                },
+            )
+            return
+        if path == "/api/studio/musicgen-status":
+            try:
+                from studio_musicgen import musicgen_available
+
+                self._json(200, {"ok": True, **musicgen_available(), "server": "telephantim-ai"})
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e), "server": "telephantim-ai"})
+            return
+        if path == "/api/studio/acestep-status":
+            try:
+                from studio_acestep import acestep_available
+
+                self._json(200, {"ok": True, **acestep_available(), "server": "telephantim-ai"})
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e), "server": "telephantim-ai"})
+            return
+        if path == "/api/studio/library":
+            # Re-open previously generated songs (path stays under /media/studio-gen/)
+            tracks = []
+            try:
+                gen_dir = PUBLIC / "media" / "studio-gen"
+                if not gen_dir.is_dir():
+                    gen_dir = ROOT / "media" / "studio-gen"
+                if gen_dir.is_dir():
+                    files = sorted(
+                        [
+                            p
+                            for p in gen_dir.iterdir()
+                            if p.is_file()
+                            and p.suffix.lower() in (".wav", ".mp3", ".flac", ".opus")
+                            and (
+                                p.name.startswith("acestep-")
+                                or p.name.startswith("musicgen-long-")
+                                or p.name.startswith("musicgen-")
+                            )
+                            and "-c" not in p.stem  # skip MusicGen chunk parts
+                        ],
+                        key=lambda p: p.stat().st_mtime,
+                        reverse=True,
+                    )
+                    for p in files[:40]:
+                        try:
+                            st = p.stat()
+                            # Rough duration for wav PCM 48k stereo 16-bit
+                            dur = None
+                            if p.suffix.lower() == ".wav" and st.st_size > 44:
+                                dur = round((st.st_size - 44) / (48000 * 2 * 2), 1)
+                            tracks.append(
+                                {
+                                    "id": p.stem,
+                                    "name": p.name,
+                                    "title": p.stem.replace("acestep-", "song ").replace("musicgen-long-", "jam "),
+                                    "url": f"/media/studio-gen/{p.name}",
+                                    "bytes": st.st_size,
+                                    "mtime": st.st_mtime,
+                                    "duration_sec": dur,
+                                }
+                            )
+                        except Exception:
+                            continue
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e), "tracks": []})
+                return
+            self._json(200, {"ok": True, "tracks": tracks, "count": len(tracks), "server": "telephantim-ai"})
+            return
+        if path.startswith("/api/studio/acestep-job/"):
+            job_id = path.rsplit("/", 1)[-1].strip()
+            try:
+                from studio_acestep import get_job
+
+                self._json(200, get_job(job_id))
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e)})
+            return
+        if path.startswith("/api/studio/song-job/"):
+            # Unified poll: ACE-Step first, then MusicGen
+            job_id = path.rsplit("/", 1)[-1].strip()
+            try:
+                from studio_acestep import get_job as ace_get
+
+                j = ace_get(job_id)
+                if j.get("ok") and j.get("status"):
+                    self._json(200, j)
+                    return
+            except Exception:
+                pass
+            try:
+                from studio_musicgen import get_job as mg_get
+
+                self._json(200, mg_get(job_id))
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e)})
+            return
+        if path.startswith("/api/studio/musicgen-job/"):
+            jid = path.rsplit("/", 1)[-1]
+            try:
+                from studio_musicgen import get_job
+
+                self._json(200, get_job(jid))
+            except Exception as e:
+                self._json(500, {"ok": False, "error": str(e)})
+            return
         # --- Public visitor stats (no PII) ---
         if path == "/api/visitors":
             self._json(200, _visitors_public())
@@ -1547,6 +1838,186 @@ class Handler(SimpleHTTPRequestHandler):
                     "pick": pick,
                 },
             )
+            return
+
+        if path == "/api/studio/suno-generate":
+            prompt = str(data.get("prompt") or data.get("description") or "").strip()
+            tags = str(data.get("tags") or data.get("style") or "type beat, dark, cinematic, studio").strip()
+            instrumental = data.get("instrumental")
+            if instrumental is None:
+                instrumental = data.get("make_instrumental", True)
+            # Prefer free open-source MusicGen when requested or when Suno isn't configured
+            prefer_local = bool(data.get("local") or data.get("musicgen") or not suno_api_configured())
+            if prefer_local:
+                try:
+                    from studio_musicgen import start_job_async
+
+                    secs = float(data.get("seconds") or data.get("duration") or 60)
+                    out = start_job_async(prompt or tags, total_seconds=secs)
+                    out["sunoConfigured"] = suno_api_configured()
+                    out["freeFallback"] = True
+                    self._json(200, out)
+                    return
+                except Exception as e:
+                    # fall through to Suno or error
+                    local_err = str(e)
+            else:
+                local_err = None
+            out = suno_start_generate(prompt, instrumental=bool(instrumental), tags=tags)
+            out["freeFallback"] = True
+            out["sunoConfigured"] = suno_api_configured()
+            if local_err and not out.get("ok"):
+                out["musicgenError"] = local_err
+            self._json(200, out)
+            return
+
+        if path == "/api/studio/musicgen-generate":
+            prompt = str(data.get("prompt") or data.get("description") or "").strip()
+            secs = float(data.get("seconds") or data.get("duration") or 60)
+            try:
+                from studio_musicgen import start_job_async
+
+                out = start_job_async(prompt, total_seconds=secs)
+                self._json(200, out)
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e), "free": True, "hint": "pip install torch transformers accelerate scipy soundfile"})
+            return
+
+        if path == "/api/studio/song-resume":
+            # Reattach after hub restart (client has ace_task_id from sessionStorage)
+            ace_task_id = str(data.get("ace_task_id") or data.get("task_id") or "").strip()
+            job_id = str(data.get("job_id") or data.get("id") or "").strip() or None
+            client_ip = (
+                self.headers.get("X-Forwarded-For")
+                or self.headers.get("X-Real-IP")
+                or (self.client_address[0] if self.client_address else "anon")
+            )
+            if isinstance(client_ip, str) and "," in client_ip:
+                client_ip = client_ip.split(",", 1)[0].strip()
+            try:
+                from studio_acestep import resume_ace_task
+
+                out = resume_ace_task(ace_task_id, job_id=job_id, client_ip=str(client_ip or "anon"))
+                self._json(200, out)
+            except Exception as e:
+                self._json(200, {"ok": False, "error": str(e), "hint": "Hit ✦ Create again"})
+            return
+
+        if path in ("/api/studio/acestep-generate", "/api/studio/song-generate"):
+            # Visitor-facing full songs with vocals (ACE-Step). Falls back to MusicGen instrumental.
+            prompt = str(data.get("prompt") or data.get("description") or data.get("sample_query") or "").strip()
+            lyrics = str(data.get("lyrics") or "").strip()
+            tags = str(data.get("tags") or data.get("style") or "").strip()
+            secs = float(data.get("seconds") or data.get("duration") or data.get("audio_duration") or 180)
+            instrumental = bool(data.get("instrumental") or data.get("make_instrumental") or False)
+            bpm = data.get("bpm")
+            try:
+                bpm_i = int(bpm) if bpm not in (None, "") else None
+            except Exception:
+                bpm_i = None
+            # Prefer vocals path unless caller forced instrumental / musicgen
+            force_musicgen = bool(data.get("musicgen") or data.get("local_musicgen"))
+            client_ip = (
+                self.headers.get("X-Forwarded-For")
+                or self.headers.get("X-Real-IP")
+                or (self.client_address[0] if self.client_address else "anon")
+            )
+            if isinstance(client_ip, str) and "," in client_ip:
+                client_ip = client_ip.split(",", 1)[0].strip()
+
+            if not force_musicgen:
+                try:
+                    from studio_acestep import start_job_async as ace_start, acestep_available
+
+                    ace_info = acestep_available()
+                    # Prefer LM thinking when loaded; still generate vocals without it
+                    use_thinking = (not instrumental) and bool(ace_info.get("llmInitialized"))
+                    out = ace_start(
+                        prompt or tags,
+                        lyrics=lyrics,
+                        seconds=secs,
+                        instrumental=instrumental,
+                        bpm=bpm_i,
+                        tags=tags,
+                        client_ip=str(client_ip or "anon"),
+                        thinking=use_thinking,
+                    )
+                    if out.get("ok"):
+                        self._json(200, out)
+                        return
+                    # Rate-limited / busy — tell the visitor (don't silently fake vocals via MusicGen)
+                    if out.get("error") in ("rate_limited",) or not instrumental:
+                        self._json(
+                            200,
+                            {
+                                **out,
+                                "ok": False,
+                                "hint": out.get("hint")
+                                or "Start ACE-Step (START_ACE_STEP.bat) for vocals + 10-min songs",
+                                "free": True,
+                                "vocals": True,
+                            },
+                        )
+                        return
+                    ace_err = out
+                except Exception as e:
+                    ace_err = {"ok": False, "error": str(e)}
+            else:
+                ace_err = None
+
+            # Fallback: MusicGen stitch (instrumental only)
+            try:
+                from studio_musicgen import start_job_async as mg_start
+
+                mg_secs = min(180.0, max(20.0, float(secs) if secs <= 180 else 90.0))
+                out = mg_start(prompt or tags or "cinematic studio instrumental", total_seconds=mg_secs)
+                out["fallbackFrom"] = "ace-step"
+                out["vocals"] = False
+                if ace_err:
+                    out["aceError"] = ace_err.get("error") or ace_err
+                    out["aceHint"] = ace_err.get("hint")
+                self._json(200, out)
+            except Exception as e:
+                self._json(
+                    200,
+                    {
+                        "ok": False,
+                        "error": (ace_err or {}).get("error") if isinstance(ace_err, dict) else str(e),
+                        "hint": (ace_err or {}).get("hint")
+                        if isinstance(ace_err, dict)
+                        else "Start ACE-Step (START_ACE_STEP.bat) for vocals + 10-min songs",
+                        "detail": str(e),
+                        "free": True,
+                        "vocals": True,
+                    },
+                )
+            return
+
+        if path == "/api/studio/suno-poll":
+            job_id = str(data.get("job_id") or data.get("id") or "").strip()
+            # ACE-Step / MusicGen jobs share this poll path
+            try:
+                from studio_acestep import get_job as ace_get
+
+                ace = ace_get(job_id)
+                if ace.get("ok") and ace.get("status"):
+                    self._json(200, {**ace, "freeFallback": True, "sunoConfigured": suno_api_configured()})
+                    return
+            except Exception:
+                pass
+            try:
+                from studio_musicgen import get_job
+
+                mg = get_job(job_id)
+                if mg.get("ok") and mg.get("status"):
+                    self._json(200, {**mg, "freeFallback": True, "sunoConfigured": suno_api_configured()})
+                    return
+            except Exception:
+                pass
+            out = suno_poll_job(job_id)
+            out["freeFallback"] = True
+            out["sunoConfigured"] = suno_api_configured()
+            self._json(200, out)
             return
 
         if path == "/api/banter":

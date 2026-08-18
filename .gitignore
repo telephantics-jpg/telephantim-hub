@@ -4,3 +4,12 @@ _parse_blocks2.py
 __pycache__/
 .DS_Store
 Thumbs.db
+
+# Studio AI gens (keep local; re-create via ACE-Step)
+media/studio-gen/
+public/media/studio-gen/
+data/studio-acestep-jobs.json
+data/visitors.json
+.env
+*.prev.jpg
+_boot_*.txt

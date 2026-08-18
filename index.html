@@ -41,7 +41,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v118-mjolnir-sky" />
+  <link rel="stylesheet" href="styles.css?v=v133-live" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -124,10 +124,16 @@
   <!-- Compact world picker — Relics · Bio · 2D · 3D -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
     <button type="button" class="world-tab" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
-    <button type="button" class="world-tab active" data-scene="bio" title="Bio — video or photo background (Beacons-style)" aria-current="true">Bio</button>
+    <button type="button" class="world-tab active" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</button>
+    <button type="button" class="world-tab" data-scene="studio" title="Music Studio — synth, looper, free AI jam">Studio</button>
     <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
     <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
   </nav>
+
+  <!-- Full Music Studio tab -->
+  <section class="stage-studio" id="stage-studio" hidden aria-label="Music Studio">
+    <div id="studio-mount" class="studio-mount"></div>
+  </section>
 
   <!-- Full-screen 3D relics: Mjolnir + Caduceus (both always on stage) -->
   <section class="stage" id="stage-telephantim" aria-label="3D relics">
@@ -201,6 +207,9 @@
     Camp hides its own music UI when loaded with ?hub=1.
   -->
   <div class="music-chrome" id="music-chrome" aria-label="Telephantix music">
+    <button type="button" class="btn-chip btn-studio" id="btn-studio" aria-expanded="false" title="Open Music Studio tab">
+      <span>🎸 Studio</span>
+    </button>
     <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music · drag to move">
       <span id="btn-music-label">♪ Play music</span>
     </button>
@@ -419,11 +428,12 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v120-relics-live"></script>
+  <script type="module" src="scenes.js?v=v127-studio-tab"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v118-mjolnir-sky"></script>
+  <script type="module" src="bio.js?v=v126-bio-games"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
-  <script type="module" src="music.js?v=98-vox-truth"></script>
+  <script type="module" src="music.js?v=v4-min-restore"></script>
+  <script type="module" src="studio.js?v=v133-live"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
   <script type="module" src="mjolnir.js?v=v122-caduceus-3d"></script>
 </body>
