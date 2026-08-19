@@ -1208,7 +1208,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v118-vox-sauce`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v119-live-dj`);
     djRadio = mod.createDjRadio({
       getAudio: () => $("music-audio"),
       getTracks: () =>
@@ -1269,21 +1269,35 @@ async function ensureDjRadio() {
 async function setDjEnabled(on) {
   const dj = await ensureDjRadio();
   if (!dj) {
-    setDjStatus("Vox unavailable");
+    setDjStatus("Vox unavailable — hard refresh");
     return;
   }
   dj.setEnabled(!!on);
   try {
     localStorage.setItem(DJ_PREF_KEY, on ? "1" : "0");
   } catch (_) {}
-  if (on && userStarted && isSunoTrack(current())) {
+  if (!on) {
+    try {
+      dj.hush?.();
+    } catch (_) {}
+    setDjStatus("");
+    return;
+  }
+
+  // Live: wake free Luna DJ (telephanti.com) — PC can stay off
+  setDjStatus("DJ Vox · waking free cloud…");
+  try {
+    await fetch("https://telephanti.com/api/health", { cache: "no-store", mode: "cors" });
+  } catch (_) {}
+
+  if (userStarted && isSunoTrack(current())) {
+    setDjStatus("DJ Vox · on — cueing…");
     try {
       dj.onTrackChanged?.(null);
     } catch (_) {}
-  } else if (on) {
-    setDjStatus("DJ Vox · on — plays when a song starts");
+    void notifyDjTrackChange();
   } else {
-    setDjStatus("");
+    setDjStatus("DJ Vox · on — tap Play music / a song and Vox talks");
   }
 }
 
