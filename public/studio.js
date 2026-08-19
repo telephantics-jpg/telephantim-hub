@@ -1,7 +1,8 @@
 /**
  * Telephantix Music Studio — full-tab synth lab + free generative AI jam.
  * Mobile-safe FAB · dedicated #studio scene · hi-fi Web Audio · free AI patterns.
- * Full-song type-beat render + optional Suno API when SUNO_API_KEY is set.
+ * Free in-browser type-beat song renderer + live instruments / sequencer.
+ * ✦ Create builds an arrangement and renders a full WAV (no Suno / ACE / cloud).
  *
  * window.TelephantixStudio.open() | .aiJam() | .renderFullSong() | .sunoGenerate()
  */
@@ -626,37 +627,31 @@ function studioShellHtml(fullPage) {
       <canvas id="stu-viz" class="tx-stu-viz" aria-hidden="true"></canvas>
       <div class="tx-studio-body" id="stu-body">
 
-        <!-- CREATIVE HERO -->
+        <!-- CREATIVE HERO — free in-browser song renderer (type-beat) -->
         <section class="stu-hero">
           <p class="stu-hero-label">What do you want to hear?</p>
           <div class="stu-hero-row">
             <input type="text" id="stu-suno-prompt" class="tx-stu-prompt stu-hero-prompt" maxlength="500"
-              placeholder="dark mystical trap anthem with vocals… soft rain piano ballad…" />
-            <button type="button" class="stu-create-btn" id="stu-musicgen-go" title="Full song with vocals via open-source ACE-Step (up to 10 min)">
+              placeholder="dark trap… soft lo-fi rain… cinematic telephantix…" />
+            <button type="button" class="stu-create-btn" id="stu-musicgen-go" title="Build a full type-beat song in your browser (free, no cloud)">
               ✦ Create
             </button>
           </div>
-          <textarea id="stu-lyrics" class="stu-lyrics" rows="3" maxlength="4000"
-            placeholder="Optional lyrics (leave blank — we'll write a verse/chorus). Tip: [Verse] / [Chorus] tags help."></textarea>
           <div class="stu-vibe-row" id="stu-vibes">${vibes}</div>
           <div class="stu-hero-meta">
             <label class="tx-stu-bpm">Length
               <select id="stu-beat-style" hidden>
                 ${Beats.TYPE_BEATS.map((t) => `<option value="${t.id}">${t.label}</option>`).join("")}
               </select>
-              <select id="stu-mg-secs" title="Song length">
-                <option value="60">1 min</option>
-                <option value="120">2 min</option>
-                <option value="180" selected>3 min</option>
-                <option value="300">5 min</option>
-                <option value="480">8 min</option>
-                <option value="600">10 min ★</option>
+              <select id="stu-mg-secs" title="Song length (approx)">
+                <option value="32">~1–2 min</option>
+                <option value="48">~2 min</option>
+                <option value="64" selected>~3 min</option>
+                <option value="80">~3–4 min</option>
+                <option value="96">~4–5 min</option>
               </select>
             </label>
-            <label class="tx-stu-bpm stu-check">
-              <input type="checkbox" id="stu-vocals" checked /> vocals
-            </label>
-            <span class="tx-stu-suno-status" id="stu-suno-status">ready</span>
+            <span class="tx-stu-suno-status" id="stu-suno-status">type-beat renderer · free · works offline</span>
           </div>
           <div class="stu-player" id="stu-song-actions" hidden>
             <audio id="stu-gen-audio" class="tx-stu-gen-audio" preload="metadata"></audio>
@@ -685,7 +680,7 @@ function studioShellHtml(fullPage) {
             </div>
           </div>
           <div class="stu-library" id="stu-library">
-            <p class="stu-section-label">Your songs <span class="stu-muted">play · save · delete</span></p>
+            <p class="stu-section-label">Your songs <span class="stu-muted">this session · scrub · repeat</span></p>
             <div class="stu-library-list" id="stu-library-list"></div>
           </div>
         </section>
@@ -744,7 +739,7 @@ function studioShellHtml(fullPage) {
             <button type="button" class="btn-chip ghost" id="stu-demo">Demo</button>
             <button type="button" class="btn-chip ghost" id="stu-export">24-bit WAV</button>
             <button type="button" class="btn-chip ghost" id="stu-json">Copy JSON</button>
-            <button type="button" class="btn-chip ghost" id="stu-suno-go">Suno API</button>
+            <button type="button" class="btn-chip ghost" id="stu-suno-go" title="Same as ✦ Create — free type-beat render">Render song</button>
           </div>
           <p class="tx-studio-hint">Paste song JSON from a chat, or export yours.</p>
           <textarea id="stu-ai-json" rows="3" placeholder='{"bpm":100,"scale":"minor","tracks":[...]}'></textarea>
@@ -883,13 +878,14 @@ function wireStudioControls(root) {
     startLoop();
   });
   on("stu-render-full", () => {
-    void renderFullSongWav();
+    void renderFullSongWav({ play: true, download: true });
   });
   on("stu-musicgen-go", () => {
-    void musicgenGenerate(root);
+    void createStudioSong(root);
   });
   on("stu-suno-go", () => {
-    void sunoOrFreeGenerate(root);
+    // Legacy craft button → same free renderer (no cloud Suno)
+    void createStudioSong(root);
   });
   on("stu-song-keep", () => {
     void saveCurrentSong(root);
@@ -943,16 +939,26 @@ function applyTypeBeat() {
 
 /**
  * Free full-song render — loops the 16-step pattern across N bars with section density.
- * Studio-grade length (2–4 min) without any paid API.
+ * Studio-grade length without any paid / cloud API.
+ * @param {{ play?: boolean, download?: boolean, bars?: number }} opts
  */
-async function renderFullSongWav() {
+async function renderFullSongWav(opts = {}) {
+  const wantPlay = opts.play !== false;
+  const wantDownload = opts.download === true;
   ensureAudio();
-  const bars = Math.max(32, Math.min(96, Number($("stu-bars")?.value || song.bars || 64)));
+  const bars = Math.max(
+    32,
+    Math.min(96, Number(opts.bars || $("stu-mg-secs")?.value || $("stu-bars")?.value || song.bars || 64)),
+  );
+  if ($("stu-bars")) $("stu-bars").value = String(bars);
+  song.bars = bars;
   const bpm = song.bpm || 100;
   const stepDur = 60 / bpm / 4;
   const totalSteps = bars * 16;
   const duration = totalSteps * stepDur + 2.0;
   const approx = Beats.barsToApproxSeconds(bars, bpm);
+  const statusEl = $("stu-suno-status");
+  if (statusEl) statusEl.textContent = `Rendering ~${Math.round(approx)}s type-beat…`;
   showToast(`Rendering ~${Math.round(approx)}s song…`);
 
   // Use section density if we have a type-beat arrangement
@@ -962,8 +968,8 @@ async function renderFullSongWav() {
   try {
     offline = new OfflineAudioContext(2, Math.ceil(rate * duration), rate);
   } catch (err) {
-    showToast("Browser blocked long render — try fewer bars");
-    return;
+    showToast("Browser blocked long render — try a shorter length");
+    return null;
   }
 
   const real = { audioCtx, masterGain, dryGain, wetGain, convolver, compressor, analyser, impulseCache };
@@ -1017,16 +1023,26 @@ async function renderFullSongWav() {
 
     const rendered = await offline.startRendering();
     const wav = audioBufferToWav(rendered, 24);
-    const a = document.createElement("a");
+    const blob = new Blob([wav], { type: "audio/wav" });
+    const url = URL.createObjectURL(blob);
     const safe = (song.name || "type-beat").replace(/[^\w\-]+/g, "-").toLowerCase();
-    a.href = URL.createObjectURL(new Blob([wav], { type: "audio/wav" }));
-    a.download = `${safe}-${bars}bars-24bit.wav`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    showToast(`⬇ Full song ready · ~${Math.round(approx)}s · 24-bit`);
+    const fname = `${safe}-${bars}bars-24bit.wav`;
+
+    if (wantPlay) {
+      bindSongResult(url, { name: fname, duration_sec: approx });
+    }
+    if (wantDownload) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      a.click();
+    }
+    if (statusEl) statusEl.textContent = `Ready · ~${Math.round(approx)}s · free type-beat`;
+    showToast(`✦ Song ready · ~${Math.round(approx)}s · free renderer`);
+    return { url, name: fname, duration_sec: approx };
   } catch (err) {
     console.error(err);
-    showToast("Full render failed — try 32–64 bars");
+    showToast("Full render failed — try a shorter length");
   } finally {
     audioCtx = real.audioCtx;
     masterGain = real.masterGain;
@@ -1068,155 +1084,66 @@ function studioApiHostLabel() {
 }
 
 async function refreshSunoStatus(root) {
+  // Free type-beat renderer — no cloud song API required
   const el = root?.querySelector?.("#stu-suno-status") || $("stu-suno-status");
-  try {
-    const r = await fetch(studioApi("/api/studio/suno-status"));
-    if (!r.ok) {
-      if (el) {
-        el.textContent = `Song API offline (${studioApiHostLabel()} · ${r.status}) — Create uses free type-beat`;
-        el.dataset.ready = "0";
-        el.dataset.apiDown = "1";
-      }
-      return;
-    }
-    const j = await r.json();
-    const ace = j.acestep || {};
-    const fal = j.fal || {};
-    const mg = j.musicgen || {};
-    if (el) {
-      el.dataset.apiDown = "0";
-      if (ace.ok) {
-        el.textContent = ace.warming
-          ? `ACE-Step warming (first-run model download) · vocals soon`
-          : `ACE-Step live · vocals · up to ${ace.maxSeconds || 600}s`;
-        el.dataset.ready = "1";
-        el.dataset.vocals = "1";
-      } else if ((j.runpod || {}).ok) {
-        el.textContent = `RunPod cloud vocals · PC can be off · ≤${(j.runpod || {}).maxSeconds || 120}s`;
-        el.dataset.ready = "1";
-        el.dataset.vocals = "1";
-      } else if (fal.ok) {
-        el.textContent = `Cloud vocals ready (fal) · guests OK while PC off · ≤${fal.maxSeconds || 120}s`;
-        el.dataset.ready = "1";
-        el.dataset.vocals = "1";
-      } else if (mg.ok) {
-        el.textContent = "Instrumental only · set RunPod or FAL_KEY for PC-off vocals";
-        el.dataset.ready = "1";
-        el.dataset.vocals = "0";
-      } else if (j.sunoConfigured) {
-        el.textContent = "Suno API ready · ACE / cloud offline";
-        el.dataset.ready = "0";
-      } else {
-        el.textContent =
-          "Vocals: local ACE, or RunPod / FAL_KEY on Render (PC off) — ENTER_THIS_RUNPOD.txt";
-        el.dataset.ready = "0";
-      }
-    }
-  } catch (_) {
-    if (el) {
-      el.textContent = `Can't reach ${studioApiHostLabel()} — free type-beat mode for guests`;
-      el.dataset.ready = "0";
-      el.dataset.apiDown = "1";
-    }
+  if (el) {
+    el.textContent = "type-beat renderer · free · works on phone & PC";
+    el.dataset.ready = "1";
+    el.dataset.apiDown = "0";
   }
 }
 
-async function musicgenGenerate(root) {
-  // Primary Create path: ACE-Step vocals (up to 10 min) → MusicGen fallback
-  // One Create at a time — never auto-queue the next song
+function vibeFromPrompt(prompt, fallbackId = "telephantix") {
+  const p = String(prompt || "").toLowerCase();
+  if (/drill/.test(p)) return "drill";
+  if (/boom\s*bap|dusty|golden age/.test(p)) return "boom-bap";
+  if (/lo-?fi|chill|rain|soft|warm|coffee/.test(p)) return "lofi";
+  if (/cinema|epic|trailer|orchestra/.test(p)) return "cinematic";
+  if (/trap|808|dark|mystical|anthem/.test(p)) return "trap-dark";
+  if (/telephant|caduce|mystic|firmament/.test(p)) return "telephantix";
+  return fallbackId;
+}
+
+/** ✦ Create — build arrangement + render full song in-browser (no Suno/ACE/cloud) */
+async function createStudioSong(root) {
   if (createInFlight) {
-    showToast("Already creating — wait for this one (or play a saved song below)");
+    showToast("Already rendering — wait a moment");
     return;
   }
   ensureAudio();
   const promptEl = root?.querySelector?.("#stu-suno-prompt") || $("stu-suno-prompt");
-  const lyricsEl = root?.querySelector?.("#stu-lyrics") || $("stu-lyrics");
   const statusEl = root?.querySelector?.("#stu-suno-status") || $("stu-suno-status");
-  const vocalsEl = root?.querySelector?.("#stu-vocals") || $("stu-vocals");
   const createBtn = root?.querySelector?.("#stu-musicgen-go") || $("stu-musicgen-go");
-  const secs = Number(
-    (root?.querySelector?.("#stu-mg-secs") || $("stu-mg-secs"))?.value || 180,
-  );
-  const style = (root?.querySelector?.("#stu-beat-style") || $("stu-beat-style"))?.value || "telephantix";
-  const beatMeta = Beats.TYPE_BEATS.find((t) => t.id === style) || Beats.TYPE_BEATS[0];
-  const wantVocals = vocalsEl ? !!vocalsEl.checked : true;
-  const prompt =
-    (promptEl?.value || "").trim() ||
-    `${beatMeta.tags}, ${wantVocals ? "full song with vocals" : "instrumental"}, high quality studio mix`;
-  const lyrics = (lyricsEl?.value || "").trim();
+  const styleSel = root?.querySelector?.("#stu-beat-style") || $("stu-beat-style");
+  const bars = Math.max(32, Math.min(96, Number((root?.querySelector?.("#stu-mg-secs") || $("stu-mg-secs"))?.value || 64)));
+  const prompt = (promptEl?.value || "").trim();
 
   createInFlight = true;
-  activePollToken += 1;
-  const myToken = activePollToken;
   if (createBtn) createBtn.disabled = true;
-  if (statusEl) {
-    statusEl.textContent = wantVocals
-      ? `Creating ${Math.round(secs / 60)}-min vocal song…`
-      : `Creating ${Math.round(secs / 60)}-min track…`;
-  }
-  showToast(wantVocals ? "✦ Full song with vocals — ACE-Step" : "✦ Instrumental — ACE-Step / MusicGen");
-
   try {
-    const r = await fetch(studioApi("/api/studio/song-generate"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt,
-        lyrics,
-        tags: beatMeta.tags,
-        seconds: secs,
-        instrumental: !wantVocals,
-      }),
+    const vibe = vibeFromPrompt(prompt, styleSel?.value || "telephantix");
+    if (styleSel) styleSel.value = vibe;
+    root?.querySelectorAll?.(".stu-vibe")?.forEach((b) => {
+      b.classList.toggle("on", b.dataset.beat === vibe);
     });
-    if (!r.ok) {
-      const msg = `Song API ${r.status} at ${studioApiHostLabel()} — rendering free type-beat instead`;
-      if (statusEl) statusEl.textContent = msg;
-      showToast(msg);
-      await renderFullSongWav();
-      return;
-    }
-    const j = await r.json();
-    if (!j.ok || !j.job_id) {
-      const msg = j.hint || j.error || "Song engine unavailable";
-      // Guests: don't dead-end — fall back to in-browser type-beat
-      if (studioApiBase() || statusEl?.dataset?.apiDown === "1") {
-        showToast(`${msg} — free type-beat fallback`);
-        if (statusEl) statusEl.textContent = "Free type-beat render…";
-        await renderFullSongWav();
-        return;
-      }
-      showToast(msg);
-      if (statusEl) statusEl.textContent = msg;
-      return;
-    }
-    const provider = j.provider || "song";
-    try {
-      sessionStorage.setItem(
-        "txStudioSongJob",
-        JSON.stringify({ job_id: j.job_id, ace_task_id: j.ace_task_id || null, at: Date.now() }),
-      );
-    } catch (_) {}
-    if (statusEl) {
-      statusEl.textContent =
-        provider === "ace-step"
-          ? `ACE-Step generating${j.vocals ? " + vocals" : ""}…`
-          : provider === "fal-ace-step"
-            ? `Cloud vocals generating…`
-            : `${provider} generating…`;
-    }
-    await pollSongJob(j.job_id, statusEl, secs, myToken, root);
+    applyTypeBeat();
+    if (prompt) song.name = prompt.slice(0, 48);
+    if (statusEl) statusEl.textContent = `Building ${vibe} · ${bars} bars…`;
+    showToast(`✦ Creating free type-beat · ${vibe}`);
+    await renderFullSongWav({ play: true, download: false, bars });
   } catch (err) {
     console.error(err);
-    const msg = `Can't reach ${studioApiHostLabel()} — free type-beat instead`;
-    showToast(msg);
-    if (statusEl) statusEl.textContent = msg;
-    try {
-      await renderFullSongWav();
-    } catch (_) {}
+    showToast("Create failed — try again");
+    if (statusEl) statusEl.textContent = "error — try shorter length";
   } finally {
-    if (myToken === activePollToken) createInFlight = false;
+    createInFlight = false;
     if (createBtn) createBtn.disabled = false;
   }
+}
+
+/** @deprecated — kept so old call sites still compile */
+async function musicgenGenerate(root) {
+  return createStudioSong(root);
 }
 
 function formatSongTime(sec) {
@@ -1533,7 +1460,7 @@ async function refreshSongLibrary(root) {
       });
     });
   } catch (_) {
-    list.innerHTML = `<p class="stu-muted">Library offline</p>`;
+    list.innerHTML = `<p class="stu-muted">Cloud library optional — your last Create still plays above</p>`;
   }
 }
 
