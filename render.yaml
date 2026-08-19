@@ -25,7 +25,18 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      # Guest vocals while home PC is OFF (fal.ai ACE-Step, pay-per-song)
+      # Guest vocals while home PC is OFF
+      # Option A: RunPod ACE API pod URL (same REST as local ACE-Step)
+      - key: ACESTEP_API_BASE
+        sync: false
+      # Option B: RunPod serverless
+      - key: RUNPOD_API_KEY
+        sync: false
+      - key: RUNPOD_ENDPOINT_ID
+        sync: false
+      - key: RUNPOD_MAX_SECONDS
+        value: "120"
+      # Option C: fal.ai ACE-Step (needs fal billing credits)
       - key: FAL_KEY
         sync: false
       - key: FAL_ACE_MAX_SECONDS

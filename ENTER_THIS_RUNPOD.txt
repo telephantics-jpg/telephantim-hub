@@ -1,0 +1,66 @@
+RunPod for Telephantix Studio (PC can be OFF)
+=============================================
+
+Two paths. Serverless = pay only while generating.
+Pod = simpler, matches our ACE API exactly (stop when idle).
+
+────────────────────────────────────────
+PATH 1 — On-demand ACE Pod (easiest / Recommended to try first)
+────────────────────────────────────────
+Works with our existing ACE-Step client (same as your home GPU).
+
+1) https://www.runpod.io  → sign up → add ~$10–25 credits
+2) Deploy an ACE-Step API pod (pick ONE):
+   a) Community one-click (XL needs big GPU / $):
+      https://console.runpod.io/deploy?template=5fn9cdbhtr&ref=2vdt3dn9
+      API: https://<POD_ID>-8000.proxy.runpod.net
+   b) Or: Deploy → GPU Cloud → RTX 4090 / A40 → template with ACE-Step API
+      Expose HTTP port 8000 or 8001
+3) Wait until Running. Open:
+   https://<POD_ID>-8000.proxy.runpod.net/health
+   (must return JSON ok)
+4) On Render → telephantim-ai → Environment:
+
+   ACESTEP_API_BASE = https://<POD_ID>-8000.proxy.runpod.net
+   (no trailing slash; use 8001 if that’s the exposed port)
+
+5) Deploy latest → hard refresh https://telephantim.com/#studio
+6) When done for the day: STOP the pod (or credits keep burning).
+
+Cost ballpark: few $/hour while Running; $0 when Stopped.
+
+────────────────────────────────────────
+PATH 2 — Serverless (pay-per-song)
+────────────────────────────────────────
+1) RunPod → Serverless → New Endpoint
+2) Use an ACE-Step / ComfyUI-ACE worker template if available
+   (input must accept prompt + lyrics + duration)
+3) Copy:
+   - Endpoint ID   (e.g. abc12xyz…)
+   - API Key       Settings → API Keys → create
+4) Render → telephantim-ai → Environment:
+
+   RUNPOD_API_KEY      = <your runpod api key>
+   RUNPOD_ENDPOINT_ID  = <endpoint id>
+   RUNPOD_MAX_SECONDS  = 120
+
+5) Deploy → Studio Create uses RunPod when local ACE + fal are offline.
+
+Cold starts can take 30–90s on serverless.
+
+────────────────────────────────────────
+What to paste back here when ready
+────────────────────────────────────────
+Either:
+  ACESTEP_API_BASE=https://xxxxx-8000.proxy.runpod.net
+or:
+  RUNPOD_API_KEY=...
+  RUNPOD_ENDPOINT_ID=...
+
+I’ll verify /api/health and Studio status from here.
+
+────────────────────────────────────────
+vs fal.ai
+────────────────────────────────────────
+fal ACE-Step was 403 until credits are added on fal billing.
+RunPod is often clearer: you see GPU hours / serverless jobs in the dashboard.

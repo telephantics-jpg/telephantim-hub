@@ -1091,20 +1091,24 @@ async function refreshSunoStatus(root) {
           : `ACE-Step live · vocals · up to ${ace.maxSeconds || 600}s`;
         el.dataset.ready = "1";
         el.dataset.vocals = "1";
+      } else if ((j.runpod || {}).ok) {
+        el.textContent = `RunPod cloud vocals · PC can be off · ≤${(j.runpod || {}).maxSeconds || 120}s`;
+        el.dataset.ready = "1";
+        el.dataset.vocals = "1";
       } else if (fal.ok) {
         el.textContent = `Cloud vocals ready (fal) · guests OK while PC off · ≤${fal.maxSeconds || 120}s`;
         el.dataset.ready = "1";
         el.dataset.vocals = "1";
       } else if (mg.ok) {
-        el.textContent = "Instrumental only here · set FAL_KEY for guest vocals when PC off";
+        el.textContent = "Instrumental only · set RunPod or FAL_KEY for PC-off vocals";
         el.dataset.ready = "1";
         el.dataset.vocals = "0";
       } else if (j.sunoConfigured) {
-        el.textContent = "Suno API ready · ACE / fal offline";
+        el.textContent = "Suno API ready · ACE / cloud offline";
         el.dataset.ready = "0";
       } else {
         el.textContent =
-          "Vocals: START_STUDIO_LOCAL.bat (PC on) or FAL_KEY on Render (PC off)";
+          "Vocals: local ACE, or RunPod / FAL_KEY on Render (PC off) — ENTER_THIS_RUNPOD.txt";
         el.dataset.ready = "0";
       }
     }

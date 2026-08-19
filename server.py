@@ -1622,7 +1622,13 @@ class Handler(SimpleHTTPRequestHandler):
                 fal = fal_available()
             except Exception as e:
                 fal = {"ok": False, "error": str(e)}
-            vocals = bool(ace.get("ok") or fal.get("ok"))
+            try:
+                from studio_runpod import runpod_available
+
+                rpod = runpod_available()
+            except Exception as e:
+                rpod = {"ok": False, "error": str(e)}
+            vocals = bool(ace.get("ok") or fal.get("ok") or rpod.get("ok"))
             self._json(
                 200,
                 {
@@ -1634,10 +1640,12 @@ class Handler(SimpleHTTPRequestHandler):
                     "musicgen": mg,
                     "acestep": ace,
                     "fal": fal,
+                    "runpod": rpod,
                     "vocals": vocals,
-                    "guestCloud": bool(fal.get("ok")),
+                    "guestCloud": bool(fal.get("ok") or rpod.get("ok") or ace.get("ok")),
                     "maxSeconds": (ace.get("maxSeconds") if ace.get("ok") else None)
                     or (fal.get("maxSeconds") if fal.get("ok") else None)
+                    or (rpod.get("maxSeconds") if rpod.get("ok") else None)
                     or 600,
                     "server": "telephantim-ai",
                 },
@@ -1682,6 +1690,7 @@ class Handler(SimpleHTTPRequestHandler):
             for getter in (
                 "studio_acestep.get_job",
                 "studio_fal.get_job",
+                "studio_runpod.get_job",
                 "studio_musicgen.get_job",
             ):
                 try:
@@ -2088,7 +2097,26 @@ class Handler(SimpleHTTPRequestHandler):
                 except Exception as e:
                     ace_err = {"ok": False, "error": str(e)}
 
-                # PC off / ACE offline → fal.ai cloud ACE-Step (needs FAL_KEY on Render)
+                # PC off / ACE offline → RunPod serverless, then fal.ai
+                try:
+                    from studio_runpod import start_job_async as rp_start, runpod_configured
+
+                    if runpod_configured():
+                        out = rp_start(
+                            prompt or tags,
+                            lyrics=lyrics,
+                            seconds=min(float(secs), 120.0),
+                            instrumental=instrumental,
+                            tags=tags or prompt,
+                        )
+                        if out.get("ok"):
+                            out["fallbackFrom"] = "local-ace-step"
+                            self._json(200, out)
+                            return
+                        ace_err = out
+                except Exception as e:
+                    ace_err = {"ok": False, "error": str(e), "from": "runpod"}
+
                 try:
                     from studio_fal import start_job_async as fal_start, fal_configured
 
@@ -2116,9 +2144,9 @@ class Handler(SimpleHTTPRequestHandler):
                             "ok": False,
                             "error": (ace_err or {}).get("error") if isinstance(ace_err, dict) else "vocals_offline",
                             "hint": (
-                                "Guest vocals need either (1) Stood's PC on with ACE-Step, or "
-                                "(2) FAL_KEY set on telephantim-ai for cloud ACE. "
-                                "Meanwhile: play Your songs / type-beat."
+                                "Guest vocals need (1) PC ACE-Step, (2) RunPod ACESTEP_API_BASE / "
+                                "RUNPOD_ENDPOINT_ID, or (3) FAL_KEY with fal credits. "
+                                "See ENTER_THIS_RUNPOD.txt"
                             ),
                             "aceError": ace_err,
                             "free": True,
