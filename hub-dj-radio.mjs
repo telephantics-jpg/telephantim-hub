@@ -201,33 +201,73 @@ export function createDjRadio(api = {}) {
     });
   }
 
-  function djApiBase() {
-    // Hub (telephantim.com static) → Luna free DJ on telephanti.com
-    // Local hub 8765 → Luna 8767 (hub has no /api/firmament/dj)
+  function djApiBases() {
+    // Live → free Luna DJ on telephanti.com (PC off). Try apex + www.
+    const bases = [];
     try {
       if (typeof api.getApiBase === "function") {
         const b = String(api.getApiBase() || "").replace(/\/$/, "");
-        if (b) return b;
+        if (b) bases.push(b);
       }
     } catch (_) {}
     try {
       const h = (location.hostname || "").toLowerCase();
       const port = String(location.port || "");
-      // Live / Pages / Render static always → telephanti.com (PC off)
-      if (
-        h.includes("telephantim") ||
-        h.includes("github.io") ||
-        h.includes("onrender") ||
-        (h.includes("telephanti") && port === "")
-      ) {
-        return "https://telephanti.com";
-      }
       if (h === "localhost" || h === "127.0.0.1") {
-        if (port === "8767") return ""; // same-origin local Luna
-        return "http://127.0.0.1:8767"; // local hub → local Luna only when developing
+        if (port === "8767") bases.push("");
+        else bases.push("http://127.0.0.1:8767");
       }
     } catch (_) {}
-    return "https://telephanti.com";
+    bases.push("https://telephanti.com", "https://www.telephanti.com");
+    return [...new Set(bases.filter((b) => b != null))];
+  }
+
+  function localDropText(nextTrack, kind = "bridge") {
+    const title = nextTrack?.title || "the next track";
+    const artist = nextTrack?.artist || "Telephantix";
+    if ((kind || "").toLowerCase() === "truth") {
+      const truths = [
+        `Hot take from the booth: we archived our childhoods in the cloud and still can't find Tuesday. Meanwhile — ${title}.`,
+        `Truth time: notifications trained us to treat every ping like an emergency. Most are coupons for anxiety. Here's ${title}.`,
+        `We optimized dating into a swipe economy then wondered why chemistry feels like customer support. Soft landing: ${title}.`,
+      ];
+      return truths[Math.floor(Math.random() * truths.length)];
+    }
+    const bridges = [
+      `This is ${title} — ${artist} night shift. If corporate radio is a spreadsheet, this is the scribble in the margin.`,
+      `Coming up: ${title}. Ego off, volume up. Vox on the boards.`,
+      `Plot twist: ${title} might fix the scroll better than another refresh. Spoiler: the bass will try.`,
+      `${title}. Telephantix Radio. Stay weird, stay kind — don't @ the algorithm.`,
+    ];
+    return bridges[Math.floor(Math.random() * bridges.length)];
+  }
+
+  function speakBrowser(text) {
+    return new Promise((resolve) => {
+      try {
+        const synth = window.speechSynthesis;
+        if (!synth || !text) {
+          resolve(false);
+          return;
+        }
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance(String(text).slice(0, 420));
+        u.rate = 1.02;
+        u.pitch = 0.92;
+        u.volume = 1;
+        const voices = synth.getVoices?.() || [];
+        const male =
+          voices.find((v) => /en(-|_)US/i.test(v.lang) && /male|guy|david|mark|fred/i.test(v.name)) ||
+          voices.find((v) => /^en/i.test(v.lang)) ||
+          null;
+        if (male) u.voice = male;
+        u.onend = () => resolve(true);
+        u.onerror = () => resolve(false);
+        synth.speak(u);
+      } catch (_) {
+        resolve(false);
+      }
+    });
   }
 
   async function fetchDrop(prevTrack, nextTrack, kind = "bridge") {
@@ -238,52 +278,69 @@ export function createDjRadio(api = {}) {
       artist: nextTrack?.artist || "Telephantix",
       station: "Telephantix Radio",
       voice: "vox",
-      // Templates + edge-tts are free and fast; LLM optional (can hang local Ollama)
       use_llm: false,
       mood: kindNorm === "truth" ? "thoughtful" : "happy",
-      // Truth bits are longer — slightly slower rate so they land
       rate: kindNorm === "truth" ? 10 : 12,
       pitch: -2,
       kind: kindNorm,
     };
-    const base = djApiBase();
-    const url = `${base}/api/firmament/dj/drop`;
-    // Render free tier may cold-start (~30–60s) — retry once after wake ping
-    const attempt = async (ms) => {
-      const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-      const timer = ctrl ? setTimeout(() => ctrl.abort(), ms) : null;
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          cache: "no-store",
-          mode: "cors",
-          signal: ctrl?.signal,
-        });
-        if (!res.ok) {
-          const t = await res.text().catch(() => "");
-          throw new Error(`DJ drop HTTP ${res.status} ${t.slice(0, 80)}`);
+    const bases = djApiBases();
+    let lastErr = null;
+
+    for (const base of bases) {
+      const url = `${base}/api/firmament/dj/drop`;
+      const attempt = async (ms) => {
+        const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), ms) : null;
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+            cache: "no-store",
+            mode: "cors",
+            signal: ctrl?.signal,
+          });
+          if (!res.ok) {
+            const t = await res.text().catch(() => "");
+            throw new Error(`HTTP ${res.status} ${t.slice(0, 60)}`);
+          }
+          const data = await res.json();
+          if (!data?.audio_b64) throw new Error("no audio in DJ response");
+          return data;
+        } finally {
+          if (timer) clearTimeout(timer);
         }
-        return res.json();
-      } finally {
-        if (timer) clearTimeout(timer);
-      }
-    };
-    try {
-      return await attempt(55000);
-    } catch (err1) {
+      };
+
       try {
-        status("Waking free DJ on telephanti.com…");
-        // Nudge Luna / Render awake (PC not required)
-        await fetch(`${base}/api/health`, { cache: "no-store", mode: "cors" }).catch(() => {});
-        await fetch(`${base}/api/firmament/dj/status`, { cache: "no-store", mode: "cors" }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 3000));
-        return await attempt(75000);
-      } catch (err2) {
-        throw err2 || err1;
+        status(`Vox · calling ${base.replace(/^https?:\/\//, "") || "local"}…`);
+        return await attempt(70000);
+      } catch (err1) {
+        lastErr = err1;
+        try {
+          status("Waking free DJ cloud…");
+          await fetch(`${base}/api/health`, { cache: "no-store", mode: "cors" }).catch(() => {});
+          await fetch(`${base}/api/firmament/dj/status`, { cache: "no-store", mode: "cors" }).catch(() => {});
+          await new Promise((r) => setTimeout(r, 2500));
+          return await attempt(90000);
+        } catch (err2) {
+          lastErr = err2 || err1;
+        }
       }
     }
+
+    // Free fallback — browser speech so Vox still talks (PC off, no paid API)
+    const text = localDropText(nextTrack, kindNorm);
+    console.warn("[dj] cloud drop failed, browser voice", lastErr?.message || lastErr);
+    return {
+      ok: true,
+      text,
+      source: "browser-speech",
+      audio_b64: "",
+      browser_speech: true,
+      next_title: nextTrack?.title || "",
+    };
   }
 
   /**
@@ -302,9 +359,8 @@ export function createDjRadio(api = {}) {
 
     const p = fetchDrop(prevTrack, track, kindNorm)
       .then((data) => {
-        if (data?.audio_b64) {
+        if (data?.audio_b64 || data?.browser_speech) {
           dropCache.set(key, { ...data, at: Date.now(), kind: kindNorm });
-          // Cap cache size
           if (dropCache.size > 48) {
             const oldest = [...dropCache.entries()].sort((a, b) => a[1].at - b[1].at)[0];
             if (oldest) dropCache.delete(oldest[0]);
@@ -315,11 +371,14 @@ export function createDjRadio(api = {}) {
       })
       .catch((err) => {
         console.warn("[dj] fetch", err?.message || err);
+        const text = localDropText(track, kindNorm);
+        const data = { ok: true, text, source: "browser-speech", audio_b64: "", browser_speech: true };
+        dropCache.set(key, { ...data, at: Date.now(), kind: kindNorm });
         try {
-          status(`Vox offline · ${String(err?.message || err).slice(0, 48)}`);
+          status("Vox · browser voice (cloud sleepy)");
         } catch (_) {}
         inflight.delete(key);
-        return null;
+        return data;
       });
     inflight.set(key, p);
     return p;
@@ -383,7 +442,7 @@ export function createDjRadio(api = {}) {
 
     if (gen !== announceGen) return; // skipped again
     if (index() !== ni) return; // not this song anymore
-    if (!data?.audio_b64) {
+    if (!data?.audio_b64 && !data?.browser_speech && !data?.text) {
       status(`♫ ${title}`);
       warmAhead();
       return;
@@ -414,9 +473,21 @@ export function createDjRadio(api = {}) {
         dj: data.dj,
       });
       status(label);
-      await playMicB64(data.audio_b64);
+      if (data.audio_b64) {
+        try {
+          await playMicB64(data.audio_b64);
+        } catch (micErr) {
+          console.warn("[dj] mic b64 failed, browser voice", micErr);
+          await speakBrowser(data.text || label);
+        }
+      } else {
+        await speakBrowser(data.text || label);
+      }
     } catch (err) {
       console.warn("[dj] mic", err);
+      try {
+        await speakBrowser(data?.text || `Vox · ${title}`);
+      } catch (_) {}
     } finally {
       if (gen === announceGen) {
         micBusy = false;
