@@ -181,8 +181,6 @@ function sunoFromCatalog(rows) {
 
 function catalogUrls() {
   const bust = Date.now();
-  // Always hit local server first (admin saves land here)
-  const urls = [`/api/suno-catalog?v=${bust}&n=${bust}`];
   const api = (typeof window !== "undefined" && window.TELEPHANTIM_API != null
     ? String(window.TELEPHANTIM_API)
     : ""
@@ -191,11 +189,17 @@ function catalogUrls() {
   try {
     host = (location.hostname || "").toLowerCase();
   } catch (_) {}
-  const isLocal = host === "localhost" || host === "127.0.0.1";
-  // On this PC, never pull a stale remote (telephantim-ai) over the local catalog
-  if (api && !isLocal) urls.push(`${api}/api/suno-catalog?v=${bust}`);
-  // Local file last — same-origin after /api
-  urls.push(`${SUNO_CATALOG_URL}?v=${bust}`);
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host === "";
+  // LIVE (telephantim.com): static suno-catalog.json first — works with PC OFF, free, no Render.
+  // LOCAL hub: prefer /api so admin saves show up immediately.
+  if (isLocal) {
+    return [
+      `/api/suno-catalog?v=${bust}&n=${bust}`,
+      `${SUNO_CATALOG_URL}?v=${bust}`,
+    ];
+  }
+  const urls = [`${SUNO_CATALOG_URL}?v=${bust}`];
+  if (api) urls.push(`${api}/api/suno-catalog?v=${bust}`);
   return urls;
 }
 
@@ -243,8 +247,8 @@ async function loadSunoCatalog() {
       const data = await res.json();
       const rows = Array.isArray(data) ? data : data.tracks || data.catalog;
       if (!Array.isArray(rows)) throw new Error("catalog not array");
-      // Empty remote is useless — keep trying (local file / other host)
-      if (!rows.length && !url.startsWith("/api/")) continue;
+      // Never accept an empty catalog — keep trying next URL (static file has the songs)
+      if (!rows.length) continue;
       orderedSunoTracks = sunoFromCatalog(rows);
       allSunoTracks = [...orderedSunoTracks];
       // Default queue = full Suno list first so new admin adds show at top
