@@ -271,14 +271,15 @@ export function createDjRadio(api = {}) {
       }
     };
     try {
-      return await attempt(45000);
+      return await attempt(55000);
     } catch (err1) {
       try {
-        status("Waking free cloud brain…");
-        // Nudge Luna / Render awake (no body needed)
+        status("Waking free DJ on telephanti.com…");
+        // Nudge Luna / Render awake (PC not required)
         await fetch(`${base}/api/health`, { cache: "no-store", mode: "cors" }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 2500));
-        return await attempt(60000);
+        await fetch(`${base}/api/firmament/dj/status`, { cache: "no-store", mode: "cors" }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 3000));
+        return await attempt(75000);
       } catch (err2) {
         throw err2 || err1;
       }
