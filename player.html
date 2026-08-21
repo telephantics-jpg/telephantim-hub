@@ -2,47 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Telephantim — Dual Relics</title>
-  <!-- Used by X/Twitter player card + og:video embed -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Telephantim — Open site</title>
+  <!-- Fallback if anything still deep-links here from an old X player card -->
   <meta name="robots" content="noindex" />
+  <meta http-equiv="refresh" content="2;url=https://telephantim.com/" />
   <style>
     html, body {
-      margin: 0; padding: 0; width: 100%; height: 100%;
-      background: #000; overflow: hidden;
+      margin: 0; padding: 0; min-height: 100%;
+      background: #05070c; color: #fef3c7;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    .wrap {
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; padding: 24px; text-align: center;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(167,139,250,0.25), transparent 55%),
+        #05070c;
     }
     video {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      background: #000;
+      width: min(92vw, 420px); aspect-ratio: 16/9;
+      border-radius: 14px; object-fit: cover;
+      border: 1px solid rgba(253,230,138,0.35);
     }
+    a.btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 48px; padding: 0 22px; border-radius: 999px;
+      background: linear-gradient(145deg, #422006, #f59e0b);
+      color: #fff7ed; font-weight: 800; text-decoration: none;
+      border: 1px solid rgba(253,230,138,0.55);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    p { margin: 0; opacity: 0.85; font-size: 0.95rem; max-width: 28rem; }
   </style>
 </head>
 <body>
-  <video
-    id="v"
-    src="media/share/link-preview-relics.mp4?v=2026-08-share-v2"
-    poster="media/share/link-preview-relics.jpg?v=2026-08-share-v2"
-    autoplay
-    muted
-    loop
-    playsinline
-    webkit-playsinline
-  ></video>
+  <div class="wrap">
+    <video
+      src="media/share/link-preview-relics.mp4?v=2026-08-share-v2"
+      poster="media/share/link-preview-relics.jpg?v=2026-08-share-v2"
+      muted
+      loop
+      playsinline
+      autoplay
+    ></video>
+    <p>Opening Telephantim… If you’re stuck in a social preview, tap below.</p>
+    <a class="btn" href="https://telephantim.com/">Open Telephantim →</a>
+  </div>
   <script>
-    (function () {
-      var el = document.getElementById("v");
-      if (!el) return;
-      el.muted = true;
-      el.playsInline = true;
-      var p = el.play();
-      if (p && p.catch) p.catch(function () {});
-      // Re-kick if parent iframe blocks first play
-      document.addEventListener("visibilitychange", function () {
-        if (!document.hidden && el.paused) el.play().catch(function () {});
-      });
-    })();
+    // Escape in-app browsers that land on the old player card
+    try {
+      if (window.top === window.self) {
+        setTimeout(function () {
+          location.replace("https://telephantim.com/");
+        }, 1200);
+      }
+    } catch (_) {}
   </script>
 </body>
 </html>
