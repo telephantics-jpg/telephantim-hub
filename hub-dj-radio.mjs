@@ -225,21 +225,56 @@ export function createDjRadio(api = {}) {
   function localDropText(nextTrack, kind = "bridge") {
     const title = nextTrack?.title || "the next track";
     const artist = nextTrack?.artist || "Telephantix";
+    const key = String(title).trim().toLowerCase();
     if ((kind || "").toLowerCase() === "truth") {
       const truths = [
         `Hot take from the booth: we archived our childhoods in the cloud and still can't find Tuesday. Meanwhile — ${title}.`,
         `Truth time: notifications trained us to treat every ping like an emergency. Most are coupons for anxiety. Here's ${title}.`,
         `We optimized dating into a swipe economy then wondered why chemistry feels like customer support. Soft landing: ${title}.`,
+        `Fifteen seconds is a clip. Three minutes is a relationship. ${title} is the longer kind. Stay.`,
+        `We stacked so many subscriptions we need an app to cancel the apps. Peace is free. ${title} is the receipt.`,
+        `Forty-seven tabs open and one feeling you refuse to click. Close the feeling first. Cue ${title}.`,
+        `Phone at three percent, soul at three percent — we charge the wrong one. ${title} is the other plug.`,
+        `Focus playlist in one ear, doomscroll in the other. Hostage situation. ${title} is the release form.`,
+        `I'll start Monday is a religion with terrible attendance. Start in this chorus. Here's ${title}.`,
       ];
       return truths[Math.floor(Math.random() * truths.length)];
     }
+    const specials = {
+      "odyssey revised": [
+        `Vox in the booth — ${title}. Second draft of the journey. Maps are for people who already know who they are. Hit play.`,
+        `Incoming: ${title} by ${artist}. Same road, new narrator. Stay in the car.`,
+      ],
+      "chord that pleased the lord": [
+        `One chord, full sermon. ${title} — church in a kick drum. Amen optional. Listening isn't.`,
+        `Soft landing into ${title}. Sacred without the brochure. Bass does the pastoral care.`,
+      ],
+      "decree by fear": [
+        `Fear wrote the first draft of the law. ${title} is the appeal. Stay for the verdict.`,
+        `Vox on the boards: ${title}. The bass objects. That's the whole brief.`,
+      ],
+      "shit dont fix": [
+        `Title does the honesty: ${title}. Neither does pretending. Four minutes of telling it straight.`,
+        `Vox calling it what it is — ${title}. Some problems don't get a patch note. Bass anyway.`,
+      ],
+    };
     const bridges = [
       `This is ${title} — ${artist} night shift. If corporate radio is a spreadsheet, this is the scribble in the margin.`,
       `Coming up: ${title}. Ego off, volume up. Vox on the boards.`,
       `Plot twist: ${title} might fix the scroll better than another refresh. Spoiler: the bass will try.`,
       `${title}. Telephantix Radio. Stay weird, stay kind — don't @ the algorithm.`,
+      `New on the overnight: ${title}. Whole song. No snippet bait. Stay through the second chorus.`,
+      `Board note — ${title}. Put the phone face down. If it loved you it would sing. It doesn't. This does.`,
+      `Here's ${title} by ${artist}. Three minutes of not being a product. Weird luxury. No checkout.`,
+      `Cue ${title}. Your for-you page thinks it knows you. This track is willing to be surprised.`,
+      `Vox with ${title} — volume as a boundary. The group chat can sit in the hallway until the fade.`,
+      `Dropping ${title}. If you were waiting for a sign, this is a kick drum. More honest than a billboard.`,
+      `${title} by ${artist}. Let the lyric clock you. If it stings, that's free diagnostics with a melody.`,
+      `Playing ${title}. Not a mood board. A mood. Difference is one of them has drums.`,
     ];
-    return bridges[Math.floor(Math.random() * bridges.length)];
+    const extra = specials[key] || [];
+    const bag = extra.length ? bridges.concat(extra, extra) : bridges;
+    return bag[Math.floor(Math.random() * bag.length)];
   }
 
   function speakBrowser(text) {
