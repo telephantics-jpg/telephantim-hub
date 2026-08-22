@@ -2371,6 +2371,15 @@ body.scene-luna-2d .world-tab[data-scene="studio"],
 body.scene-luna-2d #btn-studio {
   display: none !important;
 }
+@media (min-width: 900px) {
+  /* 2D PC: Play music parks left so Soft / Gather / Talk aren't buried */
+  body.scene-luna-2d .music-chrome #btn-music:not(.is-placed) {
+    left: max(18px, env(safe-area-inset-left, 0px));
+    right: auto;
+    transform: none;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+}
 body.scene-studio .world-switch {
   z-index: 40;
 }
