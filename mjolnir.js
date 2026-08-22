@@ -1202,9 +1202,11 @@ const clock = new THREE.Clock();
 let auraTimer = 0;
 let snakeTimer = 0;
 /** Pause WebGL when Bio / Luna fills the screen — boot is Bio, so start paused */
+const bootCamp = document.documentElement?.classList?.contains("boot-camp");
 let sceneActive =
-  document.body?.dataset?.scene === "telephantim" ||
-  document.body?.classList?.contains("scene-native");
+  !bootCamp &&
+  (document.body?.dataset?.scene === "telephantim" ||
+    document.body?.classList?.contains("scene-native"));
 
 function activateRelicsScene(on) {
   sceneActive = !!on;
@@ -1355,8 +1357,10 @@ animate();
 
 // If user lands on #relics / hash telephantim before modules finished, re-sync
 try {
-  const h = (location.hash || "").replace(/^#/, "").toLowerCase();
-  if (h === "relics" || h === "telephantim" || h === "hub" || h === "home") {
-    activateRelicsScene(true);
+  if (!bootCamp) {
+    const h = (location.hash || "").replace(/^#/, "").toLowerCase();
+    if (h === "relics" || h === "telephantim" || h === "hub" || h === "home") {
+      activateRelicsScene(true);
+    }
   }
 } catch (_) {}

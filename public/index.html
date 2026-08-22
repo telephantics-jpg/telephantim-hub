@@ -2,6 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search || "");
+        var w = String(q.get("world") || q.get("w") || q.get("scene") || "").toLowerCase();
+        var p = String(location.pathname || "").toLowerCase();
+        var h = String(location.hash || "").replace("#", "").toLowerCase();
+        var camp =
+          w === "2d" || w === "3d" || w === "luna-2d" || w === "luna-3d" ||
+          h === "luna-2d" || h === "luna-3d" || h === "2d" || h === "3d" ||
+          /\/2d(\.html)?$/.test(p) || /\/3d(\.html)?$/.test(p);
+        if (camp) {
+          document.documentElement.classList.add("boot-camp");
+          document.documentElement.setAttribute("data-boot-world", w || h || "2d");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    html.boot-camp .stage,
+    html.boot-camp #stage-telephantim,
+    html.boot-camp #canvas-wrap {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Telephantim — Relics, Music &amp; Luna Camp</title>
   <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-21" />
@@ -434,6 +461,6 @@
   <script type="module" src="music.js?v=v9-vox-lines"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
-  <script type="module" src="mjolnir.js?v=v122-caduceus-3d"></script>
+  <script type="module" src="mjolnir.js?v=v130-boot-camp"></script>
 </body>
 </html>
