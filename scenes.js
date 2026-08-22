@@ -200,6 +200,8 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   document.body.classList.toggle("scene-external", isExternal);
   document.body.classList.toggle("scene-bio", isBio);
   document.body.classList.toggle("scene-studio", isStudio);
+  document.body.classList.toggle("scene-luna-2d", sceneId === "luna-2d");
+  document.body.classList.toggle("scene-luna-3d", sceneId === "luna-3d");
   document.body.classList.toggle("scene-native", isRelics);
 
   if (isExternal || isBio || isStudio) {
