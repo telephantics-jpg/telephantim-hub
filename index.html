@@ -122,11 +122,11 @@
 
   <!-- Compact world picker — Relics · Bio · 2D · 3D -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
-    <button type="button" class="world-tab" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
-    <button type="button" class="world-tab active" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</button>
-    <button type="button" class="world-tab" data-scene="studio" title="Music Studio — synth, looper, free AI jam">Studio</button>
-    <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
-    <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
+    <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
+    <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
+    <a class="world-tab" href="/?world=studio" data-scene="studio" title="Music Studio — synth, looper, free AI jam">Studio</a>
+    <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
+    <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
   </nav>
 
   <!-- Full Music Studio tab -->
@@ -427,7 +427,7 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v128-hide-studio-2d"></script>
+  <script type="module" src="scenes.js?v=v129-world-query"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
   <script type="module" src="bio.js?v=v126-bio-games"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>

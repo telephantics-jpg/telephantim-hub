@@ -86,6 +86,12 @@ body.scene-native .badge-stack {
   margin-right: 0;
 }
 
+a.world-tab {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .world-tab {
   appearance: none;
   border: 0;

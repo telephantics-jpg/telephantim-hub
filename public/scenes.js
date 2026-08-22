@@ -126,36 +126,83 @@ function normalizeScene(id) {
   return DEFAULT_SCENE;
 }
 
-function readHash() {
-  const h = (location.hash || "").replace(/^#/, "").toLowerCase();
-  // Bare URL = Bio (landing) — notice 2D / 3D tabs immediately
-  if (!h) return DEFAULT_SCENE;
-  if (h === "luna" || h === "camp" || h === "luna2d" || h === "2d") return "luna-2d";
-  if (h === "luna3d" || h === "3d") return "luna-3d";
-  if (h === "relics" || h === "hub" || h === "home" || h === "telephantim") return "telephantim";
-  if (h === "bio" || h === "beacons" || h === "links" || h === "quote") return "bio";
-  if (h === "studio" || h === "music" || h === "lab" || h === "jam") return "studio";
-  // Ignore unknown hashes (e.g. #socials) — land on Bio
-  if (h && !SCENES[h]) return DEFAULT_SCENE;
-  return normalizeScene(h);
+function worldSlug(id) {
+  if (id === "luna-2d") return "2d";
+  if (id === "luna-3d") return "3d";
+  if (id === "telephantim") return "relics";
+  if (id === "studio") return "studio";
+  return "bio";
 }
 
-function writeHash(id) {
-  const path = location.pathname + location.search;
-  // Bio is the public landing — bare URL means Bio (no # needed)
-  const next =
-    id === "bio"
-      ? path
-      : `${path}#${id === "telephantim" ? "relics" : id === "studio" ? "studio" : id}`;
-  const cur = location.pathname + location.search + (location.hash || "");
-  if (
-    cur === next ||
-    (id === "bio" && !location.hash && location.pathname + location.search === path)
-  ) {
-    return;
+function mapWorldToken(raw) {
+  const t = String(raw || "").replace(/^#/, "").toLowerCase().trim();
+  if (!t) return "";
+  if (t === "luna" || t === "camp" || t === "luna2d" || t === "luna-2d" || t === "2d" || t === "play") {
+    return "luna-2d";
   }
-  // replaceState only — never assign location / never full navigation
+  if (t === "luna3d" || t === "luna-3d" || t === "3d") return "luna-3d";
+  if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
+  if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
+  if (t === "studio" || t === "music" || t === "lab" || t === "jam") return "studio";
+  if (SCENES[t]) return t;
+  return "";
+}
+
+function readQueryWorld() {
   try {
+    const q = new URLSearchParams(location.search || "");
+    return mapWorldToken(q.get("world") || q.get("w") || q.get("scene") || "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function readPathWorld() {
+  try {
+    const last = (location.pathname || "/")
+      .replace(/\/+$/, "")
+      .split("/")
+      .pop()
+      .toLowerCase();
+    if (last === "2d" || last === "2d.html") return "luna-2d";
+    if (last === "3d" || last === "3d.html") return "luna-3d";
+    if (last === "relics" || last === "relics.html") return "telephantim";
+    if (last === "studio" || last === "studio.html") return "studio";
+  } catch (_) {}
+  return "";
+}
+
+function readHash() {
+  const h = (location.hash || "").replace(/^#/, "").toLowerCase();
+  if (!h) return "";
+  return mapWorldToken(h);
+}
+
+/** Shared links use ?world=2d (hashes get stripped by iMessage / Discord / X). */
+function readStartScene() {
+  const fromQuery = readQueryWorld();
+  if (fromQuery) return fromQuery;
+  const fromPath = readPathWorld();
+  if (fromPath) return fromPath;
+  const fromHash = readHash();
+  if (fromHash) return fromHash;
+  return DEFAULT_SCENE;
+}
+
+function writeUrl(id) {
+  try {
+    const u = new URL(location.href);
+    if (id === "bio") {
+      u.searchParams.delete("world");
+      u.searchParams.delete("w");
+      u.searchParams.delete("scene");
+    } else {
+      u.searchParams.set("world", worldSlug(id));
+    }
+    u.hash = "";
+    const next = u.pathname + u.search;
+    const cur = location.pathname + location.search;
+    if (cur === next && !location.hash) return;
     history.replaceState({ telephantimScene: id }, "", next);
   } catch (_) {}
 }
@@ -179,7 +226,7 @@ function sceneUrlKeyRewrite(sceneId) {
   return `${base}/firmament/play?hub=1`;
 }
 
-function setScene(id, { persist = true, fromHash = false } = {}) {
+function setScene(id, { persist = true, fromHash = false, fromUrl = false } = {}) {
   const sceneId = normalizeScene(id);
   const scene = SCENES[sceneId];
   const prev = current;
@@ -267,7 +314,7 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
       localStorage.setItem(STORAGE_KEY, sceneId);
     } catch (_) {}
   }
-  if (!fromHash) writeHash(sceneId);
+  if (!fromHash && !fromUrl) writeUrl(sceneId);
 
   if (prev !== sceneId) {
     window.dispatchEvent(
@@ -303,6 +350,7 @@ function onWorldClick(e) {
   ) {
     return;
   }
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
   e.preventDefault();
   e.stopPropagation();
   const id = btn.getAttribute("data-scene");
@@ -337,8 +385,12 @@ function wire() {
   });
 
   window.addEventListener("hashchange", () => {
-    const next = readHash();
-    if (next !== current) setScene(next, { fromHash: true });
+    const next = readStartScene();
+    if (next !== current) setScene(next, { fromHash: true, fromUrl: true });
+  });
+  window.addEventListener("popstate", () => {
+    const next = readStartScene();
+    if (next !== current) setScene(next, { fromUrl: true });
   });
 
   // Block accidental middle-click / modified clicks on world tabs from opening new pages
@@ -346,13 +398,13 @@ function wire() {
     if (e.target.closest?.(".world-tab")) e.preventDefault();
   });
 
-  // Bare telephantim.com → always Bio (do not restore last tab; visitors must see 2D/3D).
-  // Deep links (#relics, #luna-2d, #luna-3d, #bio) still win.
-  let start = readHash();
-  if (!location.hash) {
-    start = DEFAULT_SCENE;
-  }
-  setScene(start, { persist: true, fromHash: !!location.hash });
+  // Bare telephantim.com → Bio. Shared links use ?world=2d (hash is fallback only).
+  const start = readStartScene();
+  setScene(start, {
+    persist: true,
+    fromHash: !!location.hash && !readQueryWorld(),
+    fromUrl: !!(readQueryWorld() || readPathWorld()),
+  });
 }
 
 if (document.readyState === "loading") {
