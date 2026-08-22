@@ -69,9 +69,17 @@ const SCENES = {
     id: "bio",
     label: "Bio",
     short: "Bio",
-    hint: "Beacons-style · your video or photo background",
+    hint: "Your video or photo background",
     url: null,
     mode: "bio",
+  },
+  studio: {
+    id: "studio",
+    label: "Music Studio",
+    short: "Studio",
+    hint: "Full synth · looper · free AI jam",
+    url: null,
+    mode: "studio",
   },
   "luna-2d": {
     id: "luna-2d",
@@ -126,6 +134,7 @@ function readHash() {
   if (h === "luna3d" || h === "3d") return "luna-3d";
   if (h === "relics" || h === "hub" || h === "home" || h === "telephantim") return "telephantim";
   if (h === "bio" || h === "beacons" || h === "links" || h === "quote") return "bio";
+  if (h === "studio" || h === "music" || h === "lab" || h === "jam") return "studio";
   // Ignore unknown hashes (e.g. #socials) — land on Bio
   if (h && !SCENES[h]) return DEFAULT_SCENE;
   return normalizeScene(h);
@@ -137,7 +146,7 @@ function writeHash(id) {
   const next =
     id === "bio"
       ? path
-      : `${path}#${id === "telephantim" ? "relics" : id}`;
+      : `${path}#${id === "telephantim" ? "relics" : id === "studio" ? "studio" : id}`;
   const cur = location.pathname + location.search + (location.hash || "");
   if (
     cur === next ||
@@ -184,14 +193,18 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
 
   const isExternal = !!want;
   const isBio = scene.mode === "bio";
+  const isStudio = scene.mode === "studio" || sceneId === "studio";
   const isRelics = sceneId === "telephantim";
 
   document.body.dataset.scene = sceneId;
   document.body.classList.toggle("scene-external", isExternal);
   document.body.classList.toggle("scene-bio", isBio);
+  document.body.classList.toggle("scene-studio", isStudio);
+  document.body.classList.toggle("scene-luna-2d", sceneId === "luna-2d");
+  document.body.classList.toggle("scene-luna-3d", sceneId === "luna-3d");
   document.body.classList.toggle("scene-native", isRelics);
 
-  if (isExternal || isBio) {
+  if (isExternal || isBio || isStudio) {
     document.body.classList.remove("sheet-open");
   }
   if (sceneId === "luna-2d") {
@@ -201,9 +214,18 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   const frame = $("scene-frame");
   const fallback = $("scene-fallback");
   const bioPage = $("bio-page");
+  const studioStage = $("stage-studio");
   const fallbackOpen = $("scene-fallback-open");
 
   if (bioPage) bioPage.hidden = !isBio;
+  if (studioStage) {
+    studioStage.hidden = !isStudio;
+    if (isStudio) {
+      try {
+        window.TelephantixStudio?.onSceneChange?.();
+      } catch (_) {}
+    }
+  }
 
   if (want && frame) {
     const prevSrc = frame.getAttribute("data-src") || frame.src || "";

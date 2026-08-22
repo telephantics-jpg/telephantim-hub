@@ -2232,30 +2232,75 @@ body:not(.sheet-open) .sheet-body {
 .tx-studio-seq-label {
   font-size: 0.72rem; color: #94a3b8; margin-bottom: 6px;
 }
-.tx-stu-seq-grid {
-  display: flex; flex-direction: column; gap: 4px;
+.stu-pattern-wide {
+  margin-top: 0.4rem;
+}
+.tx-studio-seq {
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(2, 6, 23, 0.55);
+  padding: 8px 8px 10px;
+}
+.tx-stu-seq-scroll {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: min(58vh, 560px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-color: #a78bfa #0f172a;
+}
+.tx-stu-seq-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: max-content;
+  min-width: 100%;
+  padding-bottom: 6px;
 }
 .tx-stu-seq-row {
   display: grid;
-  grid-template-columns: minmax(72px, 88px) repeat(16, minmax(18px, 1fr));
-  gap: 3px; align-items: center;
-  min-width: 420px;
+  /* sticky label + 64 roomy cells — scroll right for bars 2–4 */
+  grid-template-columns: 92px repeat(64, 30px);
+  gap: 4px;
+  align-items: center;
 }
 .tx-stu-seq-row.head .tx-stu-step-num {
-  text-align: center; font-size: 0.55rem; color: #64748b;
+  text-align: center;
+  font-size: 0.55rem;
+  color: #64748b;
+  font-weight: 700;
+  line-height: 1.1;
 }
-.tx-stu-track-name {
-  font-size: 0.62rem; text-align: left; padding: 4px 6px;
-  border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.2);
-  background: #0f172a; color: #e2e8f0; cursor: pointer;
+.tx-stu-track-name,
+.stu-seq-corner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  font-size: 0.68rem;
+  text-align: left;
+  padding: 8px 8px;
+  min-height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #0b1220;
+  color: #e2e8f0;
+  cursor: pointer;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.35);
 }
 .tx-stu-track-name.muted { opacity: 0.4; text-decoration: line-through; }
 .stu-step {
-  aspect-ratio: 1; min-height: 18px; border-radius: 4px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(15, 23, 42, 0.9); cursor: pointer;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.92);
+  cursor: pointer;
   touch-action: manipulation;
+}
+.stu-step.bar-start,
+.tx-stu-step-num.bar-start {
+  border-left: 2px solid rgba(253, 230, 138, 0.55);
 }
 .stu-step.filled {
   background: var(--c, #a78bfa);
@@ -2265,6 +2310,23 @@ body:not(.sheet-open) .sheet-body {
 .stu-step.on-playhead {
   outline: 2px solid #fde68a;
   outline-offset: 0;
+}
+.stu-looper-head .stu-hero-label {
+  margin-bottom: 6px;
+}
+@media (max-width: 640px) {
+  .tx-stu-seq-row {
+    grid-template-columns: 76px repeat(64, 28px);
+    gap: 3px;
+  }
+  .stu-step {
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+  }
+  .tx-stu-seq-scroll {
+    max-height: min(50vh, 420px);
+  }
 }
 .tx-studio-ai {
   margin-top: 12px; border-top: 1px solid rgba(148, 163, 184, 0.15);
@@ -2304,6 +2366,10 @@ body.scene-studio .float-actions {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+body.scene-luna-2d .world-tab[data-scene="studio"],
+body.scene-luna-2d #btn-studio {
+  display: none !important;
 }
 body.scene-studio .world-switch {
   z-index: 40;
@@ -2707,22 +2773,27 @@ body.scene-studio .music-chrome #btn-studio {
 .stu-playbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  margin-bottom: 1rem;
+  margin: 6px 0 1rem;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(253, 230, 138, 0.3);
+  background: rgba(15, 23, 42, 0.75);
 }
 .stu-big-play {
-  width: 52px;
-  height: 52px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   border: 2px solid #fde68a;
   background: linear-gradient(145deg, #422006, #f59e0b);
   color: #fff7ed;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.4);
   touch-action: manipulation;
+  flex: 0 0 auto;
 }
 .stu-big-play.is-playing {
   background: linear-gradient(145deg, #4c1d95, #a78bfa);
