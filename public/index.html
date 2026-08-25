@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v143-2d-hud-clear" />
+  <link rel="stylesheet" href="styles.css?v=v144-no-studio" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -151,7 +151,6 @@
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
     <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
     <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
-    <a class="world-tab" href="/?world=studio" data-scene="studio" title="Music Studio — synth, looper, free AI jam">Studio</a>
     <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
     <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
   </nav>
@@ -233,9 +232,6 @@
     Camp hides its own music UI when loaded with ?hub=1.
   -->
   <div class="music-chrome" id="music-chrome" aria-label="Telephantix music">
-    <button type="button" class="btn-chip btn-studio" id="btn-studio" aria-expanded="false" title="Open Music Studio tab">
-      <span>🎸 Studio</span>
-    </button>
     <button type="button" class="btn-chip btn-music" id="btn-music" aria-expanded="false" title="Play Telephantix music · drag to move">
       <span id="btn-music-label">♪ Play music</span>
     </button>
@@ -454,7 +450,7 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v129-world-query"></script>
+  <script type="module" src="scenes.js?v=v130-no-studio"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
   <script type="module" src="bio.js?v=v126-bio-games"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
