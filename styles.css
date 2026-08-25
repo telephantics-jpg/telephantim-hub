@@ -2373,8 +2373,10 @@ body.scene-studio .float-actions {
   visibility: hidden !important;
   pointer-events: none !important;
 }
-body.scene-luna-2d .world-tab[data-scene="studio"],
-body.scene-luna-2d #btn-studio {
+.world-tab[data-scene="studio"],
+#btn-studio,
+.btn-studio,
+.stage-studio {
   display: none !important;
 }
 @media (min-width: 900px) {

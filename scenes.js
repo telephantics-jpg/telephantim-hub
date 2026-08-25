@@ -143,7 +143,7 @@ function mapWorldToken(raw) {
   if (t === "luna3d" || t === "luna-3d" || t === "3d") return "luna-3d";
   if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
   if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
-  if (t === "studio" || t === "music" || t === "lab" || t === "jam") return "studio";
+  if (t === "studio" || t === "music" || t === "lab" || t === "jam") return DEFAULT_SCENE;
   if (SCENES[t]) return t;
   return "";
 }
