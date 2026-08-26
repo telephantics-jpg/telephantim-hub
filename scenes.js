@@ -53,6 +53,7 @@ function campUrls() {
     base,
     play: `${base}/firmament/play?hub=1`,
     three: `${base}/firmament/3d?hub=1`,
+    sense: `${base}/sense`,
   };
 }
 
@@ -98,6 +99,14 @@ const SCENES = {
     urlKey: "three",
     mode: "external",
   },
+  sense: {
+    id: "sense",
+    label: "4D — The Sense",
+    short: "4D",
+    hint: "Interactable 4D field",
+    urlKey: "sense",
+    mode: "external",
+  },
 };
 
 function sceneUrl(scene) {
@@ -105,7 +114,9 @@ function sceneUrl(scene) {
   if (scene.url) return scene.url;
   if (scene.urlKey) {
     const u = campUrls();
-    return scene.urlKey === "three" ? u.three : u.play;
+    if (scene.urlKey === "three") return u.three;
+    if (scene.urlKey === "sense") return u.sense;
+    return u.play;
   }
   return null;
 }
@@ -130,6 +141,7 @@ function worldSlug(id) {
   if (id === "luna-2d") return "2d";
   if (id === "luna-3d") return "3d";
   if (id === "telephantim") return "relics";
+  if (id === "sense") return "4d";
   if (id === "studio") return "studio";
   return "bio";
 }
@@ -143,6 +155,8 @@ function mapWorldToken(raw) {
   if (t === "luna3d" || t === "luna-3d" || t === "3d") return "luna-3d";
   if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
   if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
+  if (t === "sense" || t === "sixth" || t === "field" || t === "matrix" || t === "4d" || t === "4-d") return "sense";
+  if (t === "prophecy" || t === "oracle" || t === "omen") return "sense";
   if (t === "studio" || t === "music" || t === "lab" || t === "jam") return DEFAULT_SCENE;
   if (SCENES[t]) return t;
   return "";
@@ -166,6 +180,7 @@ function readPathWorld() {
       .toLowerCase();
     if (last === "2d" || last === "2d.html") return "luna-2d";
     if (last === "3d" || last === "3d.html") return "luna-3d";
+    if (last === "sense" || last === "sense.html" || last === "prophecy" || last === "prophecy.html") return "sense";
     if (last === "relics" || last === "relics.html") return "telephantim";
     if (last === "studio" || last === "studio.html") return "studio";
   } catch (_) {}
@@ -223,6 +238,7 @@ function updateChrome(scene) {
 function sceneUrlKeyRewrite(sceneId) {
   const base = "http://127.0.0.1:8767";
   if (sceneId === "luna-3d") return `${base}/firmament/3d?hub=1`;
+  if (sceneId === "sense") return `${base}/sense`;
   return `${base}/firmament/play?hub=1`;
 }
 
