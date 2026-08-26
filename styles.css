@@ -115,6 +115,16 @@ a.world-tab {
   background: linear-gradient(135deg, #f0d060, #c9a227);
   box-shadow: 0 0 12px rgba(201, 162, 39, 0.35);
 }
+.world-tab[data-scene="prophecy"].active {
+  color: #ecfdf5;
+  background: linear-gradient(135deg, #14532d, #f59e0b);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+.world-tab[data-scene="sense"].active {
+  color: #ecfdf5;
+  background: linear-gradient(135deg, #064e3b, #10b981);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
 .world-tab[data-scene="luna-2d"].active,
 .world-tab[data-scene="luna-3d"].active {
   color: #e8f6ff;
