@@ -2,6 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search || "");
+        var w = String(q.get("world") || q.get("w") || q.get("scene") || "").toLowerCase();
+        var p = String(location.pathname || "").toLowerCase();
+        var h = String(location.hash || "").replace("#", "").toLowerCase();
+        var camp =
+          w === "2d" || w === "3d" || w === "luna-2d" || w === "luna-3d" ||
+          h === "luna-2d" || h === "luna-3d" || h === "2d" || h === "3d" ||
+          /\/2d(\.html)?$/.test(p) || /\/3d(\.html)?$/.test(p);
+        if (camp) {
+          document.documentElement.classList.add("boot-camp");
+          document.documentElement.setAttribute("data-boot-world", w || h || "2d");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    html.boot-camp .stage,
+    html.boot-camp #stage-telephantim,
+    html.boot-camp #canvas-wrap {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Telephantim — Relics, Music &amp; Luna Camp</title>
   <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-21" />
@@ -19,29 +46,28 @@
   <meta property="og:video:height" content="720" />
   <meta property="og:video:url" content="https://telephantim.com/media/share/link-preview-relics.mp4" />
   <!-- Poster / fallback image — NEW filename so X drops the old cached card -->
-  <meta property="og:image" content="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <meta property="og:image:secure_url" content="https://telephantim.com/media/share/link-preview-relics.jpg" />
+  <meta property="og:image" content="https://telephantim.com/media/share/link-preview-relics.jpg?v=2026-08-open" />
+  <meta property="og:image:secure_url" content="https://telephantim.com/media/share/link-preview-relics.jpg?v=2026-08-open" />
   <meta property="og:image:type" content="image/jpeg" />
   <meta property="og:image:width" content="1280" />
   <meta property="og:image:height" content="720" />
   <meta property="og:image:alt" content="Mjolnir and Caduceus — dual sacred relics of Telephantim" />
-  <!-- X/Twitter: player card embeds the video in the feed when the domain allows it -->
-  <meta name="twitter:card" content="player" />
+  <!--
+    X/Twitter: use summary_large_image (NOT player).
+    Player cards trap phone in-app browsers on the preview video and never open the real site.
+    Video still works in Discord/FB via og:video above.
+  -->
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@Telephantix" />
   <meta name="twitter:creator" content="@Telephantix" />
   <meta name="twitter:title" content="Telephantim — Mjolnir &amp; Caduceus" />
   <meta name="twitter:description" content="Sacred dual relics · Telephantix radio · Luna Camp." />
-  <meta name="twitter:image" content="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <meta name="twitter:image:alt" content="Mjolnir and Caduceus dual relics video" />
-  <meta name="twitter:player" content="https://telephantim.com/player.html" />
-  <meta name="twitter:player:width" content="1280" />
-  <meta name="twitter:player:height" content="720" />
-  <meta name="twitter:player:stream" content="https://telephantim.com/media/share/link-preview-relics.mp4" />
-  <meta name="twitter:player:stream:content_type" content="video/mp4" />
+  <meta name="twitter:image" content="https://telephantim.com/media/share/link-preview-relics.jpg?v=2026-08-open" />
+  <meta name="twitter:image:alt" content="Mjolnir and Caduceus dual relics" />
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v118-mjolnir-sky" />
+  <link rel="stylesheet" href="styles.css?v=v146-suno-embed" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -53,7 +79,7 @@
     class="scene-frame"
     title="World scene"
     hidden
-    allow="autoplay; fullscreen; microphone; clipboard-write; gamepad; xr-spatial-tracking"
+    allow="autoplay; fullscreen; microphone; camera; clipboard-write; gamepad; xr-spatial-tracking"
     allowfullscreen
     referrerpolicy="no-referrer-when-downgrade"
   ></iframe>
@@ -123,11 +149,17 @@
 
   <!-- Compact world picker — Relics · Bio · 2D · 3D -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
-    <button type="button" class="world-tab" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</button>
-    <button type="button" class="world-tab active" data-scene="bio" title="Bio — video or photo background (Beacons-style)" aria-current="true">Bio</button>
-    <button type="button" class="world-tab" data-scene="luna-2d" title="Luna Camp 2D">2D</button>
-    <button type="button" class="world-tab" data-scene="luna-3d" title="Luna Camp 3D">3D</button>
+    <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
+    <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
+    <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
+    <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
+    <a class="world-tab" href="/?world=4d" data-scene="sense" title="4D — interactable hyper-form">4D</a>
   </nav>
+
+  <!-- Full Music Studio tab -->
+  <section class="stage-studio" id="stage-studio" hidden aria-label="Music Studio">
+    <div id="studio-mount" class="studio-mount"></div>
+  </section>
 
   <!-- Full-screen 3D relics: Mjolnir + Caduceus (both always on stage) -->
   <section class="stage" id="stage-telephantim" aria-label="3D relics">
@@ -222,6 +254,14 @@
           <button type="button" class="btn-chip ghost music-mini-ctl" id="music-mini-next" title="Next">›</button>
           <span class="music-mini-title" id="music-mini-title">Playing…</span>
         </div>
+        <iframe
+          id="music-embed"
+          class="music-embed"
+          title="Music player"
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write"
+          referrerpolicy="origin"
+          hidden
+        ></iframe>
         <div class="music-panel-body" id="music-panel-body">
           <div class="music-controls">
             <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
@@ -242,15 +282,6 @@
             />
           </div>
           <div class="music-stage" id="music-stage">
-            <iframe
-              id="music-embed"
-              class="music-embed"
-              title="Music player"
-              allow="clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              hidden
-            ></iframe>
             <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
@@ -419,12 +450,13 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v120-relics-live"></script>
+  <script type="module" src="scenes.js?v=v135-4d-only"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v118-mjolnir-sky"></script>
+  <script type="module" src="bio.js?v=v126-bio-games"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
-  <script type="module" src="music.js?v=98-vox-truth"></script>
+  <script type="module" src="music.js?v=v13-suno-embed"></script>
+  <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
-  <script type="module" src="mjolnir.js?v=v122-caduceus-3d"></script>
+  <script type="module" src="mjolnir.js?v=v130-boot-camp"></script>
 </body>
 </html>
