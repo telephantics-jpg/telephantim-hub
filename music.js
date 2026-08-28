@@ -64,6 +64,11 @@ let userStarted = false;
 let listFilter = "";
 /** First open this page session → shuffled queue + random start (not always song #1) */
 let firstOpenShufflePending = true;
+/** Don't skip-storm: user-picked track stays unless they hit Next */
+let pinnedSongId = null;
+let pinnedUntil = 0;
+let lastAdvanceAt = 0;
+let consecutiveLoadFails = 0;
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
 /** Drag-placed music panel box */
@@ -411,6 +416,7 @@ function renderList() {
     )}</span>`;
     btn.addEventListener("click", () => {
       index = i;
+      pinCurrentSong(12000);
       loadTrack(true);
     });
     list.appendChild(btn);
@@ -706,7 +712,7 @@ function installMediaSession() {
   });
   bind("nexttrack", () => {
     userPaused = false;
-    next();
+    next(true);
   });
   bind("previoustrack", () => {
     userPaused = false;
@@ -768,7 +774,8 @@ function installBackgroundKeepAlive() {
       updateMediaSessionMeta(true);
     }
     if (a.ended) {
-      next();
+      const dur = Number(a.duration) || 0;
+      if (dur >= 3) next(false);
       return;
     }
     // While tab is hidden, fight silent OS pauses
@@ -1347,7 +1354,7 @@ function setOpen(v, opts) {
     // Always re-pull catalog when opening so admin "add song" shows up
     loadSunoCatalog().finally(() => {
       // First open: reshuffle + random start so it's never the same intro track
-      if (firstOpenShufflePending && allSunoTracks.length > 1) {
+      if (firstOpenShufflePending && allSunoTracks.length > 1 && !userStarted) {
         firstOpenShufflePending = false;
         shuffleOn = true;
         applyShuffle(false);
@@ -1399,8 +1406,33 @@ function toggleMinimize() {
   setMinimized(!minimized);
 }
 
-function next() {
+function pinCurrentSong(ms) {
+  const cur = current();
+  pinnedSongId = (cur && (cur.songId || cur.id)) || null;
+  pinnedUntil = Date.now() + Math.max(800, ms || 8000);
+}
+
+function canAutoAdvance() {
+  const now = Date.now();
+  if (now - lastAdvanceAt < 1800) return false;
+  if (now < pinnedUntil) {
+    const cur = current();
+    const id = cur && (cur.songId || cur.id);
+    if (id && id === pinnedSongId) return false;
+  }
+  if (consecutiveLoadFails > 10) return false;
+  return true;
+}
+
+function next(fromUser) {
   if (!PLAYLIST.length) return;
+  if (!fromUser && !canAutoAdvance()) return;
+  lastAdvanceAt = Date.now();
+  if (fromUser) {
+    pinnedSongId = null;
+    pinnedUntil = 0;
+    consecutiveLoadFails = 0;
+  }
   // Cancel old Vox immediately so Next feels instant
   notifyDjSkip();
   index = (index + 1) % PLAYLIST.length;
@@ -1410,6 +1442,10 @@ function next() {
 
 function prev() {
   if (!PLAYLIST.length) return;
+  pinnedSongId = null;
+  pinnedUntil = 0;
+  consecutiveLoadFails = 0;
+  lastAdvanceAt = Date.now();
   notifyDjSkip();
   index = (index - 1 + PLAYLIST.length) % PLAYLIST.length;
   userPaused = false;
@@ -1443,7 +1479,16 @@ function playAllSuno(e) {
 function onAudioEnded() {
   // Continuous play through the queue — only after user started
   if (!userStarted || userPaused || !PLAYLIST.length) return;
-  next();
+  const audio = $("music-audio");
+  const dur = Number(audio?.duration) || 0;
+  const t = Number(audio?.currentTime) || 0;
+  // Fake "ended" from a failed/empty src — do not skip-storm
+  if (dur < 3 && t < 1) {
+    consecutiveLoadFails += 1;
+    return;
+  }
+  consecutiveLoadFails = 0;
+  next(false);
 }
 
 function wire() {
@@ -1482,9 +1527,9 @@ function wire() {
   });
   // Close = hide shell (keep playing only if user already started)
   $("music-close")?.addEventListener("click", () => setOpen(false));
-  $("music-next")?.addEventListener("click", next);
+  $("music-next")?.addEventListener("click", () => next(true));
   $("music-prev")?.addEventListener("click", prev);
-  $("music-mini-next")?.addEventListener("click", next);
+  $("music-mini-next")?.addEventListener("click", () => next(true));
   $("music-mini-prev")?.addEventListener("click", prev);
   $("music-search")?.addEventListener("input", (e) => {
     listFilter = e.target?.value || "";
@@ -1550,9 +1595,16 @@ function wire() {
       }
     });
     audio.addEventListener("error", () => {
-      if (userStarted && !userPaused && isSunoTrack(current()) && PLAYLIST.length > 1) {
-        setTimeout(next, 400);
-      }
+      consecutiveLoadFails += 1;
+      if (!userStarted || userPaused) return;
+      if (!isSunoTrack(current()) || PLAYLIST.length < 2) return;
+      const a = $("music-audio");
+      if (a && a.currentTime > 1.2) return;
+      if (!canAutoAdvance()) return;
+      setTimeout(() => next(false), 900);
+    });
+    audio.addEventListener("playing", () => {
+      consecutiveLoadFails = 0;
     });
   }
 
