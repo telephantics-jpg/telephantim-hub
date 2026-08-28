@@ -161,10 +161,23 @@ export function createDjRadio(api = {}) {
     micAudio = null;
   }
 
+  function resumeBed() {
+    unduckMusic({ ramp: true });
+    try {
+      const m = getMusic();
+      if (m && m.paused && !m.ended && api.isWantedOn?.()) {
+        m.play()?.catch?.(() => {});
+      }
+    } catch (_) {}
+  }
+
   function cancelMic() {
     stopMic();
+    try {
+      window.speechSynthesis?.cancel();
+    } catch (_) {}
     micBusy = false;
-    if (savedMusicVol != null) unduckMusic({ ramp: true });
+    resumeBed();
   }
 
   function playMicB64(b64) {
@@ -185,7 +198,10 @@ export function createDjRadio(api = {}) {
         a.src = url;
         a.volume = 1;
         micAudio = a;
+        let settled = false;
         const done = (ok) => {
+          if (settled) return;
+          settled = true;
           try {
             URL.revokeObjectURL(url);
           } catch (_) {}
@@ -194,6 +210,7 @@ export function createDjRadio(api = {}) {
         };
         a.addEventListener("ended", () => done(true), { once: true });
         a.addEventListener("error", () => done(false), { once: true });
+        setTimeout(() => done(true), 16000);
         a.play().catch(() => done(false));
       } catch (err) {
         reject(err);
@@ -277,29 +294,39 @@ export function createDjRadio(api = {}) {
     return bag[Math.floor(Math.random() * bag.length)];
   }
 
+  let voxVoice = null;
   function pickVoxVoice(voices) {
+    if (voxVoice) return voxVoice;
     const list = voices || [];
     const skip = /new zealand|en-NZ|en_NZ|kiwi|en-AU|en_AU|australia|en-IN|india|en-ZA|south africa|irish|en-IE/i;
-    const prefer = /GuyNeural|Microsoft David|Google US English|en-US-Guy|David Desktop|Mark|Eric|Guy/i;
-    return (
+    const prefer = /GuyNeural|en-US-Guy|Microsoft David|Google US English|David Desktop/i;
+    voxVoice =
       list.find((v) => prefer.test(v.name) && !skip.test(`${v.name} ${v.lang}`)) ||
-      list.find((v) => /en(-|_)US/i.test(v.lang) && /male|guy|david|mark|fred/i.test(v.name)) ||
+      list.find((v) => /en(-|_)US/i.test(v.lang) && /guy|david/i.test(v.name)) ||
       list.find((v) => /en(-|_)US/i.test(v.lang) && !skip.test(`${v.name} ${v.lang}`)) ||
-      list.find((v) => /^en/i.test(v.lang) && !skip.test(`${v.name} ${v.lang}`)) ||
-      null
-    );
+      null;
+    return voxVoice;
   }
 
   function speakBrowser(text) {
     return new Promise((resolve) => {
+      let settled = false;
+      const done = (ok) => {
+        if (settled) return;
+        settled = true;
+        resolve(!!ok);
+      };
       try {
         const synth = window.speechSynthesis;
         if (!synth || !text) {
-          resolve(false);
+          done(false);
           return;
         }
-        synth.cancel();
-        const speak = (voices) => {
+        const speakOnce = (voices) => {
+          if (settled) return;
+          try {
+            synth.cancel();
+          } catch (_) {}
           const u = new SpeechSynthesisUtterance(String(text).slice(0, 420));
           u.lang = "en-US";
           u.rate = 1.02;
@@ -307,19 +334,25 @@ export function createDjRadio(api = {}) {
           u.volume = 1;
           const male = pickVoxVoice(voices || synth.getVoices?.() || []);
           if (male) u.voice = male;
-          u.onend = () => resolve(true);
-          u.onerror = () => resolve(false);
+          u.onend = () => done(true);
+          u.onerror = () => done(true);
           synth.speak(u);
         };
         const have = synth.getVoices?.() || [];
-        if (have.length) {
-          speak(have);
-          return;
+        if (have.length) speakOnce(have);
+        else {
+          let armed = false;
+          const go = () => {
+            if (armed || settled) return;
+            armed = true;
+            speakOnce(synth.getVoices() || []);
+          };
+          synth.addEventListener("voiceschanged", go, { once: true });
+          setTimeout(go, 400);
         }
-        synth.addEventListener("voiceschanged", () => speak(synth.getVoices() || []), { once: true });
-        setTimeout(() => speak(synth.getVoices() || []), 350);
+        setTimeout(() => done(true), 14000);
       } catch (_) {
-        resolve(false);
+        done(false);
       }
     });
   }
@@ -543,9 +576,9 @@ export function createDjRadio(api = {}) {
         await speakBrowser(data?.text || `Vox · ${title}`);
       } catch (_) {}
     } finally {
+      resumeBed();
       if (gen === announceGen) {
         micBusy = false;
-        unduckMusic({ ramp: true });
         status(`♫ ${title}`);
         try {
           api.onUi?.({ enabled, micBusy: false, status: lastStatus });
