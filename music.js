@@ -170,7 +170,7 @@ function sunoFromCatalog(rows) {
     .map((row, i) => {
       const id = row.id || row.songId;
       if (!id) return null;
-      const url = row.audio_url || row.url || `https://cdn1.suno.ai/${id}.mp3`;
+      const url = `https://audiopipe.suno.ai/?item_id=${encodeURIComponent(id)}`;
       return {
         id: `suno-${id}`,
         songId: id,
@@ -1215,7 +1215,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v123-vox-lines`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v124-vox-us`);
     djRadio = mod.createDjRadio({
       getAudio: () => $("music-audio"),
       getTracks: () =>
@@ -1595,10 +1595,16 @@ function wire() {
       }
     });
     audio.addEventListener("error", () => {
+      const cur = current();
+      const a = $("music-audio");
+      if (a && cur?.songId && /cdn1\.suno\.ai|cdn2\.suno\.ai/i.test(a.src || "")) {
+        a.src = `https://audiopipe.suno.ai/?item_id=${encodeURIComponent(cur.songId)}`;
+        if (userStarted && !userPaused) a.play().catch(() => {});
+        return;
+      }
       consecutiveLoadFails += 1;
       if (!userStarted || userPaused) return;
-      if (!isSunoTrack(current()) || PLAYLIST.length < 2) return;
-      const a = $("music-audio");
+      if (!isSunoTrack(cur) || PLAYLIST.length < 2) return;
       if (a && a.currentTime > 1.2) return;
       if (!canAutoAdvance()) return;
       setTimeout(() => next(false), 900);
