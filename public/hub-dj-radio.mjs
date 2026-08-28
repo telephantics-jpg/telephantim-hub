@@ -277,6 +277,19 @@ export function createDjRadio(api = {}) {
     return bag[Math.floor(Math.random() * bag.length)];
   }
 
+  function pickVoxVoice(voices) {
+    const list = voices || [];
+    const skip = /new zealand|en-NZ|en_NZ|kiwi|en-AU|en_AU|australia|en-IN|india|en-ZA|south africa|irish|en-IE/i;
+    const prefer = /GuyNeural|Microsoft David|Google US English|en-US-Guy|David Desktop|Mark|Eric|Guy/i;
+    return (
+      list.find((v) => prefer.test(v.name) && !skip.test(`${v.name} ${v.lang}`)) ||
+      list.find((v) => /en(-|_)US/i.test(v.lang) && /male|guy|david|mark|fred/i.test(v.name)) ||
+      list.find((v) => /en(-|_)US/i.test(v.lang) && !skip.test(`${v.name} ${v.lang}`)) ||
+      list.find((v) => /^en/i.test(v.lang) && !skip.test(`${v.name} ${v.lang}`)) ||
+      null
+    );
+  }
+
   function speakBrowser(text) {
     return new Promise((resolve) => {
       try {
@@ -286,19 +299,25 @@ export function createDjRadio(api = {}) {
           return;
         }
         synth.cancel();
-        const u = new SpeechSynthesisUtterance(String(text).slice(0, 420));
-        u.rate = 1.02;
-        u.pitch = 0.92;
-        u.volume = 1;
-        const voices = synth.getVoices?.() || [];
-        const male =
-          voices.find((v) => /en(-|_)US/i.test(v.lang) && /male|guy|david|mark|fred/i.test(v.name)) ||
-          voices.find((v) => /^en/i.test(v.lang)) ||
-          null;
-        if (male) u.voice = male;
-        u.onend = () => resolve(true);
-        u.onerror = () => resolve(false);
-        synth.speak(u);
+        const speak = (voices) => {
+          const u = new SpeechSynthesisUtterance(String(text).slice(0, 420));
+          u.lang = "en-US";
+          u.rate = 1.02;
+          u.pitch = 0.92;
+          u.volume = 1;
+          const male = pickVoxVoice(voices || synth.getVoices?.() || []);
+          if (male) u.voice = male;
+          u.onend = () => resolve(true);
+          u.onerror = () => resolve(false);
+          synth.speak(u);
+        };
+        const have = synth.getVoices?.() || [];
+        if (have.length) {
+          speak(have);
+          return;
+        }
+        synth.addEventListener("voiceschanged", () => speak(synth.getVoices() || []), { once: true });
+        setTimeout(() => speak(synth.getVoices() || []), 350);
       } catch (_) {
         resolve(false);
       }
