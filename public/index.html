@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v145-sense-tab" />
+  <link rel="stylesheet" href="styles.css?v=v146-suno-embed" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -254,6 +254,14 @@
           <button type="button" class="btn-chip ghost music-mini-ctl" id="music-mini-next" title="Next">›</button>
           <span class="music-mini-title" id="music-mini-title">Playing…</span>
         </div>
+        <iframe
+          id="music-embed"
+          class="music-embed"
+          title="Music player"
+          allow="autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write"
+          referrerpolicy="origin"
+          hidden
+        ></iframe>
         <div class="music-panel-body" id="music-panel-body">
           <div class="music-controls">
             <button type="button" class="btn-chip ghost" id="music-prev">Prev</button>
@@ -274,15 +282,6 @@
             />
           </div>
           <div class="music-stage" id="music-stage">
-            <iframe
-              id="music-embed"
-              class="music-embed"
-              title="Music player"
-              allow="clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              hidden
-            ></iframe>
             <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
@@ -455,7 +454,7 @@
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
   <script type="module" src="bio.js?v=v126-bio-games"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
-  <script type="module" src="music.js?v=v12-vox-resume"></script>
+  <script type="module" src="music.js?v=v13-suno-embed"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
   <script type="module" src="mjolnir.js?v=v130-boot-camp"></script>

@@ -1415,6 +1415,24 @@ body.sheet-open .music-chrome #btn-music:not(.is-placed) {
 .music-player.open {
   display: block !important;
 }
+/* Suno/Spotify/YouTube iframe must stay in layout or the stream dies */
+.music-player.embed-keep:not(.open) {
+  display: block !important;
+  opacity: 0.02;
+  pointer-events: none;
+  width: 8px !important;
+  height: 8px !important;
+  overflow: hidden;
+  left: 0;
+  bottom: 0;
+  transform: none;
+}
+.music-player.is-minimized .music-embed:not([hidden]) {
+  width: 8px;
+  height: 8px;
+  opacity: 0.05;
+  pointer-events: none;
+}
 /* User-dragged panel (left/top) */
 .music-player.is-placed {
   left: var(--music-panel-left, 50%) !important;
@@ -1633,9 +1651,11 @@ body.sheet-open .music-player:not(.is-placed):not(.is-anchored) {
 .music-embed {
   display: block;
   width: 100%;
-  height: 132px;
+  height: 168px;
   border: 0;
   background: #000;
+  border-radius: 10px;
+  margin: 0.35rem 0 0.2rem;
 }
 .music-embed[hidden] {
   display: none !important;

@@ -164,21 +164,65 @@ function toggleShuffle() {
   if (userStarted) loadTrack(false);
 }
 
+/** Suno public MP3 CDN is signed/forbidden; their embed player still decrypts and plays. */
+function sunoEmbedUrl(id, wantPlay) {
+  const q = wantPlay ? "?autoplay=true" : "";
+  return `https://suno.com/embed/${encodeURIComponent(id)}${q}`;
+}
+
+let embedAdvanceTimer = null;
+
+function clearEmbedAdvance() {
+  if (embedAdvanceTimer) {
+    clearTimeout(embedAdvanceTimer);
+    embedAdvanceTimer = null;
+  }
+}
+
+function armEmbedAdvance(track) {
+  clearEmbedAdvance();
+  if (!userStarted || userPaused) return;
+  if (!track || (track.type !== "suno" && track.type !== "audio")) return;
+  const sec = Number(track.duration_sec);
+  const waitSec = Number.isFinite(sec) && sec > 30 ? sec : 240;
+  embedAdvanceTimer = setTimeout(() => {
+    embedAdvanceTimer = null;
+    if (!userStarted || userPaused) return;
+    const cur = current();
+    if (!cur || (cur.songId || cur.id) !== (track.songId || track.id)) return;
+    next(false);
+  }, Math.round(waitSec * 1000) + 1500);
+}
+
+function isEmbedPlaying() {
+  const frame = $("music-embed");
+  const t = current();
+  return !!(
+    userStarted &&
+    !userPaused &&
+    frame &&
+    !frame.hidden &&
+    frame.getAttribute("src") &&
+    t &&
+    (t.type === "suno" || t.type === "spotify" || t.type === "youtube")
+  );
+}
+
 function sunoFromCatalog(rows) {
   if (!Array.isArray(rows)) return [];
   return rows
     .map((row, i) => {
       const id = row.id || row.songId;
       if (!id) return null;
-      const url = `https://audiopipe.suno.ai/?item_id=${encodeURIComponent(id)}`;
       return {
         id: `suno-${id}`,
         songId: id,
         title: row.title || `Suno track ${i + 1}`,
         artist: row.artist || "Suno · @telephantix",
-        // Native audio — full queue play + auto-next (Suno profile pages cannot be embedded)
-        type: "audio",
-        url,
+        // Suno embed — cdn1/audiopipe no longer serve playable MP3 bytes
+        type: "suno",
+        url: sunoEmbedUrl(id, false),
+        duration_sec: Number(row.duration_sec) || 0,
       };
     })
     .filter(Boolean);
@@ -336,7 +380,7 @@ function embedSrc(track, wantPlay) {
     )}&rel=0&autoplay=${ap}`;
   }
   if (track.type === "suno" && track.songId) {
-    return `https://suno.com/embed/${encodeURIComponent(track.songId)}`;
+    return sunoEmbedUrl(track.songId, wantPlay);
   }
   return "";
 }
@@ -437,6 +481,7 @@ function signalCampStopMusic() {
 }
 
 function stopAllMedia() {
+  clearEmbedAdvance();
   const audio = $("music-audio");
   const frame = $("music-embed");
   const stage = $("music-stage");
@@ -501,14 +546,20 @@ function loadTrack(autoPlayHint) {
   // Always only one source: kill the other before starting this track
   signalCampStopMusic();
 
-  if (t.type === "audio" && audio && frame) {
-    // Native Suno mp3 — no iframe (prevents double playback)
+  const useSunoEmbed = !!(
+    t.songId &&
+    (t.type === "suno" ||
+      /suno\.ai|suno\.com|audiopipe/i.test(String(t.url || "")))
+  );
+
+  if (t.type === "audio" && !useSunoEmbed && audio && frame) {
+    // Native hosted mp3 — no iframe (prevents double playback)
+    clearEmbedAdvance();
     prepAudioElement(audio);
     try {
       frame.removeAttribute("src");
     } catch (_) {}
     frame.hidden = true;
-    // Keep element in layout tree for background playback (opacity 0 ok if needed)
     audio.hidden = false;
     if (stage) {
       stage.classList.add("has-audio");
@@ -523,14 +574,13 @@ function loadTrack(autoPlayHint) {
     if (autoPlayHint) {
       userPaused = false;
       audio.play().catch(() => {});
-      // Spotify-style Vox intro (async — waits for DJ module so first play isn't silent)
       void notifyDjTrackChange();
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
     saveMusicPersist();
     updateMusicChrome();
   } else if (frame && audio) {
-    // Spotify / YouTube embed only — pause native audio fully
+    // Suno / Spotify / YouTube embed — pause native audio fully
     try {
       audio.pause();
       audio.removeAttribute("src");
@@ -538,15 +588,30 @@ function loadTrack(autoPlayHint) {
     } catch (_) {}
     audio.hidden = true;
     frame.hidden = false;
+    try {
+      frame.setAttribute(
+        "allow",
+        "autoplay; encrypted-media; fullscreen; picture-in-picture; clipboard-write"
+      );
+      frame.removeAttribute("loading");
+    } catch (_) {}
     if (stage) {
       stage.classList.add("has-embed");
       stage.classList.remove("has-audio");
     }
-    if (autoPlayHint || !frame.getAttribute("src")) {
-      frame.src = embedSrc(t, !!autoPlayHint);
-    } else {
-      frame.src = embedSrc(t, false);
+    const nextSrc = embedSrc(t, !!autoPlayHint);
+    if (nextSrc && frame.getAttribute("src") !== nextSrc) {
+      frame.src = nextSrc;
     }
+    if (useSunoEmbed) armEmbedAdvance(t);
+    else clearEmbedAdvance();
+    if (autoPlayHint) {
+      userPaused = false;
+      void notifyDjTrackChange();
+    }
+    updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
+    saveMusicPersist();
+    updateMusicChrome();
   }
 
   renderList();
@@ -555,7 +620,8 @@ function loadTrack(autoPlayHint) {
 
 function isAudioPlaying() {
   const audio = $("music-audio");
-  return !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
+  const native = !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
+  return native || isEmbedPlaying();
 }
 
 /** True while we want continuous radio until browser close or user pause */
@@ -1117,8 +1183,11 @@ function updateMusicChrome() {
           : "Play music · drag chip · double-click resets place";
   }
   if (panel) {
-    panel.hidden = !open;
+    const embedLive = isEmbedPlaying();
+    // Embed iframes die on display:none — keep a tiny live shell while radio is on
+    panel.hidden = !open && !embedLive;
     panel.classList.toggle("open", open);
+    panel.classList.toggle("embed-keep", embedLive && (!open || minimized));
     panel.classList.toggle("is-minimized", open && minimized);
     // Restore full size when expanding (clear sticky layout)
     if (open && !minimized) {
@@ -1596,10 +1665,10 @@ function wire() {
     });
     audio.addEventListener("error", () => {
       const cur = current();
-      const a = $("music-audio");
-      if (a && cur?.songId && /cdn1\.suno\.ai|cdn2\.suno\.ai/i.test(a.src || "")) {
-        a.src = `https://audiopipe.suno.ai/?item_id=${encodeURIComponent(cur.songId)}`;
-        if (userStarted && !userPaused) a.play().catch(() => {});
+      if (cur?.songId && isSunoTrack(cur)) {
+        cur.type = "suno";
+        cur.url = sunoEmbedUrl(cur.songId, true);
+        loadTrack(true);
         return;
       }
       consecutiveLoadFails += 1;
