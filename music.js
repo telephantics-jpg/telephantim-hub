@@ -164,7 +164,33 @@ function toggleShuffle() {
   if (userStarted) loadTrack(false);
 }
 
-/** Suno public MP3 CDN is signed/forbidden; their embed player still decrypts and plays. */
+/** DistroKid masters on GitHub release (Suno's public MP3 CDN is locked). */
+const RADIO_MP3_BASE =
+  "https://github.com/telephantics-jpg/telephantim-hub/releases/download/radio-v1";
+
+function isDeadSunoCdn(url) {
+  return /cdn1\.suno\.ai|cdn2\.suno\.ai|audiopipe\.suno\.ai|\/api\/forbidden/i.test(
+    String(url || "")
+  );
+}
+
+function isHostedRadioUrl(url) {
+  const u = String(url || "");
+  return /\/releases\/download\/radio-|\/radio-mp3\//i.test(u) && /\.mp3(\?|$)/i.test(u);
+}
+
+function hostedMp3Url(id) {
+  let host = "";
+  try {
+    host = (location.hostname || "").toLowerCase();
+  } catch (_) {}
+  if (host === "localhost" || host === "127.0.0.1") {
+    return `/radio-mp3/${encodeURIComponent(id)}.mp3`;
+  }
+  return `${RADIO_MP3_BASE}/${encodeURIComponent(id)}.mp3`;
+}
+
+/** Suno embed — last-resort if we have no DistroKid master. */
 function sunoEmbedUrl(id, wantPlay) {
   const q = wantPlay ? "?autoplay=true" : "";
   return `https://suno.com/embed/${encodeURIComponent(id)}${q}`;
@@ -214,14 +240,30 @@ function sunoFromCatalog(rows) {
     .map((row, i) => {
       const id = row.id || row.songId;
       if (!id) return null;
+      if (String(row.radio || "").toLowerCase() === "skip") return null;
+      const catalogUrl = row.audio_url || row.url || "";
+      const hosted = isHostedRadioUrl(catalogUrl) || row.radio === "distrokid";
+      let url = hosted
+        ? isHostedRadioUrl(catalogUrl)
+          ? catalogUrl
+          : hostedMp3Url(id)
+        : "";
+      if (hosted) {
+        let host = "";
+        try {
+          host = (location.hostname || "").toLowerCase();
+        } catch (_) {}
+        if (host === "localhost" || host === "127.0.0.1") {
+          url = hostedMp3Url(id);
+        }
+      }
       return {
         id: `suno-${id}`,
         songId: id,
         title: row.title || `Suno track ${i + 1}`,
-        artist: row.artist || "Suno · @telephantix",
-        // Suno embed — cdn1/audiopipe no longer serve playable MP3 bytes
-        type: "suno",
-        url: sunoEmbedUrl(id, false),
+        artist: row.artist || "Telephantix",
+        type: hosted ? "audio" : "suno",
+        url: hosted ? url : sunoEmbedUrl(id, false),
         duration_sec: Number(row.duration_sec) || 0,
       };
     })

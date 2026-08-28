@@ -11,5 +11,7 @@ public/media/studio-gen/
 data/studio-acestep-jobs.json
 data/visitors.json
 .env
+# DistroKid radio masters (hosted as GitHub release radio-v1, not in git)
+radio-mp3/
 *.prev.jpg
 _boot_*.txt
