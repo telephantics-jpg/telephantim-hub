@@ -8,8 +8,8 @@
  * - Spam-skip cancels the old rant and starts the new track's intro ASAP.
  */
 
-const DUCK_VOL = 0.18;
-const DUCK_TALK = 0.12;
+const DUCK_VOL = 0.42;
+const DUCK_TALK = 0.38;
 const PREFETCH_AHEAD = 3; // next N tracks in queue
 const PREFETCH_LEAD_SEC = 22; // also warm near end of current
 const MIN_TRACK_FOR_END_PREFETCH = 12;
