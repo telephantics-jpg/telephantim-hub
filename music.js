@@ -374,8 +374,7 @@ function updateShuffleChip() {
 function toggleShuffle() {
   shuffleOn = !shuffleOn;
   applyShuffle(true);
-  // Stay on same song; only refresh media if user already started playback
-  if (userStarted) loadTrack(false);
+  // Reloading <audio> on iPhone stops playback and won't restart without a tap
 }
 
 /** DistroKid masters on GitHub release (Suno's public MP3 CDN is locked). */
@@ -702,8 +701,10 @@ function renderList() {
       t.artist || t.type
     )}</span>`;
     btn.addEventListener("click", () => {
+      unlockRadio();
       index = i;
       pinCurrentSong(12000);
+      userPaused = false;
       loadTrack(true);
     });
     list.appendChild(btn);
@@ -824,23 +825,27 @@ function loadTrack(autoPlayHint) {
       stage.classList.add("has-audio");
       stage.classList.remove("has-embed");
     }
+    const srcNow = decodeURIComponent(audio.currentSrc || audio.src || "");
+    const want = t.url || "";
     const sameSrc =
-      audio.src === t.url ||
-      (audio.src && t.url && t.songId && audio.src.includes(String(t.songId)));
+      (want && (srcNow === want || srcNow.endsWith(want))) ||
+      (t.songId && srcNow.includes(String(t.songId)));
     if (!sameSrc) {
       audio.src = t.url;
     }
     if (autoPlayHint) {
       userPaused = false;
+      unlockRadio();
       const startVox = () => {
-        setTimeout(() => notifyDjTrackChange(), 280);
+        setTimeout(() => notifyDjTrackChange(), 700);
       };
       try {
         const p = audio.play();
         if (p && typeof p.then === "function") {
           p.then(startVox).catch((err) => {
             console.warn("[radio] play blocked", err);
-            setDjStatus("Song blocked — tap ♪ Play music once");
+            setDjStatus("Tap ♪ Play music once if iPhone muted it");
+            audio.play().catch(() => {});
           });
         } else {
           startVox();
@@ -1556,7 +1561,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v130-live`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v131-bed-up`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
@@ -1781,12 +1786,12 @@ function next(fromUser) {
     pinnedSongId = null;
     pinnedUntil = 0;
     consecutiveLoadFails = 0;
+    unlockRadio();
   }
-  // Cancel old Vox immediately so Next feels instant
   notifyDjSkip();
   index = (index + 1) % PLAYLIST.length;
   userPaused = false;
-  loadTrack(true); // notifies DJ after play starts
+  loadTrack(true);
 }
 
 function prev() {
@@ -1795,6 +1800,7 @@ function prev() {
   pinnedUntil = 0;
   consecutiveLoadFails = 0;
   lastAdvanceAt = Date.now();
+  unlockRadio();
   notifyDjSkip();
   index = (index - 1 + PLAYLIST.length) % PLAYLIST.length;
   userPaused = false;
