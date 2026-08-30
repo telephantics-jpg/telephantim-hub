@@ -8,10 +8,14 @@
  * - Spam-skip cancels the old rant and starts the new track's intro ASAP.
  */
 
-const DUCK_VOL = 0.2;
+const DUCK_VOL = 0.18;
+const DUCK_TALK = 0.12;
 const PREFETCH_AHEAD = 3; // next N tracks in queue
 const PREFETCH_LEAD_SEC = 22; // also warm near end of current
 const MIN_TRACK_FOR_END_PREFETCH = 12;
+const MIX_LEAD_SEC = 11; // start blend this many seconds before the end
+const INTERJECT_MIN_DUR = 36;
+const TTS_WAIT_MS = 1600; // talk now — don't wait on the cloud
 const RAMP_UP_MS = 600;
 const SETTLE_MS = 180; // after skip storm, announce the track you stayed on
 
@@ -24,6 +28,33 @@ export function createDjRadio(api = {}) {
   let dropCache = new Map(); // cacheKey (track|kind) -> { text, audio_b64, source, dj, at }
   let inflight = new Map(); // cacheKey -> Promise<data>
   let micAudio = null;
+  let micNode = null;
+  let voxCtx = null;
+
+  function isIOS() {
+    try {
+      const ua = navigator.userAgent || "";
+      return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function getVoxCtx() {
+    try {
+      if (window.__teleVoxCtx) voxCtx = window.__teleVoxCtx;
+    } catch (_) {}
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!voxCtx) voxCtx = new Ctx();
+    try {
+      voxCtx.resume?.();
+    } catch (_) {}
+    return voxCtx;
+  }
+  try {
+    window.addEventListener("tele-audio-unlock", () => getVoxCtx());
+  } catch (_) {}
   let savedMusicVol = null;
   let tick = null;
   let lastStatus = "";
@@ -35,6 +66,9 @@ export function createDjRadio(api = {}) {
   /** Songs since last world-truth drop; every 3–4 tracks Vox tells a truth. */
   let songsSinceTruth = 0;
   let truthInterval = 3 + Math.floor(Math.random() * 2); // 3 or 4
+  let interjectAt = 0;
+  let interjectDoneKey = "";
+  let mixArmedKey = "";
 
   function status(msg) {
     lastStatus = msg || "";
@@ -68,11 +102,19 @@ export function createDjRadio(api = {}) {
     return String(t.id || t.src || t.title || "").trim().toLowerCase();
   }
 
+  function normalizeKind(kind) {
+    const k = (kind || "bridge").toLowerCase();
+    if (k === "truth" || k === "world") return "truth";
+    if (k === "interject" || k === "talkover" || k === "mid") return "interject";
+    if (k === "mix" || k === "remix" || k === "blend") return "mix";
+    if (k === "id") return "id";
+    return "bridge";
+  }
+
   function cacheKey(t, kind = "bridge") {
     const k = trackKey(t);
     if (!k) return "";
-    const kindNorm = (kind || "bridge").toLowerCase() === "truth" ? "truth" : "bridge";
-    return `${k}|${kindNorm}`;
+    return `${k}|${normalizeKind(kind)}`;
   }
 
   /** Most drops are witty bridges; every 3–4 songs a world-truth monologue. */
@@ -108,7 +150,7 @@ export function createDjRadio(api = {}) {
     }
   }
 
-  function duckMusic() {
+  function duckMusic(amount) {
     const a = getMusic();
     if (!a) return;
     clearRamp();
@@ -117,7 +159,7 @@ export function createDjRadio(api = {}) {
       savedMusicVol = Number.isFinite(v) && v > 0.05 ? v : 0.55;
     }
     try {
-      a.volume = Math.min(savedMusicVol, DUCK_VOL);
+      a.volume = Math.min(savedMusicVol, amount != null ? amount : DUCK_VOL);
     } catch (_) {}
   }
 
@@ -152,6 +194,12 @@ export function createDjRadio(api = {}) {
   }
 
   function stopMic() {
+    if (micNode) {
+      try {
+        micNode.stop();
+      } catch (_) {}
+      micNode = null;
+    }
     if (!micAudio) return;
     try {
       micAudio.pause();
@@ -182,11 +230,45 @@ export function createDjRadio(api = {}) {
 
   function playMicB64(b64) {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const done = (ok) => {
+        if (settled) return;
+        settled = true;
+        ok ? resolve() : reject(new Error("mic failed"));
+      };
       try {
         stopMic();
         const bin = atob(b64);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const ctx = getVoxCtx();
+        // Web Audio BufferSource — iPhone will pause a second <audio> and kill the song
+        if (ctx) {
+          ctx.decodeAudioData(bytes.buffer.slice(0), (buf) => {
+            try {
+              const src = ctx.createBufferSource();
+              const gain = ctx.createGain();
+              gain.gain.value = 1;
+              src.buffer = buf;
+              src.connect(gain);
+              gain.connect(ctx.destination);
+              micNode = src;
+              src.onended = () => {
+                if (micNode === src) micNode = null;
+                done(true);
+              };
+              src.start(0);
+              setTimeout(() => done(true), Math.min(16000, (buf.duration + 0.4) * 1000));
+            } catch (err) {
+              done(false);
+            }
+          }, () => done(false));
+          return;
+        }
+        if (isIOS()) {
+          done(false);
+          return;
+        }
         const blob = new Blob([bytes], { type: "audio/mpeg" });
         const url = URL.createObjectURL(blob);
         const a = new Audio();
@@ -198,17 +280,13 @@ export function createDjRadio(api = {}) {
         a.src = url;
         a.volume = 1;
         micAudio = a;
-        let settled = false;
-        const done = (ok) => {
-          if (settled) return;
-          settled = true;
+        a.addEventListener("ended", () => {
           try {
             URL.revokeObjectURL(url);
           } catch (_) {}
           if (micAudio === a) micAudio = null;
-          ok ? resolve() : reject(new Error("mic failed"));
-        };
-        a.addEventListener("ended", () => done(true), { once: true });
+          done(true);
+        }, { once: true });
         a.addEventListener("error", () => done(false), { once: true });
         setTimeout(() => done(true), 16000);
         a.play().catch(() => done(false));
@@ -243,7 +321,30 @@ export function createDjRadio(api = {}) {
     const title = nextTrack?.title || "the next track";
     const artist = nextTrack?.artist || "Telephantix";
     const key = String(title).trim().toLowerCase();
-    if ((kind || "").toLowerCase() === "truth") {
+    const kn = normalizeKind(kind);
+    if (kn === "interject") {
+      const now = nextTrack?.title || "this one";
+      const bag = [
+        `Vox still in the booth — stay on ${now}. Chorus isn't a suggestion.`,
+        `Talk-over: ${now} is doing the work. Phone face down.`,
+        `Don't skip ${now}. I'll mix you out when it's time.`,
+        `Booth check. ${now} has a second act. Hear it.`,
+        `Riding the fader on ${now}. Background is for grocery stores.`,
+      ];
+      return bag[Math.floor(Math.random() * bag.length)];
+    }
+    if (kn === "mix") {
+      const nxt = nextTrack?.title || "the next record";
+      const bag = [
+        `Vox blending into ${nxt}. Hands off skip — this is a mix.`,
+        `Riding the tail… slamming ${nxt} on top. That's the remix.`,
+        `Two records, one pulse. ${nxt} catching the kick. Stay.`,
+        `Live mix — ${nxt} coming through the filter. Don't blink.`,
+        `We're not stopping. ${nxt} eats the fade. Collision incoming.`,
+      ];
+      return bag[Math.floor(Math.random() * bag.length)];
+    }
+    if (kn === "truth") {
       const truths = [
         `Hot take from the booth: we archived our childhoods in the cloud and still can't find Tuesday. Meanwhile — ${title}.`,
         `Truth time: notifications trained us to treat every ping like an emergency. Most are coupons for anxiety. Here's ${title}.`,
@@ -310,6 +411,10 @@ export function createDjRadio(api = {}) {
 
   function speakBrowser(text) {
     return new Promise((resolve) => {
+      if (isIOS()) {
+        resolve(false);
+        return;
+      }
       let settled = false;
       const done = (ok) => {
         if (settled) return;
@@ -358,7 +463,7 @@ export function createDjRadio(api = {}) {
   }
 
   async function fetchDrop(prevTrack, nextTrack, kind = "bridge") {
-    const kindNorm = (kind || "bridge").toLowerCase() === "truth" ? "truth" : kind || "bridge";
+    const kindNorm = normalizeKind(kind);
     const body = {
       prev_title: prevTrack?.title || "",
       next_title: nextTrack?.title || "the next track",
@@ -393,7 +498,8 @@ export function createDjRadio(api = {}) {
             throw new Error(`HTTP ${res.status} ${t.slice(0, 60)}`);
           }
           const data = await res.json();
-          if (!data?.audio_b64) throw new Error("no audio in DJ response");
+          if (!data?.audio_b64 && !data?.text) throw new Error("empty DJ response");
+          if (!data.audio_b64) data.browser_speech = true;
           return data;
         } finally {
           if (timer) clearTimeout(timer);
@@ -401,16 +507,13 @@ export function createDjRadio(api = {}) {
       };
 
       try {
-        status(`Vox · calling ${base.replace(/^https?:\/\//, "") || "local"}…`);
-        return await attempt(70000);
+        status(`Vox · ${base.replace(/^https?:\/\//, "") || "local"}…`);
+        return await attempt(8000);
       } catch (err1) {
         lastErr = err1;
         try {
-          status("Waking free DJ cloud…");
           await fetch(`${base}/api/health`, { cache: "no-store", mode: "cors" }).catch(() => {});
-          await fetch(`${base}/api/firmament/dj/status`, { cache: "no-store", mode: "cors" }).catch(() => {});
-          await new Promise((r) => setTimeout(r, 2500));
-          return await attempt(90000);
+          return await attempt(5000);
         } catch (err2) {
           lastErr = err2 || err1;
         }
@@ -436,7 +539,7 @@ export function createDjRadio(api = {}) {
    * Truth drops are fetched on demand (not prefetched as bridge).
    */
   function ensureDrop(track, prevTrack, kind = "bridge") {
-    const kindNorm = (kind || "bridge").toLowerCase() === "truth" ? "truth" : "bridge";
+    const kindNorm = normalizeKind(kind);
     const key = cacheKey(track, kindNorm);
     if (!key) return Promise.resolve(null);
     if (dropCache.has(key)) {
@@ -515,41 +618,19 @@ export function createDjRadio(api = {}) {
 
     status(kind === "truth" ? `Vox · truth · ${title}…` : `Vox · ${title}…`);
 
-    // Prefer kind-matched cache; truth is rarely prefetched
-    const ck = cacheKey(next, kind);
-    let data = ck && dropCache.has(ck) ? dropCache.get(ck) : null;
-    // Bridge may fall back to any bridge cache entry for this track
-    if (!data?.audio_b64 && kind === "bridge" && key) {
-      const bridgeCk = cacheKey(next, "bridge");
-      if (dropCache.has(bridgeCk)) data = dropCache.get(bridgeCk);
-    }
-    if (!data?.audio_b64) {
-      data = await ensureDrop(next, prevTrack, kind);
-    }
-
-    if (gen !== announceGen) return; // skipped again
-    if (index() !== ni) return; // not this song anymore
-    if (!data?.audio_b64 && !data?.browser_speech && !data?.text) {
-      status(`♫ ${title}`);
-      warmAhead();
-      return;
-    }
-
     lastAnnouncedKey = key;
     micBusy = true;
     try {
-      duckMusic();
+      duckMusic(DUCK_TALK);
       try {
         const m = getMusic();
         if (m?.paused) await m.play?.();
       } catch (_) {}
 
+      const data = await dropOrTalk(next, prevTrack, kind);
       if (gen !== announceGen || index() !== ni) return;
 
-      const label =
-        kind === "truth" && data.text
-          ? data.text
-          : data.text || `Vox · ${title}`;
+      const label = data.text || `Vox · ${title}`;
       api.onUi?.({
         enabled: true,
         micBusy: true,
@@ -560,20 +641,11 @@ export function createDjRadio(api = {}) {
         dj: data.dj,
       });
       status(label);
-      if (data.audio_b64) {
-        try {
-          await playMicB64(data.audio_b64);
-        } catch (micErr) {
-          console.warn("[dj] mic b64 failed, browser voice", micErr);
-          await speakBrowser(data.text || label);
-        }
-      } else {
-        await speakBrowser(data.text || label);
-      }
+      await speakNow(data, `Vox on the boards — ${title}.`);
     } catch (err) {
       console.warn("[dj] mic", err);
       try {
-        await speakBrowser(data?.text || `Vox · ${title}`);
+        await speakBrowser(`Vox · ${title}`);
       } catch (_) {}
     } finally {
       resumeBed();
@@ -636,24 +708,147 @@ export function createDjRadio(api = {}) {
     scheduleAnnounceForCurrent(prev);
   }
 
+  function armInterjectTime(dur) {
+    if (!(dur > INTERJECT_MIN_DUR)) {
+      interjectAt = 0;
+      return;
+    }
+    // Talk over ~20–35s in so the booth feels live, not a 2-minute wait
+    const lo = 18;
+    const hi = Math.min(dur - MIX_LEAD_SEC - 10, 36);
+    interjectAt = hi > lo ? lo + Math.random() * (hi - lo) : lo;
+  }
+
+  async function speakNow(data, fallbackText) {
+    const text = (data && data.text) || fallbackText || "";
+    if (data?.audio_b64) {
+      try {
+        await playMicB64(data.audio_b64);
+        return;
+      } catch (_) {}
+    }
+    if (text) await speakBrowser(text);
+  }
+
+  async function dropOrTalk(track, prev, kind) {
+    const instant = localDropText(track, kind);
+    const pending = ensureDrop(track, prev, kind);
+    let data = null;
+    try {
+      data = await Promise.race([
+        pending,
+        new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), TTS_WAIT_MS)),
+      ]);
+    } catch (_) {
+      data = null;
+    }
+    if (data?.timeout) data = { text: instant, browser_speech: true };
+    if (!data?.audio_b64 && !data?.text) data = { text: instant, browser_speech: true };
+    return data;
+  }
+
+  async function announceInterject() {
+    if (!enabled || micBusy) return;
+    const cur = trackAt(index());
+    if (!cur) return;
+    const gen = ++announceGen;
+    micBusy = true;
+    try {
+      duckMusic(DUCK_TALK);
+      api.setBoothFx?.({ lowpass: 1400 });
+      const data = await dropOrTalk(cur, null, "interject");
+      if (gen !== announceGen) return;
+      status(data?.text || `Vox · riding ${cur.title}`);
+      await speakNow(data, localDropText(cur, "interject"));
+    } catch (err) {
+      console.warn("[dj] interject", err);
+    } finally {
+      api.setBoothFx?.({ lowpass: 18000 });
+      resumeBed();
+      if (gen === announceGen) micBusy = false;
+    }
+  }
+
+  async function announceMix() {
+    if (!enabled) return;
+    const ts = tracks();
+    if (ts.length < 2) return;
+    const i = index();
+    const cur = ts[i];
+    const nxt = ts[(i + 1) % ts.length];
+    if (!cur || !nxt) return;
+    const gen = ++announceGen;
+    micBusy = true;
+    try {
+      duckMusic(DUCK_TALK);
+      api.setBoothFx?.({ lowpass: 700 });
+      const data = await dropOrTalk(nxt, cur, "mix");
+      if (gen !== announceGen) return;
+      status(data?.text || `Vox mixing into ${nxt.title}`);
+      await speakNow(data, localDropText(nxt, "mix"));
+      if (gen !== announceGen) return;
+      const mixed = api.mixToNext?.();
+      lastAnnouncedKey = trackKey(nxt);
+      if (mixed === false) {
+        try {
+          api.playAt?.((i + 1) % ts.length);
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.warn("[dj] mix", err);
+    } finally {
+      api.setBoothFx?.({ lowpass: 18000 });
+      resumeBed();
+      if (gen === announceGen) micBusy = false;
+    }
+  }
+
   function startWatch() {
     if (tick) return;
     tick = setInterval(() => {
       if (!enabled) return;
       warmAhead();
       const music = getMusic();
-      if (!music || micBusy) return;
+      if (!music || music.paused) return;
       const dur = Number(music.duration) || 0;
       const t = Number(music.currentTime) || 0;
-      // Near end: make sure next drop is hot
+      const key = trackKey(trackAt(index()));
+      if (interjectAt === 0 && dur > INTERJECT_MIN_DUR) {
+        armInterjectTime(dur);
+      }
       if (dur > MIN_TRACK_FOR_END_PREFETCH && dur - t < PREFETCH_LEAD_SEC) {
         warmAhead();
       }
-      // Only auto-advance when host asked us to (camp). Hub advances itself.
+      // Live talk-over once per song
+      if (
+        !micBusy &&
+        interjectAt > 0 &&
+        t >= interjectAt &&
+        dur - t > MIX_LEAD_SEC + 6 &&
+        key &&
+        key !== interjectDoneKey
+      ) {
+        interjectDoneKey = key;
+        void announceInterject();
+        return;
+      }
+      // Mix-out: talk + blend into the next record
+      if (
+        !micBusy &&
+        dur > 40 &&
+        dur - t <= MIX_LEAD_SEC &&
+        dur - t > 0.4 &&
+        key &&
+        key !== mixArmedKey
+      ) {
+        mixArmedKey = key;
+        void announceMix();
+        return;
+      }
       if (api.advanceOnEnded !== false && dur > 2 && t >= dur - 0.12 && music.paused) {
         onMusicEnded();
       }
-    }, 700);
+    }, 450);
   }
 
   function stopWatch() {
@@ -682,7 +877,7 @@ export function createDjRadio(api = {}) {
     if (enabled) {
       startWatch();
       bindEnded(getMusic());
-      status("DJ Vox · funnier ironic lines · truth every 3–4 songs");
+      status("DJ Vox · live booth · talk-overs + mixes");
       songsSinceTruth = 0;
       truthInterval = 3 + Math.floor(Math.random() * 2);
       warmAhead();
@@ -725,6 +920,10 @@ export function createDjRadio(api = {}) {
     onTrackChanged(prevTrack) {
       if (!enabled) return;
       lastAnnouncedKey = "";
+      mixArmedKey = "";
+      interjectDoneKey = "";
+      const music = getMusic();
+      armInterjectTime(Number(music?.duration) || Number(prevTrack?.duration_sec) || 180);
       scheduleAnnounceForCurrent(prevTrack || null);
     },
 

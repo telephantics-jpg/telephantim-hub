@@ -69,6 +69,14 @@ let pinnedSongId = null;
 let pinnedUntil = 0;
 let lastAdvanceAt = 0;
 let consecutiveLoadFails = 0;
+let advancingUntil = 0;
+
+function requestAdvance(force) {
+  const now = Date.now();
+  if (now < advancingUntil) return;
+  advancingUntil = now + 2200;
+  next(!!force);
+}
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
 /** Drag-placed music panel box */
@@ -90,6 +98,212 @@ let lastSoftResumeAt = 0;
 
 function $(id) {
   return document.getElementById(id);
+}
+
+/** Dual-deck radio: A/B so Vox can mix instead of hard-cutting. */
+let liveDeck = "a";
+let mixing = false;
+let mixTimer = null;
+let boothCtx = null;
+const boothNodes = new WeakMap();
+/** Ignore ended/error while we tear down native audio to show an embed. */
+let ignoringAudioEvents = false;
+let radioWatch = null;
+let embedStartedAt = 0;
+
+function isIOS() {
+  try {
+    const ua = navigator.userAgent || "";
+    return (
+      /iPhone|iPad|iPod/i.test(ua) ||
+      (navigator.platform === "MacIntel" && (navigator.maxTouchPoints || 0) > 1)
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function isMobileRadio() {
+  try {
+    if (isIOS()) return true;
+    const ua = navigator.userAgent || "";
+    if (/Android/i.test(ua)) return true;
+    if ((navigator.maxTouchPoints || 0) > 1 && Math.min(screen.width, screen.height) < 920) {
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function unlockRadio() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (Ctx) {
+      if (!boothCtx) boothCtx = new Ctx();
+      boothCtx.resume?.();
+      try {
+        window.__teleVoxCtx = boothCtx;
+      } catch (_) {}
+      const buf = boothCtx.createBuffer(1, 1, 22050);
+      const src = boothCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(boothCtx.destination);
+      src.start(0);
+    }
+  } catch (_) {}
+  const a = liveAudioEl();
+  prepAudioElement(a);
+  try {
+    window.dispatchEvent(new Event("tele-audio-unlock"));
+  } catch (_) {}
+}
+
+function isLocalHub() {
+  let host = "";
+  let port = "";
+  try {
+    host = (location.hostname || "").toLowerCase();
+    port = String(location.port || "");
+  } catch (_) {}
+  if (host === "localhost" || host === "127.0.0.1") return true;
+  if (port === "8765" || port === "8767") return true;
+  return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(host);
+}
+
+function hushNativeAudio(audio) {
+  ignoringAudioEvents = true;
+  if (audio) {
+    try {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load?.();
+    } catch (_) {}
+  }
+  setTimeout(() => {
+    ignoringAudioEvents = false;
+  }, 600);
+}
+
+function liveAudioEl() {
+  const b = document.getElementById("music-audio-b");
+  const a = document.getElementById("music-audio");
+  if (liveDeck === "b" && b) return b;
+  return a;
+}
+
+function otherAudioEl() {
+  return liveDeck === "a"
+    ? document.getElementById("music-audio-b")
+    : document.getElementById("music-audio");
+}
+
+function ensureBooth(audio) {
+  if (isIOS() || isMobileRadio()) return null;
+  if (!audio || typeof AudioContext === "undefined") return null;
+  if (boothNodes.has(audio)) return boothNodes.get(audio);
+  try {
+    if (!boothCtx) boothCtx = new AudioContext();
+    boothCtx.resume?.();
+    if (boothCtx.state !== "running") return null;
+    const src = boothCtx.createMediaElementSource(audio);
+    const filter = boothCtx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 18000;
+    const gain = boothCtx.createGain();
+    gain.gain.value = 1;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(boothCtx.destination);
+    const nodes = { filter, gain };
+    boothNodes.set(audio, nodes);
+    return nodes;
+  } catch (err) {
+    console.warn("[booth]", err);
+    return null;
+  }
+}
+
+function setBoothFx(fx = {}) {
+  const audio = liveAudioEl();
+  const nodes = ensureBooth(audio);
+  if (!nodes) return;
+  try {
+    boothCtx?.resume?.();
+  } catch (_) {}
+  const hz = Number(fx.lowpass);
+  if (Number.isFinite(hz) && hz > 80) {
+    try {
+      nodes.filter.frequency.setTargetAtTime(hz, boothCtx.currentTime, 0.18);
+    } catch (_) {
+      nodes.filter.frequency.value = hz;
+    }
+  }
+}
+
+function mixToNext() {
+  // iOS / Android: one audio element. Dual-deck mix kills the queue.
+  if (isMobileRadio()) return false;
+  if (mixing) return false;
+  if (!PLAYLIST.length) return false;
+  const nextI = (index + 1) % PLAYLIST.length;
+  const t = PLAYLIST[nextI];
+  if (!t || t.type !== "audio" || !t.url) return false;
+  const from = liveAudioEl();
+  const to = otherAudioEl();
+  if (!from || !to) return false;
+  mixing = true;
+  index = nextI;
+  consecutiveLoadFails = 0;
+  lastAdvanceAt = Date.now();
+  pinCurrentSong(5000);
+  prepAudioElement(to);
+  to.hidden = false;
+  to.volume = 0;
+  try {
+    to.src = t.url;
+  } catch (_) {}
+  ensureBooth(from);
+  ensureBooth(to);
+  setBoothFx({ lowpass: 720 });
+  to.play().catch(() => {});
+  const fromStart = Number(from.volume);
+  const startVol = Number.isFinite(fromStart) && fromStart > 0.05 ? fromStart : 0.55;
+  const steps = 16;
+  let step = 0;
+  if (mixTimer) clearInterval(mixTimer);
+  mixTimer = setInterval(() => {
+    step += 1;
+    const p = Math.min(1, step / steps);
+    try {
+      from.volume = startVol * (1 - p);
+    } catch (_) {}
+    try {
+      to.volume = startVol * p;
+    } catch (_) {}
+    if (step >= steps) {
+      clearInterval(mixTimer);
+      mixTimer = null;
+      try {
+        from.pause();
+        from.removeAttribute("src");
+        from.load?.();
+        from.volume = startVol;
+      } catch (_) {}
+      liveDeck = liveDeck === "a" ? "b" : "a";
+      mixing = false;
+      setBoothFx({ lowpass: 18000 });
+      try {
+        to.volume = startVol;
+      } catch (_) {}
+      updateMusicChrome();
+      renderList();
+      updateMediaSessionMeta(true);
+      saveMusicPersist();
+    }
+  }, 480);
+  updateMusicChrome();
+  renderList();
+  return true;
 }
 
 function escapeHtml(s) {
@@ -180,14 +394,12 @@ function isHostedRadioUrl(url) {
 }
 
 function hostedMp3Url(id) {
-  let host = "";
-  try {
-    host = (location.hostname || "").toLowerCase();
-  } catch (_) {}
-  if (host === "localhost" || host === "127.0.0.1") {
-    return `/radio-mp3/${encodeURIComponent(id)}.mp3`;
+  const clip = encodeURIComponent(id);
+  if (isLocalHub()) {
+    return `/radio-mp3/${clip}.mp3`;
   }
-  return `${RADIO_MP3_BASE}/${encodeURIComponent(id)}.mp3`;
+  // Luna proxy sets audio/mpeg — GitHub's octet-stream fails on iPhone
+  return `https://telephanti.com/radio-mp3/${clip}.mp3`;
 }
 
 /** Suno embed — last-resort if we have no DistroKid master. */
@@ -207,16 +419,17 @@ function clearEmbedAdvance() {
 
 function armEmbedAdvance(track) {
   clearEmbedAdvance();
+  embedStartedAt = Date.now();
   if (!userStarted || userPaused) return;
   if (!track || (track.type !== "suno" && track.type !== "audio")) return;
   const sec = Number(track.duration_sec);
-  const waitSec = Number.isFinite(sec) && sec > 30 ? sec : 240;
+  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : 180;
   embedAdvanceTimer = setTimeout(() => {
     embedAdvanceTimer = null;
     if (!userStarted || userPaused) return;
     const cur = current();
     if (!cur || (cur.songId || cur.id) !== (track.songId || track.id)) return;
-    next(false);
+    requestAdvance(true);
   }, Math.round(waitSec * 1000) + 1500);
 }
 
@@ -243,20 +456,7 @@ function sunoFromCatalog(rows) {
       if (String(row.radio || "").toLowerCase() === "skip") return null;
       const catalogUrl = row.audio_url || row.url || "";
       const hosted = isHostedRadioUrl(catalogUrl) || row.radio === "distrokid";
-      let url = hosted
-        ? isHostedRadioUrl(catalogUrl)
-          ? catalogUrl
-          : hostedMp3Url(id)
-        : "";
-      if (hosted) {
-        let host = "";
-        try {
-          host = (location.hostname || "").toLowerCase();
-        } catch (_) {}
-        if (host === "localhost" || host === "127.0.0.1") {
-          url = hostedMp3Url(id);
-        }
-      }
+      let url = hosted ? hostedMp3Url(id) : "";
       return {
         id: `suno-${id}`,
         songId: id,
@@ -265,6 +465,7 @@ function sunoFromCatalog(rows) {
         type: hosted ? "audio" : "suno",
         url: hosted ? url : sunoEmbedUrl(id, false),
         duration_sec: Number(row.duration_sec) || 0,
+        radio: hosted ? "distrokid" : "suno",
       };
     })
     .filter(Boolean);
@@ -372,7 +573,7 @@ async function loadSunoCatalog() {
       renderList();
       // Already playing: keep same song + position (do not restart)
       if (userStarted) {
-        const audio = $("music-audio");
+        const audio = liveAudioEl();
         const cur = current();
         const same =
           audio &&
@@ -524,16 +725,23 @@ function signalCampStopMusic() {
 
 function stopAllMedia() {
   clearEmbedAdvance();
-  const audio = $("music-audio");
+  const audio = liveAudioEl();
   const frame = $("music-embed");
   const stage = $("music-stage");
-  if (audio) {
+  ["music-audio", "music-audio-b"].forEach((id) => {
+    const audio = document.getElementById(id);
+    if (!audio) return;
     try {
       audio.pause();
       audio.removeAttribute("src");
       audio.load?.();
     } catch (_) {}
     audio.hidden = true;
+  });
+  mixing = false;
+  if (mixTimer) {
+    clearInterval(mixTimer);
+    mixTimer = null;
   }
   if (frame) {
     try {
@@ -548,7 +756,7 @@ function stopAllMedia() {
 function loadTrack(autoPlayHint) {
   const t = current();
   const frame = $("music-embed");
-  const audio = $("music-audio");
+  const audio = liveAudioEl();
   const title = $("music-now-title");
   const sub = $("music-now-sub");
   const sunoLink = $("music-suno-link");
@@ -588,8 +796,17 @@ function loadTrack(autoPlayHint) {
   // Always only one source: kill the other before starting this track
   signalCampStopMusic();
 
+  // DistroKid masters stay native MP3 — iPhone Suno embeds steal the tap and never auto-next
+  if (t.radio === "distrokid" || isHostedRadioUrl(t.url)) {
+    t.type = "audio";
+    if (!t.url || /suno\.com\/embed/i.test(t.url)) {
+      t.url = hostedMp3Url(t.songId || String(t.id || "").replace(/^suno-/, ""));
+    }
+  }
   const useSunoEmbed = !!(
     t.songId &&
+    t.radio !== "distrokid" &&
+    !isHostedRadioUrl(t.url) &&
     (t.type === "suno" ||
       /suno\.ai|suno\.com|audiopipe/i.test(String(t.url || "")))
   );
@@ -615,19 +832,31 @@ function loadTrack(autoPlayHint) {
     }
     if (autoPlayHint) {
       userPaused = false;
-      audio.play().catch(() => {});
-      void notifyDjTrackChange();
+      const startVox = () => {
+        setTimeout(() => notifyDjTrackChange(), 280);
+      };
+      try {
+        const p = audio.play();
+        if (p && typeof p.then === "function") {
+          p.then(startVox).catch((err) => {
+            console.warn("[radio] play blocked", err);
+            setDjStatus("Song blocked — tap ♪ Play music once");
+          });
+        } else {
+          startVox();
+        }
+      } catch (err) {
+        console.warn("[radio] play", err);
+      }
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
     saveMusicPersist();
     updateMusicChrome();
   } else if (frame && audio) {
     // Suno / Spotify / YouTube embed — pause native audio fully
-    try {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load?.();
-    } catch (_) {}
+    hushNativeAudio(audio);
+    const other = otherAudioEl();
+    if (other && other !== audio) hushNativeAudio(other);
     audio.hidden = true;
     frame.hidden = false;
     try {
@@ -661,7 +890,7 @@ function loadTrack(autoPlayHint) {
 }
 
 function isAudioPlaying() {
-  const audio = $("music-audio");
+  const audio = liveAudioEl();
   const native = !!(audio && !audio.paused && !audio.ended && audio.currentTime > 0);
   return native || isEmbedPlaying();
 }
@@ -678,16 +907,17 @@ function prepAudioElement(audio) {
     audio.setAttribute("webkit-playsinline", "");
     audio.playsInline = true;
     // Keep decoding friendly for long sessions
-    if (!audio.getAttribute("preload") || audio.getAttribute("preload") === "none") {
-      // once user starts, allow auto so next tracks buffer
-    }
+    audio.preload = "auto";
+    try {
+      audio.setAttribute("x-webkit-airplay", "allow");
+    } catch (_) {}
   } catch (_) {}
 }
 
 function saveMusicPersist() {
   if (!wantBackgroundPlay()) return;
   try {
-    const audio = $("music-audio");
+    const audio = liveAudioEl();
     const cur = current();
     if (!cur || !isSunoTrack(cur)) return;
     sessionStorage.setItem(
@@ -710,7 +940,7 @@ function softResumeMusic(why) {
   const now = Date.now();
   if (now - lastSoftResumeAt < 400) return;
   lastSoftResumeAt = now;
-  const audio = $("music-audio");
+  const audio = liveAudioEl();
   const cur = current();
   if (!audio || !cur || !isSunoTrack(cur)) return;
   const dur = Number(audio.duration) || 0;
@@ -771,7 +1001,7 @@ function updateMediaSessionMeta(playing) {
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
   } catch (_) {}
   try {
-    const audio = $("music-audio");
+    const audio = liveAudioEl();
     if (
       audio &&
       typeof navigator.mediaSession.setPositionState === "function" &&
@@ -808,7 +1038,7 @@ function installMediaSession() {
   bind("pause", () => {
     userPaused = true;
     try {
-      $("music-audio")?.pause();
+      liveAudioEl()?.pause();
     } catch (_) {}
     updateMediaSessionMeta(false);
   });
@@ -827,14 +1057,14 @@ function installMediaSession() {
     prev();
   });
   bind("seekbackward", (d) => {
-    const a = $("music-audio");
+    const a = liveAudioEl();
     if (!a) return;
     const sec = Math.max(5, Number(d?.seekOffset) || 10);
     a.currentTime = Math.max(0, (a.currentTime || 0) - sec);
     saveMusicPersist();
   });
   bind("seekforward", (d) => {
-    const a = $("music-audio");
+    const a = liveAudioEl();
     if (!a) return;
     const sec = Math.max(5, Number(d?.seekOffset) || 10);
     const dur = Number(a.duration) || 0;
@@ -842,7 +1072,7 @@ function installMediaSession() {
     saveMusicPersist();
   });
   bind("seekto", (d) => {
-    const a = $("music-audio");
+    const a = liveAudioEl();
     if (!a || typeof d?.seekTime !== "number") return;
     a.currentTime = Math.max(0, d.seekTime);
     saveMusicPersist();
@@ -875,7 +1105,7 @@ function installBackgroundKeepAlive() {
   // Background tick: advance at end, soft-resume if OS stalled us
   setInterval(() => {
     if (!wantBackgroundPlay()) return;
-    const a = $("music-audio");
+    const a = liveAudioEl();
     if (!a) return;
     if (!a.paused && a.currentTime > 0) {
       saveMusicPersist();
@@ -1326,9 +1556,17 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v125-vox-hold`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v130-live`);
     djRadio = mod.createDjRadio({
-      getAudio: () => $("music-audio"),
+      getAudio: () => liveAudioEl(),
+      mixToNext: () => mixToNext(),
+      setBoothFx: (fx) => setBoothFx(fx),
+      playAt: (i) => {
+        const n = PLAYLIST.length;
+        if (!n) return;
+        index = ((Number(i) % n) + n) % n;
+        loadTrack(true);
+      },
       getTracks: () =>
         PLAYLIST.filter(isSunoTrack).map((t) => ({
           id: t.songId || t.id,
@@ -1402,10 +1640,12 @@ async function setDjEnabled(on) {
     return;
   }
 
-  // Live: wake free Luna DJ (telephanti.com) — PC can stay off
-  setDjStatus("DJ Vox · waking free cloud…");
+  setDjStatus("DJ Vox · live booth…");
   try {
-    await fetch("https://telephanti.com/api/health", { cache: "no-store", mode: "cors" });
+    const h = (location.hostname || "").toLowerCase();
+    if (h === "localhost" || h === "127.0.0.1") {
+      await fetch("http://127.0.0.1:8767/api/health", { cache: "no-store", mode: "cors" });
+    }
   } catch (_) {}
 
   if (userStarted && isSunoTrack(current())) {
@@ -1422,13 +1662,6 @@ async function setDjEnabled(on) {
 /** Fire Vox for the current track — waits for module; auto-enables unless user turned off */
 async function notifyDjTrackChange() {
   try {
-    let prefOn = true;
-    try {
-      const p = localStorage.getItem(DJ_PREF_KEY);
-      if (p === "0") prefOn = false;
-    } catch (_) {}
-    if (!prefOn) return;
-
     const dj = await ensureDjRadio();
     if (!dj) return;
     if (!dj.isEnabled()) {
@@ -1462,7 +1695,14 @@ function setOpen(v, opts) {
   if (open) minimized = false;
   updateMusicChrome();
   if (open) {
-    // Always re-pull catalog when opening so admin "add song" shows up
+    const wantPlay = opts?.play === true;
+    if (wantPlay) {
+      unlockRadio();
+      userStarted = true;
+      userPaused = false;
+      // Same tap as iPhone gesture — don't wait on catalog fetch
+      if (PLAYLIST.length) loadTrack(true);
+    }
     loadSunoCatalog().finally(() => {
       // First open: reshuffle + random start so it's never the same intro track
       if (firstOpenShufflePending && allSunoTracks.length > 1 && !userStarted) {
@@ -1476,9 +1716,7 @@ function setOpen(v, opts) {
         firstOpenShufflePending = false;
       }
 
-      // Explicit only — never default-on (prevents accidental autoplay)
-      const wantPlay = opts?.play === true;
-      const audio = $("music-audio");
+      const audio = liveAudioEl();
       const cur = current();
       const already =
         !!(
@@ -1587,19 +1825,71 @@ function playAllSuno(e) {
   start();
 }
 
-function onAudioEnded() {
-  // Continuous play through the queue — only after user started
+function onAudioEnded(ev) {
+  if (ignoringAudioEvents) return;
+  const cur = current();
+  // Empty <audio> under a Suno embed is not a real end
+  if (cur && (cur.type === "suno" || cur.type === "spotify" || cur.type === "youtube")) {
+    return;
+  }
+  if (mixing) {
+    mixing = false;
+    if (mixTimer) {
+      clearInterval(mixTimer);
+      mixTimer = null;
+    }
+    const live = liveAudioEl();
+    const dying = ev?.target;
+    if (dying && live && dying !== live) return;
+  }
   if (!userStarted || userPaused || !PLAYLIST.length) return;
-  const audio = $("music-audio");
+  const audio = (ev && ev.target) || liveAudioEl();
   const dur = Number(audio?.duration) || 0;
   const t = Number(audio?.currentTime) || 0;
-  // Fake "ended" from a failed/empty src — do not skip-storm
   if (dur < 3 && t < 1) {
     consecutiveLoadFails += 1;
+    if (consecutiveLoadFails > 2 && cur?.songId && !isMobileRadio() && cur.radio !== "distrokid") {
+      cur.type = "suno";
+      cur.url = sunoEmbedUrl(cur.songId, true);
+      loadTrack(true);
+    }
     return;
   }
   consecutiveLoadFails = 0;
-  next(false);
+  requestAdvance(true);
+}
+
+function startRadioWatch() {
+  if (radioWatch) return;
+  radioWatch = setInterval(() => {
+    if (!userStarted || userPaused || !PLAYLIST.length) return;
+    const cur = current();
+    if (mixing && Date.now() - lastAdvanceAt > 12000) {
+      mixing = false;
+      if (mixTimer) {
+        clearInterval(mixTimer);
+        mixTimer = null;
+      }
+      requestAdvance(true);
+      return;
+    }
+    const audio = liveAudioEl();
+    if (cur && cur.type === "audio" && audio && !audio.paused && !mixing) {
+      const dur = Number(audio.duration) || 0;
+      const t = Number(audio.currentTime) || 0;
+      if (dur > 8 && t >= dur - 0.55) {
+        requestAdvance(true);
+        return;
+      }
+    }
+    if (cur && cur.type === "suno" && embedStartedAt) {
+      const sec = Number(cur.duration_sec);
+      const wait = ((Number.isFinite(sec) && sec > 20 ? sec : 180) + 2) * 1000;
+      if (Date.now() - embedStartedAt >= wait) {
+        requestAdvance(true);
+      }
+    }
+  }, 900);
 }
 
 function wire() {
@@ -1615,7 +1905,8 @@ function wire() {
       return;
     }
     if (!open) {
-      // First tap: open panel AND start music (explicit user gesture)
+      // First tap: unlock iPhone audio + start DistroKid bed in this gesture
+      unlockRadio();
       setOpen(true, { play: true });
       return;
     }
@@ -1672,8 +1963,9 @@ function wire() {
   $("music-shuffle")?.addEventListener("click", toggleShuffle);
   $("music-suno-link")?.addEventListener("click", playAllSuno);
 
-  const audio = $("music-audio");
-  if (audio) {
+  function bindDeck(audio) {
+    if (!audio || audio.dataset.deckBound === "1") return;
+    audio.dataset.deckBound = "1";
     prepAudioElement(audio);
     audio.addEventListener("ended", onAudioEnded);
     audio.addEventListener("play", () => {
@@ -1699,31 +1991,73 @@ function wire() {
       }, 160);
     });
     audio.addEventListener("timeupdate", () => {
-      if (Math.floor(audio.currentTime || 0) % 5 === 0) {
+      if (ignoringAudioEvents || mixing) return;
+      const dur = Number(audio.duration) || 0;
+      const t = Number(audio.currentTime) || 0;
+      if (dur > 8 && t >= dur - 0.45 && userStarted && !userPaused) {
+        requestAdvance(true);
+        return;
+      }
+      if (Math.floor(t) % 5 === 0) {
         try {
           updateMediaSessionMeta(!audio.paused);
         } catch (_) {}
       }
     });
     audio.addEventListener("error", () => {
+      if (ignoringAudioEvents) return;
+      if (mixing) {
+        mixing = false;
+        if (mixTimer) {
+          clearInterval(mixTimer);
+          mixTimer = null;
+        }
+      }
       const cur = current();
-      if (cur?.songId && isSunoTrack(cur)) {
+      const id = cur?.songId;
+      if (id && (cur.radio === "distrokid" || isHostedRadioUrl(cur.url))) {
+        const local = `/radio-mp3/${id}.mp3`;
+        const gh = `${RADIO_MP3_BASE}/${id}.mp3`;
+        const src = String(audio.currentSrc || audio.src || cur.url || "");
+        if (/radio-mp3/i.test(src) && !cur._triedGh) {
+          cur._triedGh = true;
+          cur.url = gh;
+          audio.src = gh;
+          audio.play().catch(() => {});
+          return;
+        }
+        if (/github\.com|githubusercontent/i.test(src) && isLocalHub() && !cur._triedLocal) {
+          cur._triedLocal = true;
+          cur.url = local;
+          audio.src = local;
+          audio.play().catch(() => {});
+          return;
+        }
+      }
+      if (id && isSunoTrack(cur) && cur.type !== "suno") {
+        if (isMobileRadio() || cur.radio === "distrokid") {
+          consecutiveLoadFails += 1;
+          setTimeout(() => requestAdvance(true), 400);
+          return;
+        }
         cur.type = "suno";
-        cur.url = sunoEmbedUrl(cur.songId, true);
+        cur.url = sunoEmbedUrl(id, true);
         loadTrack(true);
         return;
       }
       consecutiveLoadFails += 1;
       if (!userStarted || userPaused) return;
-      if (!isSunoTrack(cur) || PLAYLIST.length < 2) return;
-      if (a && a.currentTime > 1.2) return;
-      if (!canAutoAdvance()) return;
-      setTimeout(() => next(false), 900);
+      if (!PLAYLIST.length || PLAYLIST.length < 2) return;
+      if (audio && audio.currentTime > 1.2) return;
+      setTimeout(() => requestAdvance(true), 600);
     });
     audio.addEventListener("playing", () => {
       consecutiveLoadFails = 0;
     });
   }
+  bindDeck(document.getElementById("music-audio"));
+  bindDeck(document.getElementById("music-audio-b"));
+  startRadioWatch();
 
   installMediaSession();
   installBackgroundKeepAlive();
@@ -1741,16 +2075,11 @@ function wire() {
   loadSunoCatalog();
   updateMusicChrome();
 
-  // Restore DJ preference (default on for hub radio vibes)
+  // Local booth: Vox on until they tap DJ Vox off
   try {
-    const pref = localStorage.getItem(DJ_PREF_KEY);
-    const wantDj = pref == null ? true : pref === "1";
-    if (wantDj) {
-      setDjEnabled(true).catch(() => {});
-    }
-  } catch (_) {
-    setDjEnabled(true).catch(() => {});
-  }
+    localStorage.setItem(DJ_PREF_KEY, "1");
+  } catch (_) {}
+  setDjEnabled(true).catch(() => {});
 }
 
 if (document.readyState === "loading") {
