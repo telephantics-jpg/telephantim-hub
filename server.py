@@ -1512,8 +1512,92 @@ class Handler(SimpleHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+    def _serve_radio_mp3(self, path: str) -> bool:
+        """Serve DistroKid masters from radio-mp3/{uuid}.mp3 (Range-aware)."""
+        name = path.rsplit("/", 1)[-1]
+        if not re.fullmatch(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp3",
+            name,
+            re.I,
+        ):
+            return False
+        fp = ROOT / "radio-mp3" / name
+        if not fp.is_file():
+            gh = (
+                "https://github.com/telephantics-jpg/telephantim-hub"
+                f"/releases/download/radio-v1/{name}"
+            )
+            try:
+                req = urllib.request.Request(
+                    gh,
+                    headers={"User-Agent": "TelephantixRadio/1.0", "Accept": "*/*"},
+                )
+                rng = self.headers.get("Range")
+                if rng:
+                    req.add_header("Range", rng)
+                with urllib.request.urlopen(req, timeout=90) as up:
+                    body = up.read()
+                    self.send_response(up.status)
+                    self.send_header("Content-Type", "audio/mpeg")
+                    self.send_header("Accept-Ranges", "bytes")
+                    cl = up.headers.get("Content-Length") or str(len(body))
+                    self.send_header("Content-Length", cl)
+                    cr = up.headers.get("Content-Range")
+                    if cr:
+                        self.send_header("Content-Range", cr)
+                    self.send_header("Cache-Control", "public, max-age=86400")
+                    self._cors()
+                    self.end_headers()
+                    if self.command != "HEAD":
+                        self.wfile.write(body)
+                return True
+            except Exception:
+                return False
+        data_len = fp.stat().st_size
+        start, end = 0, data_len - 1
+        status = 200
+        rng = self.headers.get("Range") or ""
+        if rng.lower().startswith("bytes="):
+            spec = rng.split("=", 1)[1].split("-", 1)
+            try:
+                if spec[0]:
+                    start = max(0, int(spec[0]))
+                if len(spec) > 1 and spec[1]:
+                    end = int(spec[1])
+            except ValueError:
+                start, end = 0, data_len - 1
+            end = min(end, data_len - 1)
+            if start > end:
+                start, end = 0, data_len - 1
+            else:
+                status = 206
+        length = end - start + 1
+        self.send_response(status)
+        self.send_header("Content-Type", "audio/mpeg")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(length))
+        if status == 206:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{data_len}")
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self._cors()
+        self.end_headers()
+        if self.command == "HEAD":
+            return True
+        with fp.open("rb") as f:
+            f.seek(start)
+            left = length
+            while left > 0:
+                chunk = f.read(min(65536, left))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                left -= len(chunk)
+        return True
+
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?")[0]
+        if path.startswith("/radio-mp3/") and self._serve_radio_mp3(path):
+            return
         if path in ("/admin", "/admin/"):
             # Prefer /admin/index.html
             self.path = "/admin/index.html"
