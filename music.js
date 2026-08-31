@@ -1561,7 +1561,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v132-vox-andrew`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v133-pause`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
@@ -1608,6 +1608,7 @@ async function ensureDjRadio() {
       // Hub owns next/prev + ended; DJ only speaks
       advanceOnEnded: false,
       isWantedOn: () => wantBackgroundPlay(),
+      isUserPaused: () => !!userPaused,
       setStatus: setDjStatus,
       onUi: ({ enabled, status: st }) => {
         const btn = $("music-dj");
@@ -1982,19 +1983,20 @@ function wire() {
     });
     audio.addEventListener("pause", () => {
       updateMusicChrome();
-      // Background / lock: browser may pause us — fight it if we still want radio
-      if (document.hidden && wantBackgroundPlay()) {
-        setTimeout(() => softResumeMusic("hidden-pause"), 180);
+      if (ignoringAudioEvents || mixing) return;
+      // Lock-screen / hidden tab: OS may pause us — only fight if user didn't pause
+      if (document.hidden && wantBackgroundPlay() && !userPaused) {
+        setTimeout(() => {
+          if (!userPaused) softResumeMusic("hidden-pause");
+        }, 180);
         return;
       }
-      // Visible pause that sticks = user (native controls)
-      setTimeout(() => {
-        if (!audio.paused || audio.ended || document.hidden) return;
-        if (wantBackgroundPlay() || userStarted) {
-          userPaused = true;
-          updateMediaSessionMeta(false);
-        }
-      }, 160);
+      // Visible pause = user. Stick it and kill Vox so he doesn't start another line.
+      userPaused = true;
+      try {
+        djRadio?.hush?.();
+      } catch (_) {}
+      updateMediaSessionMeta(false);
     });
     audio.addEventListener("timeupdate", () => {
       if (ignoringAudioEvents || mixing) return;

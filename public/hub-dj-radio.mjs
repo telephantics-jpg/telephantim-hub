@@ -209,11 +209,17 @@ export function createDjRadio(api = {}) {
     micAudio = null;
   }
 
+  function wantedOn() {
+    if (api.isUserPaused?.()) return false;
+    return api.isWantedOn?.() !== false;
+  }
+
   function resumeBed() {
     unduckMusic({ ramp: true });
+    if (!wantedOn()) return;
     try {
       const m = getMusic();
-      if (m && m.paused && !m.ended && api.isWantedOn?.()) {
+      if (m && m.paused && !m.ended) {
         m.play()?.catch?.(() => {});
       }
     } catch (_) {}
@@ -225,7 +231,8 @@ export function createDjRadio(api = {}) {
       window.speechSynthesis?.cancel();
     } catch (_) {}
     micBusy = false;
-    resumeBed();
+    if (wantedOn()) resumeBed();
+    else unduckMusic({ ramp: false });
   }
 
   function playMicB64(b64) {
@@ -595,6 +602,7 @@ export function createDjRadio(api = {}) {
    */
   async function announceTrack(forIndex, prevTrack, opts = {}) {
     if (!enabled) return;
+    if (!wantedOn()) return;
     const gen = ++announceGen;
     const ts = tracks();
     if (!ts.length) return;
@@ -624,7 +632,7 @@ export function createDjRadio(api = {}) {
       duckMusic(DUCK_TALK);
       try {
         const m = getMusic();
-        if (m?.paused) await m.play?.();
+        if (m?.paused && wantedOn()) await m.play?.();
       } catch (_) {}
 
       const data = await dropOrTalk(next, prevTrack, kind);
@@ -648,7 +656,8 @@ export function createDjRadio(api = {}) {
         await speakBrowser(`Vox · ${title}`);
       } catch (_) {}
     } finally {
-      resumeBed();
+      if (wantedOn()) resumeBed();
+      else unduckMusic({ ramp: false });
       if (gen === announceGen) {
         micBusy = false;
         status(`♫ ${title}`);
@@ -748,7 +757,7 @@ export function createDjRadio(api = {}) {
   }
 
   async function announceInterject() {
-    if (!enabled || micBusy) return;
+    if (!enabled || micBusy || !wantedOn()) return;
     const cur = trackAt(index());
     if (!cur) return;
     const gen = ++announceGen;
@@ -764,13 +773,14 @@ export function createDjRadio(api = {}) {
       console.warn("[dj] interject", err);
     } finally {
       api.setBoothFx?.({ lowpass: 18000 });
-      resumeBed();
+      if (wantedOn()) resumeBed();
+      else unduckMusic({ ramp: false });
       if (gen === announceGen) micBusy = false;
     }
   }
 
   async function announceMix() {
-    if (!enabled) return;
+    if (!enabled || !wantedOn()) return;
     const ts = tracks();
     if (ts.length < 2) return;
     const i = index();
@@ -786,7 +796,7 @@ export function createDjRadio(api = {}) {
       if (gen !== announceGen) return;
       status(data?.text || `Vox mixing into ${nxt.title}`);
       await speakNow(data, localDropText(nxt, "mix"));
-      if (gen !== announceGen) return;
+      if (gen !== announceGen || !wantedOn()) return;
       const mixed = api.mixToNext?.();
       lastAnnouncedKey = trackKey(nxt);
       if (mixed === false) {
@@ -798,7 +808,8 @@ export function createDjRadio(api = {}) {
       console.warn("[dj] mix", err);
     } finally {
       api.setBoothFx?.({ lowpass: 18000 });
-      resumeBed();
+      if (wantedOn()) resumeBed();
+      else unduckMusic({ ramp: false });
       if (gen === announceGen) micBusy = false;
     }
   }
@@ -806,7 +817,7 @@ export function createDjRadio(api = {}) {
   function startWatch() {
     if (tick) return;
     tick = setInterval(() => {
-      if (!enabled) return;
+      if (!enabled || !wantedOn()) return;
       warmAhead();
       const music = getMusic();
       if (!music || music.paused) return;
