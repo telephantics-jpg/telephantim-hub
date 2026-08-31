@@ -400,7 +400,7 @@ export function createDjRadio(api = {}) {
     if (voxVoice) return voxVoice;
     const list = voices || [];
     const skip = /new zealand|en-NZ|en_NZ|kiwi|en-AU|en_AU|australia|en-IN|india|en-ZA|south africa|irish|en-IE/i;
-    const prefer = /GuyNeural|en-US-Guy|Microsoft David|Google US English|David Desktop/i;
+    const prefer = /AndrewMultilingual|Andrew Neural|en-US-Andrew|GuyNeural|Microsoft David|Google US English|David Desktop/i;
     voxVoice =
       list.find((v) => prefer.test(v.name) && !skip.test(`${v.name} ${v.lang}`)) ||
       list.find((v) => /en(-|_)US/i.test(v.lang) && /guy|david/i.test(v.name)) ||
@@ -471,9 +471,9 @@ export function createDjRadio(api = {}) {
       station: "Telephantix Radio",
       voice: "vox",
       use_llm: false,
-      mood: kindNorm === "truth" ? "thoughtful" : "happy",
-      rate: kindNorm === "truth" ? 10 : 12,
-      pitch: -2,
+      mood: "booth",
+      rate: kindNorm === "truth" ? -2 : 0,
+      pitch: -1,
       kind: kindNorm,
     };
     const bases = djApiBases();
