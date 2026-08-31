@@ -1561,7 +1561,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v131-bed-up`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v132-vox-andrew`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
