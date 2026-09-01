@@ -8,8 +8,9 @@
  * - Spam-skip cancels the old rant and starts the new track's intro ASAP.
  */
 
-const DUCK_VOL = 0.42;
-const DUCK_TALK = 0.38;
+const BED_VOL = 1;
+const DUCK_VOL = 0.55;
+const DUCK_TALK = 0.5;
 const PREFETCH_AHEAD = 3; // next N tracks in queue
 const PREFETCH_LEAD_SEC = 22; // also warm near end of current
 const MIN_TRACK_FOR_END_PREFETCH = 12;
@@ -154,43 +155,23 @@ export function createDjRadio(api = {}) {
     const a = getMusic();
     if (!a) return;
     clearRamp();
-    if (savedMusicVol == null) {
-      const v = Number(a.volume);
-      savedMusicVol = Number.isFinite(v) && v > 0.05 ? v : 0.55;
-    }
     try {
-      a.volume = Math.min(savedMusicVol, amount != null ? amount : DUCK_VOL);
+      a.volume = amount != null ? amount : DUCK_VOL;
     } catch (_) {}
   }
 
   function unduckMusic({ ramp = true } = {}) {
     const a = getMusic();
-    const target = savedMusicVol != null ? savedMusicVol : 0.55;
     savedMusicVol = null;
-    if (!a) return;
     clearRamp();
-    if (!ramp) {
-      try {
-        a.volume = target;
-      } catch (_) {}
-      return;
-    }
-    const start = Number(a.volume) || DUCK_VOL;
-    const steps = 12;
-    let i = 0;
-    rampTimer = setInterval(() => {
-      i++;
-      const t = Math.min(1, i / steps);
-      try {
-        a.volume = start + (target - start) * t;
-      } catch (_) {}
-      if (i >= steps) {
-        clearRamp();
-        try {
-          a.volume = target;
-        } catch (_) {}
-      }
-    }, Math.max(28, RAMP_UP_MS / steps));
+    try {
+      api.setBoothFx?.({ lowpass: 18000 });
+    } catch (_) {}
+    if (!a) return;
+    // Snap back — iPhone often ignores setInterval volume ramps and stays ducked
+    try {
+      a.volume = BED_VOL;
+    } catch (_) {}
   }
 
   function stopMic() {
@@ -629,7 +610,6 @@ export function createDjRadio(api = {}) {
     lastAnnouncedKey = key;
     micBusy = true;
     try {
-      duckMusic(DUCK_TALK);
       try {
         const m = getMusic();
         if (m?.paused && wantedOn()) await m.play?.();
@@ -637,6 +617,7 @@ export function createDjRadio(api = {}) {
 
       const data = await dropOrTalk(next, prevTrack, kind);
       if (gen !== announceGen || index() !== ni) return;
+      if (!wantedOn()) return;
 
       const label = data.text || `Vox · ${title}`;
       api.onUi?.({
@@ -730,13 +711,19 @@ export function createDjRadio(api = {}) {
 
   async function speakNow(data, fallbackText) {
     const text = (data && data.text) || fallbackText || "";
-    if (data?.audio_b64) {
-      try {
-        await playMicB64(data.audio_b64);
-        return;
-      } catch (_) {}
+    const hasVox = !!(data?.audio_b64) || (!isIOS() && text);
+    if (hasVox) duckMusic(DUCK_TALK);
+    try {
+      if (data?.audio_b64) {
+        try {
+          await playMicB64(data.audio_b64);
+          return;
+        } catch (_) {}
+      }
+      if (text) await speakBrowser(text);
+    } finally {
+      unduckMusic({ ramp: false });
     }
-    if (text) await speakBrowser(text);
   }
 
   async function dropOrTalk(track, prev, kind) {
@@ -763,8 +750,6 @@ export function createDjRadio(api = {}) {
     const gen = ++announceGen;
     micBusy = true;
     try {
-      duckMusic(DUCK_TALK);
-      api.setBoothFx?.({ lowpass: 1400 });
       const data = await dropOrTalk(cur, null, "interject");
       if (gen !== announceGen) return;
       status(data?.text || `Vox · riding ${cur.title}`);
@@ -790,8 +775,6 @@ export function createDjRadio(api = {}) {
     const gen = ++announceGen;
     micBusy = true;
     try {
-      duckMusic(DUCK_TALK);
-      api.setBoothFx?.({ lowpass: 700 });
       const data = await dropOrTalk(nxt, cur, "mix");
       if (gen !== announceGen) return;
       status(data?.text || `Vox mixing into ${nxt.title}`);

@@ -833,6 +833,9 @@ function loadTrack(autoPlayHint) {
     if (!sameSrc) {
       audio.src = t.url;
     }
+    try {
+      audio.volume = 1;
+    } catch (_) {}
     if (autoPlayHint) {
       userPaused = false;
       unlockRadio();
@@ -1561,7 +1564,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v133-pause`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v134-unduck`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
