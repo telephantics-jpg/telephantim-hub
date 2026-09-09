@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v147-bio-latest" />
+  <link rel="stylesheet" href="styles.css?v=v148-bio-mp4" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -117,14 +117,17 @@
           <p class="bio-links-label">Latest video</p>
           <h2 class="bio-latest-title">What Isn't Is</h2>
           <div class="bio-embed">
-            <iframe
-              src="https://www.youtube.com/embed/DPk2S_6JeQo"
+            <video
+              id="bio-latest-video"
+              class="bio-latest-video"
+              controls
+              playsinline
+              preload="metadata"
+              poster="media/what-isnt-is.jpg"
               title="What Isn't Is — Telephantix"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-            ></iframe>
+            >
+              <source src="media/what-isnt-is.mp4" type="video/mp4" />
+            </video>
           </div>
         </section>
 
@@ -464,7 +467,7 @@
   </script>
   <script type="module" src="scenes.js?v=v136-live-camp"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v127-latest-video"></script>
+  <script type="module" src="bio.js?v=v128-what-isnt-is"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script type="module" src="music.js?v=v23-unduck"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>

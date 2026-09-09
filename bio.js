@@ -236,7 +236,21 @@ function pauseMedia() {
 
 function resumeMedia() {
   const video = $("bio-video");
+  const latest = $("bio-latest-video");
+  if (latest && !latest.paused) return;
   if (video && !video.hidden) video.play().catch(() => {});
+}
+
+function wireLatestVideo() {
+  const latest = $("bio-latest-video");
+  if (!latest || latest.__wired) return;
+  latest.__wired = true;
+  latest.addEventListener("play", () => pauseMedia());
+  latest.addEventListener("pause", () => {
+    if (latest.ended) return;
+    resumeMedia();
+  });
+  latest.addEventListener("ended", () => resumeMedia());
 }
 
 function onScene(e) {
@@ -246,6 +260,8 @@ function onScene(e) {
     resumeMedia();
   } else {
     pauseMedia();
+    const latest = $("bio-latest-video");
+    if (latest && !latest.paused) latest.pause();
   }
 }
 
@@ -263,6 +279,7 @@ async function wire() {
   renderSocials();
   renderLinks();
   applyMedia();
+  wireLatestVideo();
   window.addEventListener("telephantim-scene", onScene);
 }
 
