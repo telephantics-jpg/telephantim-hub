@@ -368,37 +368,71 @@ body.scene-bio .float-actions {
   opacity: 0.9;
 }
 .bio-latest {
-  margin: 0.95rem 0 0.35rem;
+  width: min(94vw, 920px);
+  margin: 1.1rem auto 0.5rem;
   text-align: left;
+  align-self: center;
 }
 .bio-latest .bio-links-label {
   margin-bottom: 0.35rem;
 }
 .bio-latest-title {
-  margin: 0 0 0.55rem;
-  font-size: 1.08rem;
-  font-weight: 700;
+  margin: 0 0 0.65rem;
+  font-size: 1.22rem;
+  font-weight: 800;
   color: #f2f0eb;
 }
 .bio-embed {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: 14px;
+  min-height: min(56vw, 32rem);
+  border-radius: 16px;
   overflow: hidden;
   background: #000;
-  border: 1px solid rgba(201, 162, 39, 0.35);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 .bio-embed iframe,
-.bio-embed .bio-latest-video {
+.bio-embed .bio-latest-video,
+.bio-embed .bio-latest-poster {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
-  object-fit: contain;
+  object-fit: cover;
   background: #000;
+}
+.bio-latest-poster {
+  z-index: 2;
+  pointer-events: none;
+}
+.bio-latest-play {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4.2rem;
+  height: 4.2rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(8, 12, 22, 0.72);
+  color: var(--gold-bright);
+  font-size: 1.55rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+.bio-latest-play:hover,
+.bio-latest-play:focus-visible {
+  background: rgba(201, 162, 39, 0.92);
+  color: #111;
+}
+.bio-embed.is-playing .bio-latest-poster,
+.bio-embed.is-playing .bio-latest-play {
+  display: none;
 }
 .bio-hint {
   margin: 0.15rem 0 0.5rem;

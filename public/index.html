@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v148-bio-mp4" />
+  <link rel="stylesheet" href="styles.css?v=v149-bio-thumb" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -116,14 +116,23 @@
         <section class="bio-latest" aria-label="Latest video">
           <p class="bio-links-label">Latest video</p>
           <h2 class="bio-latest-title">What Isn't Is</h2>
-          <div class="bio-embed">
+          <div class="bio-embed" id="bio-embed">
+            <img
+              id="bio-latest-poster"
+              class="bio-latest-poster"
+              src="media/what-isnt-is.jpg?v=2"
+              alt="What Isn't Is"
+              width="1280"
+              height="720"
+            />
+            <button type="button" class="bio-latest-play" id="bio-latest-play" aria-label="Play What Isn't Is">▶</button>
             <video
               id="bio-latest-video"
               class="bio-latest-video"
               controls
               playsinline
-              preload="metadata"
-              poster="media/what-isnt-is.jpg"
+              preload="none"
+              poster="media/what-isnt-is.jpg?v=2"
               title="What Isn't Is — Telephantix"
             >
               <source src="media/what-isnt-is.mp4" type="video/mp4" />
@@ -467,7 +476,7 @@
   </script>
   <script type="module" src="scenes.js?v=v136-live-camp"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v128-what-isnt-is"></script>
+  <script type="module" src="bio.js?v=v129-bio-thumb"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script type="module" src="music.js?v=v23-unduck"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
