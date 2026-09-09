@@ -243,14 +243,38 @@ function resumeMedia() {
 
 function wireLatestVideo() {
   const latest = $("bio-latest-video");
+  const wrap = $("bio-embed");
+  const playBtn = $("bio-latest-play");
   if (!latest || latest.__wired) return;
   latest.__wired = true;
-  latest.addEventListener("play", () => pauseMedia());
+  const showThumb = () => wrap?.classList.remove("is-playing");
+  const hideThumb = () => wrap?.classList.add("is-playing");
+  const start = () => {
+    hideThumb();
+    pauseMedia();
+    latest.play().catch(() => showThumb());
+  };
+  playBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    start();
+  });
+  latest.addEventListener("play", () => {
+    hideThumb();
+    pauseMedia();
+  });
   latest.addEventListener("pause", () => {
+    if (latest.ended || latest.currentTime < 0.2) showThumb();
     if (latest.ended) return;
     resumeMedia();
   });
-  latest.addEventListener("ended", () => resumeMedia());
+  latest.addEventListener("ended", () => {
+    showThumb();
+    try {
+      latest.currentTime = 0;
+    } catch (_) {}
+    resumeMedia();
+  });
 }
 
 function onScene(e) {
