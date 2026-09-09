@@ -367,6 +367,36 @@ body.scene-bio .float-actions {
   color: var(--gold-bright);
   opacity: 0.9;
 }
+.bio-latest {
+  margin: 0.95rem 0 0.35rem;
+  text-align: left;
+}
+.bio-latest .bio-links-label {
+  margin-bottom: 0.35rem;
+}
+.bio-latest-title {
+  margin: 0 0 0.55rem;
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #f2f0eb;
+}
+.bio-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+}
+.bio-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
 .bio-hint {
   margin: 0.15rem 0 0.5rem;
   font-size: 0.68rem;
