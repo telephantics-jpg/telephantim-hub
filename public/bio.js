@@ -1,5 +1,5 @@
 /**
- * Beacons-style Bio: fixed bg video/image + scrollable quote & links.
+ * Bio page: fixed bg video/image + scrollable quote & links.
  */
 import { BIO } from "./bio-config.js";
 import { PROFILE, SUPPORT, FEATURED, SOCIALS, ICONS } from "./links.js";
