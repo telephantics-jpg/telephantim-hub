@@ -234,46 +234,62 @@ function pauseMedia() {
   if (video && !video.hidden) video.pause();
 }
 
+function latestVideos() {
+  return [...document.querySelectorAll(".bio-latest-video")];
+}
+
+function anyLatestPlaying() {
+  return latestVideos().some((v) => v && !v.paused);
+}
+
+function pauseLatestVideos(except) {
+  latestVideos().forEach((v) => {
+    if (v && v !== except && !v.paused) v.pause();
+  });
+}
+
 function resumeMedia() {
   const video = $("bio-video");
-  const latest = $("bio-latest-video");
-  if (latest && !latest.paused) return;
+  if (anyLatestPlaying()) return;
   if (video && !video.hidden) video.play().catch(() => {});
 }
 
 function wireLatestVideo() {
-  const latest = $("bio-latest-video");
-  const wrap = $("bio-embed");
-  const playBtn = $("bio-latest-play");
-  if (!latest || latest.__wired) return;
-  latest.__wired = true;
-  const showThumb = () => wrap?.classList.remove("is-playing");
-  const hideThumb = () => wrap?.classList.add("is-playing");
-  const start = () => {
-    hideThumb();
-    pauseMedia();
-    latest.play().catch(() => showThumb());
-  };
-  playBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    start();
-  });
-  latest.addEventListener("play", () => {
-    hideThumb();
-    pauseMedia();
-  });
-  latest.addEventListener("pause", () => {
-    if (latest.ended || latest.currentTime < 0.2) showThumb();
-    if (latest.ended) return;
-    resumeMedia();
-  });
-  latest.addEventListener("ended", () => {
-    showThumb();
-    try {
-      latest.currentTime = 0;
-    } catch (_) {}
-    resumeMedia();
+  document.querySelectorAll("[data-video-embed]").forEach((wrap) => {
+    const latest = wrap.querySelector(".bio-latest-video");
+    const playBtn = wrap.querySelector(".bio-latest-play");
+    if (!latest || latest.__wired) return;
+    latest.__wired = true;
+    const showThumb = () => wrap.classList.remove("is-playing");
+    const hideThumb = () => wrap.classList.add("is-playing");
+    const start = () => {
+      hideThumb();
+      pauseLatestVideos(latest);
+      pauseMedia();
+      latest.play().catch(() => showThumb());
+    };
+    playBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      start();
+    });
+    latest.addEventListener("play", () => {
+      hideThumb();
+      pauseLatestVideos(latest);
+      pauseMedia();
+    });
+    latest.addEventListener("pause", () => {
+      if (latest.ended || latest.currentTime < 0.2) showThumb();
+      if (latest.ended) return;
+      resumeMedia();
+    });
+    latest.addEventListener("ended", () => {
+      showThumb();
+      try {
+        latest.currentTime = 0;
+      } catch (_) {}
+      resumeMedia();
+    });
   });
 }
 
@@ -284,8 +300,7 @@ function onScene(e) {
     resumeMedia();
   } else {
     pauseMedia();
-    const latest = $("bio-latest-video");
-    if (latest && !latest.paused) latest.pause();
+    pauseLatestVideos();
   }
 }
 
