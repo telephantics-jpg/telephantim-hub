@@ -434,6 +434,9 @@ body.scene-bio .float-actions {
 .bio-embed.is-playing .bio-latest-play {
   display: none;
 }
+.bio-latest .bio-more-videos {
+  margin-top: 1.25rem;
+}
 .bio-hint {
   margin: 0.15rem 0 0.5rem;
   font-size: 0.68rem;
