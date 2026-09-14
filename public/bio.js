@@ -277,6 +277,10 @@ function wireLatestVideo() {
       hideThumb();
       pauseLatestVideos(latest);
       pauseMedia();
+      const id = wrap.getAttribute("data-video-id");
+      if (id && window.TelephantimVisitorCounter && window.TelephantimVisitorCounter.recordVideo) {
+        window.TelephantimVisitorCounter.recordVideo(id);
+      }
     });
     latest.addEventListener("pause", () => {
       if (latest.ended || latest.currentTime < 0.2) showThumb();

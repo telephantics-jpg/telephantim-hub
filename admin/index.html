@@ -167,6 +167,8 @@
         </div>
       </div>
       <p class="hint" id="st-meta" style="margin-top:12px">Loading…</p>
+      <h3 style="margin-top:18px">Video views</h3>
+      <p class="hint" id="st-videos">—</p>
       <div class="actions" style="margin-top:10px">
         <button type="button" id="btn-refresh-stats">Refresh</button>
       </div>
@@ -617,6 +619,9 @@
           "Day " + ((st.today && st.today.date) || "—") +
           (bits.length ? " · " + bits.join(" · ") : "") +
           (st.knownStored != null ? " · ids stored: " + fmt(st.knownStored) : "");
+        const vv = st.videoViews || {};
+        const vbits = Object.keys(vv).map((k) => k + ": " + fmt(vv[k]));
+        $("st-videos").textContent = vbits.length ? vbits.join(" · ") : "No plays yet";
       } catch (e) {
         $("st-meta").textContent = "Stats unavailable: " + (e.message || "error");
       }

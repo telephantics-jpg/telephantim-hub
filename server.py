@@ -333,6 +333,71 @@ def record_visit(
 
 _visitors_load()
 
+# --- Bio music-video play counts (own system, not YouTube) ---
+VIDEO_VIEWS_FILE = ROOT / "data" / "video-views.json"
+_VIDEO_VIEWS_LOCK = threading.Lock()
+VIDEO_IDS = ("unknown-force", "it-all", "what-isnt-is")
+_VIDEO_VIEWS: dict = {"counts": {k: 0 for k in VIDEO_IDS}}
+
+
+def _video_views_load() -> None:
+    global _VIDEO_VIEWS
+    try:
+        if VIDEO_VIEWS_FILE.is_file():
+            data = json.loads(VIDEO_VIEWS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                counts = data.get("counts") if isinstance(data.get("counts"), dict) else data
+                if isinstance(counts, dict):
+                    merged = {k: 0 for k in VIDEO_IDS}
+                    for k, v in counts.items():
+                        key = re.sub(r"[^a-z0-9_\-]", "", str(k).lower())[:40]
+                        if key:
+                            merged[key] = int(v or 0)
+                    _VIDEO_VIEWS = {"counts": merged}
+    except Exception as e:
+        print("[telephantim] video-views load failed:", e)
+
+
+def _video_views_save() -> None:
+    try:
+        VIDEO_VIEWS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "counts": dict(_VIDEO_VIEWS.get("counts") or {}),
+            "updatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        VIDEO_VIEWS_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] video-views save failed:", e)
+
+
+def _video_view_counts() -> dict:
+    with _VIDEO_VIEWS_LOCK:
+        counts = dict(_VIDEO_VIEWS.get("counts") or {})
+        for k in VIDEO_IDS:
+            counts.setdefault(k, 0)
+        return {k: int(v or 0) for k, v in counts.items()}
+
+
+def record_video_view(video_id: str) -> dict:
+    vid = re.sub(r"[^a-z0-9_\-]", "", str(video_id or "").lower())[:40]
+    if vid not in VIDEO_IDS:
+        return {"ok": False, "error": "unknown_video", "server": "telephantim-ai"}
+    with _VIDEO_VIEWS_LOCK:
+        counts = _VIDEO_VIEWS.setdefault("counts", {})
+        counts[vid] = int(counts.get(vid) or 0) + 1
+        _video_views_save()
+        out = {k: int(v or 0) for k, v in counts.items()}
+        return {
+            "ok": True,
+            "id": vid,
+            "views": int(counts[vid]),
+            "counts": out,
+            "server": "telephantim-ai",
+        }
+
+
+_video_views_load()
+
 
 def _default_site_content() -> dict:
     """Minimal seed if data/site-content.json is missing."""
@@ -489,6 +554,145 @@ def load_suno_catalog() -> list:
         except Exception as e:
             print("[telephantim] suno catalog load failed:", path, e)
     return []
+
+
+def studio_gen_dirs() -> list:
+    """Primary + mirror folders for Studio AI songs."""
+    dirs = []
+    for d in (PUBLIC / "media" / "studio-gen", ROOT / "media" / "studio-gen"):
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+        if d not in dirs:
+            dirs.append(d)
+    return dirs
+
+
+def _studio_safe_song_name(name: str) -> str | None:
+    """Only allow known Studio song filenames (no path traversal)."""
+    name = (name or "").strip().replace("\\", "/").split("/")[-1]
+    if not name or ".." in name or "/" in name:
+        return None
+    low = name.lower()
+    if not low.endswith((".wav", ".mp3", ".flac", ".opus")):
+        return None
+    stem = name.rsplit(".", 1)[0]
+    if "-c" in stem and stem.startswith("musicgen-"):
+        return None  # chunk parts
+    if not (
+        stem.startswith("acestep-")
+        or stem.startswith("musicgen-long-")
+        or stem.startswith("musicgen-")
+    ):
+        return None
+    return name
+
+
+def _studio_meta_path(audio_path: Path) -> Path:
+    return audio_path.with_suffix(".json")
+
+
+def _studio_read_title(audio_path: Path) -> str:
+    meta = _studio_meta_path(audio_path)
+    if meta.is_file():
+        try:
+            data = json.loads(meta.read_text(encoding="utf-8"))
+            title = str(data.get("title") or "").strip()
+            if title:
+                return title[:120]
+        except Exception:
+            pass
+    stem = audio_path.stem
+    return stem.replace("acestep-", "song ").replace("musicgen-long-", "jam ").replace("musicgen-", "jam ")
+
+
+def studio_library_list() -> list:
+    tracks = []
+    seen = set()
+    files = []
+    for gen_dir in studio_gen_dirs():
+        if not gen_dir.is_dir():
+            continue
+        for p in gen_dir.iterdir():
+            if not p.is_file():
+                continue
+            safe = _studio_safe_song_name(p.name)
+            if not safe or safe in seen:
+                continue
+            seen.add(safe)
+            files.append(p)
+    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    for p in files[:40]:
+        try:
+            st = p.stat()
+            dur = None
+            if p.suffix.lower() == ".wav" and st.st_size > 44:
+                dur = round((st.st_size - 44) / (48000 * 2 * 2), 1)
+            tracks.append(
+                {
+                    "id": p.stem,
+                    "name": p.name,
+                    "title": _studio_read_title(p),
+                    "url": f"/media/studio-gen/{p.name}",
+                    "bytes": st.st_size,
+                    "mtime": st.st_mtime,
+                    "duration_sec": dur,
+                }
+            )
+        except Exception:
+            continue
+    return tracks
+
+
+def studio_library_delete(name: str) -> dict:
+    safe = _studio_safe_song_name(name)
+    if not safe:
+        return {"ok": False, "error": "bad_name"}
+    deleted = []
+    for gen_dir in studio_gen_dirs():
+        target = gen_dir / safe
+        meta = _studio_meta_path(target)
+        if target.is_file():
+            try:
+                target.unlink()
+                deleted.append(str(target))
+            except Exception as e:
+                return {"ok": False, "error": f"delete_failed: {e}"}
+        if meta.is_file():
+            try:
+                meta.unlink()
+            except Exception:
+                pass
+    if not deleted:
+        return {"ok": False, "error": "not_found", "name": safe}
+    return {"ok": True, "deleted": deleted, "name": safe}
+
+
+def studio_library_save(name: str, title: str) -> dict:
+    """Save/rename display title for a song (sidecar JSON). File stays put."""
+    safe = _studio_safe_song_name(name)
+    if not safe:
+        return {"ok": False, "error": "bad_name"}
+    title = (title or "").strip()[:120]
+    if not title:
+        return {"ok": False, "error": "empty_title"}
+    wrote = None
+    for gen_dir in studio_gen_dirs():
+        target = gen_dir / safe
+        if not target.is_file():
+            continue
+        meta = _studio_meta_path(target)
+        payload = {"title": title, "name": safe, "savedAt": time.time()}
+        try:
+            meta.write_text(json.dumps(payload, indent=0), encoding="utf-8")
+            wrote = str(meta)
+            break
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+    if not wrote:
+        return {"ok": False, "error": "not_found", "name": safe}
+    return {"ok": True, "name": safe, "title": title, "meta": wrote}
 
 
 def suno_api_configured() -> bool:
@@ -1373,8 +1577,92 @@ class Handler(SimpleHTTPRequestHandler):
         self._cors()
         self.end_headers()
 
+    def _serve_radio_mp3(self, path: str) -> bool:
+        """Serve DistroKid masters from radio-mp3/{uuid}.mp3 (Range-aware)."""
+        name = path.rsplit("/", 1)[-1]
+        if not re.fullmatch(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp3",
+            name,
+            re.I,
+        ):
+            return False
+        fp = ROOT / "radio-mp3" / name
+        if not fp.is_file():
+            gh = (
+                "https://github.com/telephantics-jpg/telephantim-hub"
+                f"/releases/download/radio-v1/{name}"
+            )
+            try:
+                req = urllib.request.Request(
+                    gh,
+                    headers={"User-Agent": "TelephantixRadio/1.0", "Accept": "*/*"},
+                )
+                rng = self.headers.get("Range")
+                if rng:
+                    req.add_header("Range", rng)
+                with urllib.request.urlopen(req, timeout=90) as up:
+                    body = up.read()
+                    self.send_response(up.status)
+                    self.send_header("Content-Type", "audio/mpeg")
+                    self.send_header("Accept-Ranges", "bytes")
+                    cl = up.headers.get("Content-Length") or str(len(body))
+                    self.send_header("Content-Length", cl)
+                    cr = up.headers.get("Content-Range")
+                    if cr:
+                        self.send_header("Content-Range", cr)
+                    self.send_header("Cache-Control", "public, max-age=86400")
+                    self._cors()
+                    self.end_headers()
+                    if self.command != "HEAD":
+                        self.wfile.write(body)
+                return True
+            except Exception:
+                return False
+        data_len = fp.stat().st_size
+        start, end = 0, data_len - 1
+        status = 200
+        rng = self.headers.get("Range") or ""
+        if rng.lower().startswith("bytes="):
+            spec = rng.split("=", 1)[1].split("-", 1)
+            try:
+                if spec[0]:
+                    start = max(0, int(spec[0]))
+                if len(spec) > 1 and spec[1]:
+                    end = int(spec[1])
+            except ValueError:
+                start, end = 0, data_len - 1
+            end = min(end, data_len - 1)
+            if start > end:
+                start, end = 0, data_len - 1
+            else:
+                status = 206
+        length = end - start + 1
+        self.send_response(status)
+        self.send_header("Content-Type", "audio/mpeg")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(length))
+        if status == 206:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{data_len}")
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self._cors()
+        self.end_headers()
+        if self.command == "HEAD":
+            return True
+        with fp.open("rb") as f:
+            f.seek(start)
+            left = length
+            while left > 0:
+                chunk = f.read(min(65536, left))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                left -= len(chunk)
+        return True
+
     def do_GET(self) -> None:  # noqa: N802
         path = self.path.split("?")[0]
+        if path.startswith("/radio-mp3/") and self._serve_radio_mp3(path):
+            return
         if path in ("/admin", "/admin/"):
             # Prefer /admin/index.html
             self.path = "/admin/index.html"
@@ -1477,6 +1765,19 @@ class Handler(SimpleHTTPRequestHandler):
                 ace = acestep_available()
             except Exception as e:
                 ace = {"ok": False, "error": str(e)}
+            try:
+                from studio_fal import fal_available
+
+                fal = fal_available()
+            except Exception as e:
+                fal = {"ok": False, "error": str(e)}
+            try:
+                from studio_runpod import runpod_available
+
+                rpod = runpod_available()
+            except Exception as e:
+                rpod = {"ok": False, "error": str(e)}
+            vocals = bool(ace.get("ok") or fal.get("ok") or rpod.get("ok"))
             self._json(
                 200,
                 {
@@ -1487,8 +1788,14 @@ class Handler(SimpleHTTPRequestHandler):
                     "freeFallback": True,
                     "musicgen": mg,
                     "acestep": ace,
-                    "vocals": bool(ace.get("ok")),
-                    "maxSeconds": ace.get("maxSeconds") or 600,
+                    "fal": fal,
+                    "runpod": rpod,
+                    "vocals": vocals,
+                    "guestCloud": bool(fal.get("ok") or rpod.get("ok") or ace.get("ok")),
+                    "maxSeconds": (ace.get("maxSeconds") if ace.get("ok") else None)
+                    or (fal.get("maxSeconds") if fal.get("ok") else None)
+                    or (rpod.get("maxSeconds") if rpod.get("ok") else None)
+                    or 600,
                     "server": "telephantim-ai",
                 },
             )
@@ -1511,52 +1818,11 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path == "/api/studio/library":
             # Re-open previously generated songs (path stays under /media/studio-gen/)
-            tracks = []
             try:
-                gen_dir = PUBLIC / "media" / "studio-gen"
-                if not gen_dir.is_dir():
-                    gen_dir = ROOT / "media" / "studio-gen"
-                if gen_dir.is_dir():
-                    files = sorted(
-                        [
-                            p
-                            for p in gen_dir.iterdir()
-                            if p.is_file()
-                            and p.suffix.lower() in (".wav", ".mp3", ".flac", ".opus")
-                            and (
-                                p.name.startswith("acestep-")
-                                or p.name.startswith("musicgen-long-")
-                                or p.name.startswith("musicgen-")
-                            )
-                            and "-c" not in p.stem  # skip MusicGen chunk parts
-                        ],
-                        key=lambda p: p.stat().st_mtime,
-                        reverse=True,
-                    )
-                    for p in files[:40]:
-                        try:
-                            st = p.stat()
-                            # Rough duration for wav PCM 48k stereo 16-bit
-                            dur = None
-                            if p.suffix.lower() == ".wav" and st.st_size > 44:
-                                dur = round((st.st_size - 44) / (48000 * 2 * 2), 1)
-                            tracks.append(
-                                {
-                                    "id": p.stem,
-                                    "name": p.name,
-                                    "title": p.stem.replace("acestep-", "song ").replace("musicgen-long-", "jam "),
-                                    "url": f"/media/studio-gen/{p.name}",
-                                    "bytes": st.st_size,
-                                    "mtime": st.st_mtime,
-                                    "duration_sec": dur,
-                                }
-                            )
-                        except Exception:
-                            continue
+                tracks = studio_library_list()
+                self._json(200, {"ok": True, "tracks": tracks, "count": len(tracks), "server": "telephantim-ai"})
             except Exception as e:
                 self._json(200, {"ok": False, "error": str(e), "tracks": []})
-                return
-            self._json(200, {"ok": True, "tracks": tracks, "count": len(tracks), "server": "telephantim-ai"})
             return
         if path.startswith("/api/studio/acestep-job/"):
             job_id = path.rsplit("/", 1)[-1].strip()
@@ -1568,23 +1834,24 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json(200, {"ok": False, "error": str(e)})
             return
         if path.startswith("/api/studio/song-job/"):
-            # Unified poll: ACE-Step first, then MusicGen
+            # Unified poll: ACE-Step → fal cloud → MusicGen
             job_id = path.rsplit("/", 1)[-1].strip()
-            try:
-                from studio_acestep import get_job as ace_get
-
-                j = ace_get(job_id)
-                if j.get("ok") and j.get("status"):
-                    self._json(200, j)
-                    return
-            except Exception:
-                pass
-            try:
-                from studio_musicgen import get_job as mg_get
-
-                self._json(200, mg_get(job_id))
-            except Exception as e:
-                self._json(200, {"ok": False, "error": str(e)})
+            for getter in (
+                "studio_acestep.get_job",
+                "studio_fal.get_job",
+                "studio_runpod.get_job",
+                "studio_musicgen.get_job",
+            ):
+                try:
+                    mod_name, fn_name = getter.rsplit(".", 1)
+                    mod = __import__(mod_name)
+                    j = getattr(mod, fn_name)(job_id)
+                    if j.get("ok") and j.get("status"):
+                        self._json(200, j)
+                        return
+                except Exception:
+                    continue
+            self._json(200, {"ok": False, "error": "unknown_job"})
             return
         if path.startswith("/api/studio/musicgen-job/"):
             jid = path.rsplit("/", 1)[-1]
@@ -1597,7 +1864,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         # --- Public visitor stats (no PII) ---
         if path == "/api/visitors":
-            self._json(200, _visitors_public())
+            pub = _visitors_public()
+            pub["videoViews"] = _video_view_counts()
+            self._json(200, pub)
+            return
+        if path == "/api/video-views":
+            self._json(200, {"ok": True, "counts": _video_view_counts(), "server": "telephantim-ai"})
             return
         if path == "/api/admin/visitors":
             if not self._is_admin():
@@ -1608,6 +1880,7 @@ class Handler(SimpleHTTPRequestHandler):
                 known_n = len(_VISITORS.get("known") or {})
             pub["knownStored"] = known_n
             pub["admin"] = True
+            pub["videoViews"] = _video_view_counts()
             self._json(200, pub)
             return
         # --- Admin session ---
@@ -1643,6 +1916,12 @@ class Handler(SimpleHTTPRequestHandler):
                 vid = "anon-" + secrets.token_hex(8)
             result = record_visit(vid, site=site, path=path_hit, is_new_session=bool(is_new))
             self._json(200, result)
+            return
+
+        if path == "/api/video-view":
+            video_id = str(data.get("videoId") or data.get("id") or data.get("video") or "").strip()
+            result = record_video_view(video_id)
+            self._json(200 if result.get("ok") else 400, result)
             return
 
         # --- Admin auth + CMS writes (before heavy brain work) ---
@@ -1903,6 +2182,21 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json(200, {"ok": False, "error": str(e), "hint": "Hit ✦ Create again"})
             return
 
+        if path in ("/api/studio/library-delete", "/api/studio/library-remove"):
+            name = str(data.get("name") or data.get("file") or "").strip()
+            if not name and data.get("url"):
+                name = str(data.get("url")).replace("\\", "/").rstrip("/").split("/")[-1]
+            self._json(200, studio_library_delete(name))
+            return
+
+        if path in ("/api/studio/library-save", "/api/studio/library-rename"):
+            name = str(data.get("name") or data.get("file") or "").strip()
+            if not name and data.get("url"):
+                name = str(data.get("url")).replace("\\", "/").rstrip("/").split("/")[-1]
+            title = str(data.get("title") or data.get("label") or "").strip()
+            self._json(200, studio_library_save(name, title))
+            return
+
         if path in ("/api/studio/acestep-generate", "/api/studio/song-generate"):
             # Visitor-facing full songs with vocals (ACE-Step). Falls back to MusicGen instrumental.
             prompt = str(data.get("prompt") or data.get("description") or data.get("sample_query") or "").strip()
@@ -1925,6 +2219,7 @@ class Handler(SimpleHTTPRequestHandler):
             if isinstance(client_ip, str) and "," in client_ip:
                 client_ip = client_ip.split(",", 1)[0].strip()
 
+            ace_err = None
             if not force_musicgen:
                 try:
                     from studio_acestep import start_job_async as ace_start, acestep_available
@@ -1945,15 +2240,15 @@ class Handler(SimpleHTTPRequestHandler):
                     if out.get("ok"):
                         self._json(200, out)
                         return
-                    # Rate-limited / busy — tell the visitor (don't silently fake vocals via MusicGen)
-                    if out.get("error") in ("rate_limited",) or not instrumental:
+                    # Rate-limited on local GPU — don't pile more jobs
+                    if out.get("error") == "rate_limited":
                         self._json(
                             200,
                             {
                                 **out,
                                 "ok": False,
                                 "hint": out.get("hint")
-                                or "Start ACE-Step (START_ACE_STEP.bat) for vocals + 10-min songs",
+                                or "Busy — wait for the current song, then Create again",
                                 "free": True,
                                 "vocals": True,
                             },
@@ -1962,10 +2257,69 @@ class Handler(SimpleHTTPRequestHandler):
                     ace_err = out
                 except Exception as e:
                     ace_err = {"ok": False, "error": str(e)}
+
+                # PC off / ACE offline → RunPod serverless, then fal.ai
+                try:
+                    from studio_runpod import start_job_async as rp_start, runpod_configured
+
+                    if runpod_configured():
+                        out = rp_start(
+                            prompt or tags,
+                            lyrics=lyrics,
+                            seconds=min(float(secs), 120.0),
+                            instrumental=instrumental,
+                            tags=tags or prompt,
+                        )
+                        if out.get("ok"):
+                            out["fallbackFrom"] = "local-ace-step"
+                            self._json(200, out)
+                            return
+                        ace_err = out
+                except Exception as e:
+                    ace_err = {"ok": False, "error": str(e), "from": "runpod"}
+
+                try:
+                    from studio_fal import start_job_async as fal_start, fal_configured
+
+                    if fal_configured():
+                        out = fal_start(
+                            prompt or tags,
+                            lyrics=lyrics,
+                            seconds=min(float(secs), 120.0),
+                            instrumental=instrumental,
+                            tags=tags or prompt,
+                        )
+                        if out.get("ok"):
+                            out["fallbackFrom"] = "local-ace-step"
+                            self._json(200, out)
+                            return
+                        ace_err = out
+                except Exception as e:
+                    ace_err = {"ok": False, "error": str(e), "from": "fal"}
+
+                # Vocals requested but no GPU + no cloud key
+                if not instrumental:
+                    self._json(
+                        200,
+                        {
+                            "ok": False,
+                            "error": (ace_err or {}).get("error") if isinstance(ace_err, dict) else "vocals_offline",
+                            "hint": (
+                                "Guest vocals need (1) PC ACE-Step, (2) RunPod ACESTEP_API_BASE / "
+                                "RUNPOD_ENDPOINT_ID, or (3) FAL_KEY with fal credits. "
+                                "See ENTER_THIS_RUNPOD.txt"
+                            ),
+                            "aceError": ace_err,
+                            "free": True,
+                            "vocals": True,
+                            "guestCloud": False,
+                        },
+                    )
+                    return
             else:
                 ace_err = None
 
-            # Fallback: MusicGen stitch (instrumental only)
+            # Fallback: MusicGen stitch (instrumental only, local GPU when available)
             try:
                 from studio_musicgen import start_job_async as mg_start
 
@@ -1985,7 +2339,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "error": (ace_err or {}).get("error") if isinstance(ace_err, dict) else str(e),
                         "hint": (ace_err or {}).get("hint")
                         if isinstance(ace_err, dict)
-                        else "Start ACE-Step (START_ACE_STEP.bat) for vocals + 10-min songs",
+                        else "Start ACE-Step or set FAL_KEY for guest cloud vocals",
                         "detail": str(e),
                         "free": True,
                         "vocals": True,
@@ -2147,6 +2501,7 @@ def main() -> None:
     print(f"  Admin:   http://127.0.0.1:{PORT}/admin/")
     print(f"  Health:  http://127.0.0.1:{PORT}/api/status")
     print(f"  Visits:  http://127.0.0.1:{PORT}/api/visitors")
+    print(f"  Videos:  http://127.0.0.1:{PORT}/api/video-views")
     print(f"  Ollama:  {'YES' if models else 'NO — start Ollama app'}")
     if models:
         print(f"  Mjolnir mind:   {m_m}")

@@ -94,6 +94,76 @@
       })
       .then(function (j) {
         if (j && j.ok) paint(j);
+        if (j && j.ok && j.videoViews) paintVideoViews(j.videoViews);
+        return j;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  function paintVideoViews(counts) {
+    if (!counts || typeof counts !== "object") return;
+    document.querySelectorAll("[data-video-views]").forEach(function (el) {
+      var id = el.getAttribute("data-video-views") || "";
+      if (!id) return;
+      var n = counts[id];
+      if (n == null) n = 0;
+      el.textContent = fmt(n);
+    });
+  }
+
+  function fetchVideoViews() {
+    return fetch(apiUrl("/api/video-views"), {
+      method: "GET",
+      credentials: "omit",
+      cache: "no-store",
+    })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (j) {
+        if (j && j.ok && j.counts) paintVideoViews(j.counts);
+        return j;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  function recordVideo(videoId) {
+    var id = String(videoId || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_\-]/g, "")
+      .slice(0, 40);
+    if (!id) return Promise.resolve(null);
+    var key = "telephantim_video_view_" + id;
+    try {
+      if (sessionStorage.getItem(key) === "1") return Promise.resolve(null);
+      sessionStorage.setItem(key, "1");
+    } catch (_) {}
+    document.querySelectorAll('[data-video-views="' + id + '"]').forEach(function (el) {
+      var cur = parseInt(String(el.textContent || "").replace(/[^\d]/g, ""), 10);
+      if (!isFinite(cur)) cur = 0;
+      el.textContent = fmt(cur + 1);
+    });
+    return fetch(apiUrl("/api/video-view"), {
+      method: "POST",
+      credentials: "omit",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        videoId: id,
+        visitorId: getVisitorId(),
+        site: siteKey(),
+      }),
+      cache: "no-store",
+      keepalive: true,
+    })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (j) {
+        if (j && j.ok && j.counts) paintVideoViews(j.counts);
         return j;
       })
       .catch(function () {
@@ -146,6 +216,7 @@
 
   function boot() {
     // Always try to show latest totals, then count this session once
+    fetchVideoViews();
     fetchStats().finally(function () {
       recordVisit();
     });
@@ -160,6 +231,8 @@
   window.TelephantimVisitorCounter = {
     refresh: fetchStats,
     record: recordVisit,
+    recordVideo: recordVideo,
+    refreshVideos: fetchVideoViews,
     getId: getVisitorId,
   };
 })();
