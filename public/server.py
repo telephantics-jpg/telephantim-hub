@@ -333,6 +333,71 @@ def record_visit(
 
 _visitors_load()
 
+# --- Bio music-video play counts (own system, not YouTube) ---
+VIDEO_VIEWS_FILE = ROOT / "data" / "video-views.json"
+_VIDEO_VIEWS_LOCK = threading.Lock()
+VIDEO_IDS = ("unknown-force", "it-all", "what-isnt-is")
+_VIDEO_VIEWS: dict = {"counts": {k: 0 for k in VIDEO_IDS}}
+
+
+def _video_views_load() -> None:
+    global _VIDEO_VIEWS
+    try:
+        if VIDEO_VIEWS_FILE.is_file():
+            data = json.loads(VIDEO_VIEWS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                counts = data.get("counts") if isinstance(data.get("counts"), dict) else data
+                if isinstance(counts, dict):
+                    merged = {k: 0 for k in VIDEO_IDS}
+                    for k, v in counts.items():
+                        key = re.sub(r"[^a-z0-9_\-]", "", str(k).lower())[:40]
+                        if key:
+                            merged[key] = int(v or 0)
+                    _VIDEO_VIEWS = {"counts": merged}
+    except Exception as e:
+        print("[telephantim] video-views load failed:", e)
+
+
+def _video_views_save() -> None:
+    try:
+        VIDEO_VIEWS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "counts": dict(_VIDEO_VIEWS.get("counts") or {}),
+            "updatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+        VIDEO_VIEWS_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("[telephantim] video-views save failed:", e)
+
+
+def _video_view_counts() -> dict:
+    with _VIDEO_VIEWS_LOCK:
+        counts = dict(_VIDEO_VIEWS.get("counts") or {})
+        for k in VIDEO_IDS:
+            counts.setdefault(k, 0)
+        return {k: int(v or 0) for k, v in counts.items()}
+
+
+def record_video_view(video_id: str) -> dict:
+    vid = re.sub(r"[^a-z0-9_\-]", "", str(video_id or "").lower())[:40]
+    if vid not in VIDEO_IDS:
+        return {"ok": False, "error": "unknown_video", "server": "telephantim-ai"}
+    with _VIDEO_VIEWS_LOCK:
+        counts = _VIDEO_VIEWS.setdefault("counts", {})
+        counts[vid] = int(counts.get(vid) or 0) + 1
+        _video_views_save()
+        out = {k: int(v or 0) for k, v in counts.items()}
+        return {
+            "ok": True,
+            "id": vid,
+            "views": int(counts[vid]),
+            "counts": out,
+            "server": "telephantim-ai",
+        }
+
+
+_video_views_load()
+
 
 def _default_site_content() -> dict:
     """Minimal seed if data/site-content.json is missing."""
@@ -1715,7 +1780,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         # --- Public visitor stats (no PII) ---
         if path == "/api/visitors":
-            self._json(200, _visitors_public())
+            pub = _visitors_public()
+            pub["videoViews"] = _video_view_counts()
+            self._json(200, pub)
+            return
+        if path == "/api/video-views":
+            self._json(200, {"ok": True, "counts": _video_view_counts(), "server": "telephantim-ai"})
             return
         if path == "/api/admin/visitors":
             if not self._is_admin():
@@ -1726,6 +1796,7 @@ class Handler(SimpleHTTPRequestHandler):
                 known_n = len(_VISITORS.get("known") or {})
             pub["knownStored"] = known_n
             pub["admin"] = True
+            pub["videoViews"] = _video_view_counts()
             self._json(200, pub)
             return
         # --- Admin session ---
@@ -1761,6 +1832,12 @@ class Handler(SimpleHTTPRequestHandler):
                 vid = "anon-" + secrets.token_hex(8)
             result = record_visit(vid, site=site, path=path_hit, is_new_session=bool(is_new))
             self._json(200, result)
+            return
+
+        if path == "/api/video-view":
+            video_id = str(data.get("videoId") or data.get("id") or data.get("video") or "").strip()
+            result = record_video_view(video_id)
+            self._json(200 if result.get("ok") else 400, result)
             return
 
         # --- Admin auth + CMS writes (before heavy brain work) ---
@@ -2340,6 +2417,7 @@ def main() -> None:
     print(f"  Admin:   http://127.0.0.1:{PORT}/admin/")
     print(f"  Health:  http://127.0.0.1:{PORT}/api/status")
     print(f"  Visits:  http://127.0.0.1:{PORT}/api/visitors")
+    print(f"  Videos:  http://127.0.0.1:{PORT}/api/video-views")
     print(f"  Ollama:  {'YES' if models else 'NO — start Ollama app'}")
     if models:
         print(f"  Mjolnir mind:   {m_m}")

@@ -382,6 +382,17 @@ body.scene-bio .float-actions {
   font-weight: 800;
   color: #f2f0eb;
 }
+.bio-video-views {
+  margin: -0.4rem 0 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(186, 230, 253, 0.82);
+}
+.bio-video-views [data-video-views] {
+  color: #fde68a;
+  font-variant-numeric: tabular-nums;
+}
 .bio-embed {
   position: relative;
   width: 100%;

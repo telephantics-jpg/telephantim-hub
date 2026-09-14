@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v150-it-all" />
+  <link rel="stylesheet" href="styles.css?v=v151-unknown-force" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -115,8 +115,33 @@
 
         <section class="bio-latest" aria-label="Videos">
           <p class="bio-links-label">Latest video</p>
+          <h2 class="bio-latest-title">UNKNOWN FORCE</h2>
+          <p class="bio-video-views"><span data-video-views="unknown-force">—</span> views</p>
+          <div class="bio-embed" data-video-embed data-video-id="unknown-force">
+            <img
+              class="bio-latest-poster"
+              src="media/unknown-force.jpg?v=1"
+              alt="UNKNOWN FORCE"
+              width="1280"
+              height="720"
+            />
+            <button type="button" class="bio-latest-play" aria-label="Play UNKNOWN FORCE">▶</button>
+            <video
+              class="bio-latest-video"
+              controls
+              playsinline
+              preload="none"
+              poster="media/unknown-force.jpg?v=1"
+              title="UNKNOWN FORCE — Telephantix"
+            >
+              <source src="media/unknown-force.mp4" type="video/mp4" />
+            </video>
+          </div>
+
+          <p class="bio-links-label bio-more-videos">Videos</p>
           <h2 class="bio-latest-title">It All</h2>
-          <div class="bio-embed" data-video-embed>
+          <p class="bio-video-views"><span data-video-views="it-all">—</span> views</p>
+          <div class="bio-embed" data-video-embed data-video-id="it-all">
             <img
               class="bio-latest-poster"
               src="media/it-all.jpg?v=1"
@@ -137,9 +162,9 @@
             </video>
           </div>
 
-          <p class="bio-links-label bio-more-videos">Videos</p>
-          <h2 class="bio-latest-title">What Isn't Is</h2>
-          <div class="bio-embed" id="bio-embed" data-video-embed>
+          <h2 class="bio-latest-title bio-more-videos">What Isn't Is</h2>
+          <p class="bio-video-views"><span data-video-views="what-isnt-is">—</span> views</p>
+          <div class="bio-embed" id="bio-embed" data-video-embed data-video-id="what-isnt-is">
             <img
               id="bio-latest-poster"
               class="bio-latest-poster"
@@ -200,6 +225,7 @@
     <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
     <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
     <a class="world-tab" href="/?world=4d" data-scene="sense" title="4D — interactable hyper-form">4D</a>
+    <a class="world-tab" href="/?world=aether" data-scene="aether" title="Aether's cottage">Aether</a>
   </nav>
 
   <!-- Full Music Studio tab -->
@@ -487,7 +513,7 @@
   <!-- Sets window.TELEPHANTIM_API + TELEPHANTIM_GA_ID -->
   <script src="api-config.js?v=87-live-telephantim"></script>
   <script src="analytics.js?v=87-live-telephantim"></script>
-  <script src="visitors.js?v=v112-visitors"></script>
+  <script src="visitors.js?v=v151-unknown-force"></script>
   <!-- Local Three.js (no CDN) so Relics still load offline -->
   <script type="importmap">
   {
@@ -497,9 +523,9 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v136-live-camp"></script>
+  <script type="module" src="scenes.js?v=v138-aether-embed"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v150-it-all"></script>
+  <script type="module" src="bio.js?v=v151-unknown-force"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script type="module" src="music.js?v=v23-unduck"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
