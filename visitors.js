@@ -108,9 +108,73 @@
       var id = el.getAttribute("data-video-views") || "";
       if (!id) return;
       var n = counts[id];
-      if (n == null) n = 0;
+      if (n == null) return;
       el.textContent = fmt(n);
     });
+  }
+
+  var FALLBACK_COUNT = "https://countapi.mileshilliard.com/api/v1";
+
+  function fallbackKey(id) {
+    return "telephantim-" + id;
+  }
+
+  function listedVideoIds() {
+    var ids = [];
+    document.querySelectorAll("[data-video-views]").forEach(function (el) {
+      var id = el.getAttribute("data-video-views") || "";
+      if (id && ids.indexOf(id) < 0) ids.push(id);
+    });
+    return ids;
+  }
+
+  function fetchFallbackCounts() {
+    return Promise.all(
+      listedVideoIds().map(function (id) {
+        return fetch(FALLBACK_COUNT + "/get/" + encodeURIComponent(fallbackKey(id)), {
+          credentials: "omit",
+          cache: "no-store",
+        })
+          .then(function (r) {
+            return r.ok ? r.json() : { value: 0 };
+          })
+          .then(function (j) {
+            return [id, Number(j && j.value) || 0];
+          })
+          .catch(function () {
+            return [id, 0];
+          });
+      })
+    ).then(function (pairs) {
+      var counts = {};
+      pairs.forEach(function (p) {
+        counts[p[0]] = p[1];
+      });
+      paintVideoViews(counts);
+      return { ok: true, counts: counts, fallback: true };
+    });
+  }
+
+  function hitFallback(id) {
+    return fetch(FALLBACK_COUNT + "/hit/" + encodeURIComponent(fallbackKey(id)), {
+      credentials: "omit",
+      cache: "no-store",
+      keepalive: true,
+    })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (j) {
+        if (j && j.value != null) {
+          var counts = {};
+          counts[id] = Number(j.value) || 0;
+          paintVideoViews(counts);
+        }
+        return j;
+      })
+      .catch(function () {
+        return null;
+      });
   }
 
   function fetchVideoViews() {
@@ -123,11 +187,14 @@
         return r.ok ? r.json() : null;
       })
       .then(function (j) {
-        if (j && j.ok && j.counts) paintVideoViews(j.counts);
-        return j;
+        if (j && j.ok && j.counts) {
+          paintVideoViews(j.counts);
+          return j;
+        }
+        return fetchFallbackCounts();
       })
       .catch(function () {
-        return null;
+        return fetchFallbackCounts();
       });
   }
 
@@ -163,11 +230,14 @@
         return r.ok ? r.json() : null;
       })
       .then(function (j) {
-        if (j && j.ok && j.counts) paintVideoViews(j.counts);
-        return j;
+        if (j && j.ok && j.counts) {
+          paintVideoViews(j.counts);
+          return j;
+        }
+        return hitFallback(id);
       })
       .catch(function () {
-        return null;
+        return hitFallback(id);
       });
   }
 
