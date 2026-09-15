@@ -14,23 +14,19 @@ function lunaCampBase() {
     const h = (location.hostname || "").toLowerCase();
     const port = String(location.port || "");
     const path = String(location.pathname || "");
-    // Explicit override for dev: ?luna=http://127.0.0.1:8767
+    // Explicit override: ?luna=http://127.0.0.1:8767 when local Camp is running
     try {
       const q = new URLSearchParams(location.search || "");
       const o = (q.get("luna") || "").trim().replace(/\/$/, "");
       if (o && /^https?:\/\//i.test(o)) return o;
     } catch (_) {}
     if (h === "localhost" || h === "127.0.0.1") {
-      // Hub AI server is 8765 and has no /firmament — point at Luna
-      if (port === "8765" || port === "8766" || port === "") {
-        // Empty port only if not actually serving camp (rare); prefer 8767 for hub
-        if (port === "8765" || port === "8766") return "http://127.0.0.1:8767";
-      }
-      // Already on Luna port → same origin (START_TOWN_LOCAL)
+      // Already on Luna → same origin
       if (port === "8767" || path.includes("firmament")) {
         return location.origin;
       }
-      // Default local split: hub → Luna
+      // Local hub (8765): Camp on 8767 when Luna is running.
+      // Fallback: ?luna=https://telephanti.com for live Camp.
       return "http://127.0.0.1:8767";
     }
     // Live hub / Pages / Render static → always cloud Luna (your PC off is fine)
@@ -53,6 +49,7 @@ function campUrls() {
     base,
     play: `${base}/firmament/play?hub=1`,
     three: `${base}/firmament/3d?hub=1`,
+    sense: `${base}/sense`,
   };
 }
 
@@ -69,9 +66,17 @@ const SCENES = {
     id: "bio",
     label: "Bio",
     short: "Bio",
-    hint: "Beacons-style · your video or photo background",
+    hint: "Your video or photo background",
     url: null,
     mode: "bio",
+  },
+  studio: {
+    id: "studio",
+    label: "Music Studio",
+    short: "Studio",
+    hint: "Full synth · looper · free AI jam",
+    url: null,
+    mode: "studio",
   },
   "luna-2d": {
     id: "luna-2d",
@@ -90,6 +95,14 @@ const SCENES = {
     urlKey: "three",
     mode: "external",
   },
+  sense: {
+    id: "sense",
+    label: "4D — The Sense",
+    short: "4D",
+    hint: "Interactable 4D field",
+    urlKey: "sense",
+    mode: "external",
+  },
 };
 
 function sceneUrl(scene) {
@@ -97,7 +110,9 @@ function sceneUrl(scene) {
   if (scene.url) return scene.url;
   if (scene.urlKey) {
     const u = campUrls();
-    return scene.urlKey === "three" ? u.three : u.play;
+    if (scene.urlKey === "three") return u.three;
+    if (scene.urlKey === "sense") return u.sense;
+    return u.play;
   }
   return null;
 }
@@ -118,35 +133,88 @@ function normalizeScene(id) {
   return DEFAULT_SCENE;
 }
 
-function readHash() {
-  const h = (location.hash || "").replace(/^#/, "").toLowerCase();
-  // Bare URL = Bio (landing) — notice 2D / 3D tabs immediately
-  if (!h) return DEFAULT_SCENE;
-  if (h === "luna" || h === "camp" || h === "luna2d" || h === "2d") return "luna-2d";
-  if (h === "luna3d" || h === "3d") return "luna-3d";
-  if (h === "relics" || h === "hub" || h === "home" || h === "telephantim") return "telephantim";
-  if (h === "bio" || h === "beacons" || h === "links" || h === "quote") return "bio";
-  // Ignore unknown hashes (e.g. #socials) — land on Bio
-  if (h && !SCENES[h]) return DEFAULT_SCENE;
-  return normalizeScene(h);
+function worldSlug(id) {
+  if (id === "luna-2d") return "2d";
+  if (id === "luna-3d") return "3d";
+  if (id === "telephantim") return "relics";
+  if (id === "sense") return "4d";
+  if (id === "studio") return "studio";
+  return "bio";
 }
 
-function writeHash(id) {
-  const path = location.pathname + location.search;
-  // Bio is the public landing — bare URL means Bio (no # needed)
-  const next =
-    id === "bio"
-      ? path
-      : `${path}#${id === "telephantim" ? "relics" : id}`;
-  const cur = location.pathname + location.search + (location.hash || "");
-  if (
-    cur === next ||
-    (id === "bio" && !location.hash && location.pathname + location.search === path)
-  ) {
-    return;
+function mapWorldToken(raw) {
+  const t = String(raw || "").replace(/^#/, "").toLowerCase().trim();
+  if (!t) return "";
+  if (t === "luna" || t === "camp" || t === "luna2d" || t === "luna-2d" || t === "2d" || t === "play") {
+    return "luna-2d";
   }
-  // replaceState only — never assign location / never full navigation
+  if (t === "luna3d" || t === "luna-3d" || t === "3d") return "luna-3d";
+  if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
+  if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
+  if (t === "sense" || t === "sixth" || t === "field" || t === "matrix" || t === "4d" || t === "4-d") return "sense";
+  if (t === "aether" || t === "cottage" || t === "house") return DEFAULT_SCENE;
+  if (t === "prophecy" || t === "oracle" || t === "omen") return "sense";
+  if (t === "studio" || t === "music" || t === "lab" || t === "jam") return DEFAULT_SCENE;
+  if (SCENES[t]) return t;
+  return "";
+}
+
+function readQueryWorld() {
   try {
+    const q = new URLSearchParams(location.search || "");
+    return mapWorldToken(q.get("world") || q.get("w") || q.get("scene") || "");
+  } catch (_) {
+    return "";
+  }
+}
+
+function readPathWorld() {
+  try {
+    const last = (location.pathname || "/")
+      .replace(/\/+$/, "")
+      .split("/")
+      .pop()
+      .toLowerCase();
+    if (last === "2d" || last === "2d.html") return "luna-2d";
+    if (last === "3d" || last === "3d.html") return "luna-3d";
+    if (last === "sense" || last === "sense.html" || last === "prophecy" || last === "prophecy.html") return "sense";
+    if (last === "relics" || last === "relics.html") return "telephantim";
+    if (last === "studio" || last === "studio.html") return "studio";
+  } catch (_) {}
+  return "";
+}
+
+function readHash() {
+  const h = (location.hash || "").replace(/^#/, "").toLowerCase();
+  if (!h) return "";
+  return mapWorldToken(h);
+}
+
+/** Shared links use ?world=2d (hashes get stripped by iMessage / Discord / X). */
+function readStartScene() {
+  const fromQuery = readQueryWorld();
+  if (fromQuery) return fromQuery;
+  const fromPath = readPathWorld();
+  if (fromPath) return fromPath;
+  const fromHash = readHash();
+  if (fromHash) return fromHash;
+  return DEFAULT_SCENE;
+}
+
+function writeUrl(id) {
+  try {
+    const u = new URL(location.href);
+    if (id === "bio") {
+      u.searchParams.delete("world");
+      u.searchParams.delete("w");
+      u.searchParams.delete("scene");
+    } else {
+      u.searchParams.set("world", worldSlug(id));
+    }
+    u.hash = "";
+    const next = u.pathname + u.search;
+    const cur = location.pathname + location.search;
+    if (cur === next && !location.hash) return;
     history.replaceState({ telephantimScene: id }, "", next);
   } catch (_) {}
 }
@@ -165,12 +233,13 @@ function updateChrome(scene) {
 }
 
 function sceneUrlKeyRewrite(sceneId) {
-  const base = "http://127.0.0.1:8767";
+  const base = lunaCampBase().replace(/\/$/, "");
   if (sceneId === "luna-3d") return `${base}/firmament/3d?hub=1`;
+  if (sceneId === "sense") return `${base}/sense`;
   return `${base}/firmament/play?hub=1`;
 }
 
-function setScene(id, { persist = true, fromHash = false } = {}) {
+function setScene(id, { persist = true, fromHash = false, fromUrl = false } = {}) {
   const sceneId = normalizeScene(id);
   const scene = SCENES[sceneId];
   const prev = current;
@@ -184,14 +253,18 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
 
   const isExternal = !!want;
   const isBio = scene.mode === "bio";
+  const isStudio = scene.mode === "studio" || sceneId === "studio";
   const isRelics = sceneId === "telephantim";
 
   document.body.dataset.scene = sceneId;
   document.body.classList.toggle("scene-external", isExternal);
   document.body.classList.toggle("scene-bio", isBio);
+  document.body.classList.toggle("scene-studio", isStudio);
+  document.body.classList.toggle("scene-luna-2d", sceneId === "luna-2d");
+  document.body.classList.toggle("scene-luna-3d", sceneId === "luna-3d");
   document.body.classList.toggle("scene-native", isRelics);
 
-  if (isExternal || isBio) {
+  if (isExternal || isBio || isStudio) {
     document.body.classList.remove("sheet-open");
   }
   if (sceneId === "luna-2d") {
@@ -201,9 +274,18 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
   const frame = $("scene-frame");
   const fallback = $("scene-fallback");
   const bioPage = $("bio-page");
+  const studioStage = $("stage-studio");
   const fallbackOpen = $("scene-fallback-open");
 
   if (bioPage) bioPage.hidden = !isBio;
+  if (studioStage) {
+    studioStage.hidden = !isStudio;
+    if (isStudio) {
+      try {
+        window.TelephantixStudio?.onSceneChange?.();
+      } catch (_) {}
+    }
+  }
 
   if (want && frame) {
     const prevSrc = frame.getAttribute("data-src") || frame.src || "";
@@ -245,7 +327,7 @@ function setScene(id, { persist = true, fromHash = false } = {}) {
       localStorage.setItem(STORAGE_KEY, sceneId);
     } catch (_) {}
   }
-  if (!fromHash) writeHash(sceneId);
+  if (!fromHash && !fromUrl) writeUrl(sceneId);
 
   if (prev !== sceneId) {
     window.dispatchEvent(
@@ -281,6 +363,7 @@ function onWorldClick(e) {
   ) {
     return;
   }
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
   e.preventDefault();
   e.stopPropagation();
   const id = btn.getAttribute("data-scene");
@@ -315,8 +398,12 @@ function wire() {
   });
 
   window.addEventListener("hashchange", () => {
-    const next = readHash();
-    if (next !== current) setScene(next, { fromHash: true });
+    const next = readStartScene();
+    if (next !== current) setScene(next, { fromHash: true, fromUrl: true });
+  });
+  window.addEventListener("popstate", () => {
+    const next = readStartScene();
+    if (next !== current) setScene(next, { fromUrl: true });
   });
 
   // Block accidental middle-click / modified clicks on world tabs from opening new pages
@@ -324,13 +411,13 @@ function wire() {
     if (e.target.closest?.(".world-tab")) e.preventDefault();
   });
 
-  // Bare telephantim.com → always Bio (do not restore last tab; visitors must see 2D/3D).
-  // Deep links (#relics, #luna-2d, #luna-3d, #bio) still win.
-  let start = readHash();
-  if (!location.hash) {
-    start = DEFAULT_SCENE;
-  }
-  setScene(start, { persist: true, fromHash: !!location.hash });
+  // Bare telephantim.com → Bio. Shared links use ?world=2d (hash is fallback only).
+  const start = readStartScene();
+  setScene(start, {
+    persist: true,
+    fromHash: !!location.hash && !readQueryWorld(),
+    fromUrl: !!(readQueryWorld() || readPathWorld()),
+  });
 }
 
 if (document.readyState === "loading") {
