@@ -52,7 +52,7 @@ function setVideoBg(url, poster) {
   video.setAttribute("loop", "");
   video.setAttribute("autoplay", "");
   // Cache-bust so phones don't keep a stale Mind-Over-Hell clip
-  const bust = String(url).includes("?") ? url : `${url}?v=mjolnir-sky-bio`;
+  const bust = String(url).includes("?") ? url : `${url}?v=1`;
   if (poster) video.poster = poster;
   video.src = bust;
   const forceMute = () => {
@@ -102,16 +102,20 @@ function setVideoBg(url, poster) {
 function applyMedia() {
   const mode = (BIO.mode || "auto").toLowerCase();
   const poster = BIO.poster || "";
+  let videoUrl = BIO.video || "";
+  const path = String(videoUrl).split("?")[0];
+  if (!path || /\/bio-bg\.mp4$/i.test(path) || path === "media/bio-bg.mp4") {
+    videoUrl = "media/bio-bg-grok.mp4";
+  }
   if (mode === "image") {
     setImageBg(BIO.image || poster);
     return;
   }
   if (mode === "video") {
-    setVideoBg(BIO.video, poster || BIO.image);
+    setVideoBg(videoUrl, poster || BIO.image);
     return;
   }
-  // auto
-  if (BIO.video) setVideoBg(BIO.video, poster || BIO.image);
+  if (videoUrl) setVideoBg(videoUrl, poster || BIO.image);
   else setImageBg(BIO.image || poster);
 }
 
