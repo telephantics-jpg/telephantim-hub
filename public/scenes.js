@@ -14,23 +14,19 @@ function lunaCampBase() {
     const h = (location.hostname || "").toLowerCase();
     const port = String(location.port || "");
     const path = String(location.pathname || "");
-    // Explicit override for dev: ?luna=http://127.0.0.1:8767
+    // Explicit override: ?luna=http://127.0.0.1:8767 when local Camp is running
     try {
       const q = new URLSearchParams(location.search || "");
       const o = (q.get("luna") || "").trim().replace(/\/$/, "");
       if (o && /^https?:\/\//i.test(o)) return o;
     } catch (_) {}
     if (h === "localhost" || h === "127.0.0.1") {
-      // Hub AI server is 8765 and has no /firmament — point at Luna
-      if (port === "8765" || port === "8766" || port === "") {
-        // Empty port only if not actually serving camp (rare); prefer 8767 for hub
-        if (port === "8765" || port === "8766") return "http://127.0.0.1:8767";
-      }
-      // Already on Luna port → same origin (START_TOWN_LOCAL)
+      // Already on Luna → same origin
       if (port === "8767" || path.includes("firmament")) {
         return location.origin;
       }
-      // Default local split: hub → Luna
+      // Local hub (8765): Camp on 8767 when Luna is running.
+      // Fallback: ?luna=https://telephanti.com for live Camp.
       return "http://127.0.0.1:8767";
     }
     // Live hub / Pages / Render static → always cloud Luna (your PC off is fine)
@@ -156,6 +152,7 @@ function mapWorldToken(raw) {
   if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
   if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
   if (t === "sense" || t === "sixth" || t === "field" || t === "matrix" || t === "4d" || t === "4-d") return "sense";
+  if (t === "aether" || t === "cottage" || t === "house") return DEFAULT_SCENE;
   if (t === "prophecy" || t === "oracle" || t === "omen") return "sense";
   if (t === "studio" || t === "music" || t === "lab" || t === "jam") return DEFAULT_SCENE;
   if (SCENES[t]) return t;
@@ -236,7 +233,7 @@ function updateChrome(scene) {
 }
 
 function sceneUrlKeyRewrite(sceneId) {
-  const base = "http://127.0.0.1:8767";
+  const base = lunaCampBase().replace(/\/$/, "");
   if (sceneId === "luna-3d") return `${base}/firmament/3d?hub=1`;
   if (sceneId === "sense") return `${base}/sense`;
   return `${base}/firmament/play?hub=1`;
