@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v155-bio" />
+  <link rel="stylesheet" href="styles.css?v=v157-bio" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -97,9 +97,10 @@
         loop
         playsinline
         autoplay
-        preload="metadata"
-        hidden
-      ></video>
+        preload="auto"
+      >
+        <source src="media/bio-bg-grok.mp4?v=1" type="video/mp4" />
+      </video>
       <div id="bio-image" class="bio-image" hidden></div>
     </div>
     <div class="bio-scrim" aria-hidden="true"></div>
@@ -525,7 +526,7 @@
   </script>
   <script type="module" src="scenes.js?v=v138-aether-embed"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v155-bio"></script>
+  <script type="module" src="bio.js?v=v157-bio"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script type="module" src="music.js?v=v23-unduck"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
