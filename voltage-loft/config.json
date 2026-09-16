@@ -1,0 +1,213 @@
+{
+  "version": "v141-dynamic",
+  "host": "AGENT ALpha",
+  "navOrder": ["portal", "studio", "lounge", "vip", "balcony"],
+  "keywords": [
+    {
+      "match": ["hello", "hi", "hey", "yo", "sup"],
+      "replies": [
+        "Hey. Voltage Loft’s live — pick a room or ask me anything.",
+        "You’re on the feed. What’s the move?"
+      ]
+    },
+    {
+      "match": ["help", "what", "how", "where", "guide"],
+      "replies": [
+        "Hotspots move you. Type to me anytime. Esc backs toward Portal.",
+        "Portal → Studio → Lounge / VIP / Balcony. Signal climbs as you explore."
+      ]
+    },
+    {
+      "match": ["music", "beat", "mix", "studio", "pad", "fader"],
+      "replies": [
+        "Desk never sleeps. Studio’s where the meters breathe.",
+        "Push anything that glows. Pad’s tuned to midnight."
+      ]
+    },
+    {
+      "match": ["vip", "velvet", "private", "booth"],
+      "replies": [
+        "VIP is velvet rules — soft voice, hard boundaries.",
+        "Consent locked. List doesn’t lie. You’re on it."
+      ]
+    },
+    {
+      "match": ["lounge", "couch", "peers", "clerk", "pour"],
+      "replies": [
+        "Lounge is soft light, hard opinions. Match the voltage.",
+        "Clerk’s pour is clean. Tip in compliments or silence."
+      ]
+    },
+    {
+      "match": ["balcony", "city", "skyline", "night", "air"],
+      "replies": [
+        "Balcony’s the screensaver. Skyline doesn’t ask for a setlist.",
+        "Wind tastes like copper and rain. Good night for thinking."
+      ]
+    },
+    {
+      "match": ["alpha", "who", "host", "you"],
+      "replies": [
+        "I’m ALpha — crystalline host. Session’s yours.",
+        "Host online. No tickets. Just voltage."
+      ]
+    },
+    {
+      "match": ["signal", "meter", "session", "status"],
+      "replies": [
+        "Signal rises when you move rooms and talk. Keep the feed warm.",
+        "Your session’s stored locally — rooms, last line, signal, clock."
+      ]
+    },
+    {
+      "match": ["bye", "later", "exit", "leave", "gone"],
+      "replies": [
+        "Gate stays open. Come back when the meters call.",
+        "Logged. Voltage Loft doesn’t forget a guest who returns."
+      ]
+    }
+  ],
+  "fallbackReplies": [
+    "Say more — or tap a hotspot. I’m listening.",
+    "Room’s live. Try music, lounge, vip, balcony — or just vibe.",
+    "Signal received. Ask about the desk, the pour, or the skyline."
+  ],
+  "rooms": {
+    "portal": {
+      "id": "portal",
+      "name": "Portal Gate",
+      "bg": "01-pad.png",
+      "parent": null,
+      "lines": [
+        "Took you long enough. Voltage Loft’s lit. Step through.",
+        "Threshold’s warm. Studio’s waiting on the other side.",
+        "No tickets. Just voltage. When you’re ready — step."
+      ],
+      "extra": [
+        "I don’t do small talk at the gate. I do invitations.",
+        "Behind this door: desk, lounge, VIP, balcony. Pick your voltage.",
+        "Casting’s locked. You’re the guest of honor."
+      ],
+      "chatHooks": [
+        "Gate’s open. Type if you want a briefing before you step.",
+        "Still at threshold. Studio’s one step through."
+      ],
+      "hotspots": [
+        { "label": "Step Through", "x": 50, "y": 48, "type": "door", "action": { "go": "studio" } },
+        { "label": "Peek Studio", "x": 72, "y": 62, "type": "object", "action": { "say": "Empty chair. Mixing board breathing. That’s your pad." } },
+        { "label": "Skyline", "x": 28, "y": 38, "type": "object", "action": { "say": "City’s already watching. Don’t keep it waiting." } }
+      ],
+      "enterCta": true
+    },
+    "studio": {
+      "id": "studio",
+      "name": "Studio Desk",
+      "bg": "02-host.png",
+      "parent": "portal",
+      "lines": [
+        "This desk never sleeps. Your seat’s the empty one — claim it.",
+        "Faders up. Heartbeat in the meters. Welcome to the loft.",
+        "I’m ALpha. Crystalline host. Your session starts when you sit."
+      ],
+      "extra": [
+        "Pad’s tuned to midnight. Push anything that glows.",
+        "Wall says Music Penthouse. I say: don’t waste the sunset.",
+        "Need quiet? Balcony. Need noise? Lounge. Need rules? VIP.",
+        "That empty chair isn’t empty anymore. You’re in it."
+      ],
+      "chatHooks": [
+        "From the desk: ask about faders, lounge, VIP, or the balcony.",
+        "Meters are warm. What’s on your mind?"
+      ],
+      "hotspots": [
+        { "label": "Mixing Desk", "x": 55, "y": 68, "type": "object", "action": { "say": "Sliders remember every night. Make a new one." } },
+        { "label": "Lounge →", "x": 18, "y": 55, "type": "door", "action": { "go": "lounge" } },
+        { "label": "VIP Wing", "x": 82, "y": 42, "type": "door", "action": { "go": "vip" } },
+        { "label": "Balcony", "x": 70, "y": 28, "type": "door", "action": { "go": "balcony" } }
+      ]
+    },
+    "lounge": {
+      "id": "lounge",
+      "name": "Lounge",
+      "bg": "05-peers.png",
+      "altBg": "03-couch.png",
+      "parent": "studio",
+      "lines": [
+        "Peers are loud on purpose. Grab a pour from Clerk.",
+        "Couch has room. Conversations don’t wait for intros.",
+        "Soft light, hard opinions. That’s the lounge formula."
+      ],
+      "extra": [
+        "Clerk’s pour is clean. Tip in compliments or silence.",
+        "They’re not audience — they’re voltage. Match it.",
+        "If the couch invites you, accept. That’s etiquette.",
+        "VIP’s past the velvet. Balcony’s past the glass."
+      ],
+      "chatHooks": [
+        "Lounge mode: peers, couch, Clerk’s pour — or bounce to VIP.",
+        "Soft light here. Ask me anything while you linger."
+      ],
+      "hotspots": [
+        { "label": "Peers", "x": 48, "y": 52, "type": "object", "action": { "say": "Four frequencies. Don’t interrupt — harmonize.", "bg": "05-peers.png" } },
+        { "label": "Couch Invite", "x": 62, "y": 70, "type": "object", "action": { "say": "Sit. Stay. The night stretches when you do.", "bg": "03-couch.png" } },
+        { "label": "Clerk’s Pour", "x": 30, "y": 72, "type": "object", "action": { "say": "One glass. No tab. Reputation’s the currency." } },
+        { "label": "→ VIP", "x": 88, "y": 40, "type": "door", "action": { "go": "vip" } },
+        { "label": "← Studio", "x": 12, "y": 48, "type": "door", "action": { "go": "studio" } }
+      ]
+    },
+    "vip": {
+      "id": "vip",
+      "name": "VIP Wing",
+      "bg": "06-vip.png",
+      "parent": "studio",
+      "lines": [
+        "Adults only, consent locked, invoices burned. You’re on the list.",
+        "Velvet rules. Soft voice. Hard boundaries. That’s VIP.",
+        "No cameras that matter. No names that stick. Just voltage."
+      ],
+      "extra": [
+        "List doesn’t lie. You’re here because someone vouched.",
+        "If it isn’t enthusiastic, it isn’t happening. House law.",
+        "Amber light means stay. Violet means deeper. Read the room.",
+        "Back to studio when you’re done glowing."
+      ],
+      "chatHooks": [
+        "VIP channel open. Soft voice only.",
+        "Boundaries hold. Ask carefully — or return to studio."
+      ],
+      "hotspots": [
+        { "label": "Velvet Rope", "x": 22, "y": 55, "type": "object", "action": { "say": "Rope’s theater. Consent’s the real gate." } },
+        { "label": "Private Booth", "x": 55, "y": 60, "type": "object", "action": { "say": "Booth remembers nothing. That’s the point." } },
+        { "label": "→ Lounge", "x": 78, "y": 45, "type": "door", "action": { "go": "lounge" } },
+        { "label": "← Studio", "x": 14, "y": 35, "type": "door", "action": { "go": "studio" } }
+      ]
+    },
+    "balcony": {
+      "id": "balcony",
+      "name": "Balcony",
+      "bg": "04-balcony.png",
+      "parent": "studio",
+      "lines": [
+        "City’s the screensaver. Stay as long as you want.",
+        "Wind tastes like copper and rain. Good night for thinking.",
+        "No setlist out here. Just skyline and whatever you brought."
+      ],
+      "extra": [
+        "Lights below don’t care who you are. That’s freedom.",
+        "Lean on the rail. Don’t fall for metaphors — or do.",
+        "When the city blinks, blink back. Protocol.",
+        "Studio’s warm when you’re ready to mix again."
+      ],
+      "chatHooks": [
+        "Balcony air online. Skyline’s the only audience.",
+        "Quiet channel. Type, or just watch the city."
+      ],
+      "hotspots": [
+        { "label": "Skyline", "x": 50, "y": 35, "type": "object", "action": { "say": "Millions of windows. One of them’s yours someday." } },
+        { "label": "Rail", "x": 40, "y": 68, "type": "object", "action": { "say": "Hold steady. The loft holds you." } },
+        { "label": "Night Air", "x": 72, "y": 50, "type": "object", "action": { "say": "Breathe. Voltage doesn’t only live indoors." } },
+        { "label": "← Studio", "x": 16, "y": 55, "type": "door", "action": { "go": "studio" } }
+      ]
+    }
+  }
+}
