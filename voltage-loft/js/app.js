@@ -8,7 +8,7 @@
 
   const ASSETS = "assets/";
   const STORAGE_KEY = "voltage-loft-session-v1";
-  const BUILD = "v141-dynamic";
+  const BUILD = "v160-phone";
 
   /** Embedded fallback if config.json cannot load (file:// or network fail) */
   const FALLBACK_CONFIG = {
@@ -307,15 +307,26 @@
     }
   }
 
+  function isPhone() {
+    return window.matchMedia("(max-width: 700px)").matches;
+  }
+
   function renderHotspots() {
     el.hotspots.innerHTML = "";
     const r = room();
+    const phone = isPhone();
     (r.hotspots || []).forEach(function (h) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "hotspot " + (h.type || "object");
-      btn.style.left = h.x + "%";
-      btn.style.top = h.y + "%";
+      let x = h.x;
+      let y = h.y;
+      if (phone) {
+        x = Math.min(86, Math.max(14, h.x));
+        y = Math.min(40, Math.max(16, h.y * 0.58));
+      }
+      btn.style.left = x + "%";
+      btn.style.top = y + "%";
       btn.textContent = h.label;
       btn.setAttribute("aria-label", h.label);
       btn.addEventListener("click", function () {
@@ -492,7 +503,10 @@
   function updateCoords() {
     if (el.coords) el.coords.textContent = window.innerWidth + "×" + window.innerHeight;
   }
-  window.addEventListener("resize", updateCoords);
+  window.addEventListener("resize", function () {
+    updateCoords();
+    renderHotspots();
+  });
   updateCoords();
 
   function applyConfig(cfg) {

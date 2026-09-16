@@ -131,6 +131,29 @@ a.world-tab {
   background: linear-gradient(135deg, #1a4a7a, #0c2848);
   box-shadow: 0 0 12px rgba(80, 160, 255, 0.3);
 }
+.world-tab[data-scene="loft"].active {
+  color: #efe8ff;
+  background: linear-gradient(135deg, #6b3fd4, #2a1848);
+  box-shadow: 0 0 12px rgba(168, 120, 255, 0.4);
+}
+@media (max-width: 520px) {
+  .world-switch {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    max-width: calc(100vw - 8px);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .world-switch::-webkit-scrollbar { display: none; }
+  .world-tab {
+    flex: 0 0 auto;
+    font-size: 0.62rem;
+    padding: 0.38rem 0.5rem;
+    min-width: 2.6rem;
+  }
+}
 @media (max-width: 380px) {
   .world-tab {
     font-size: 0.62rem;
@@ -724,6 +747,20 @@ body.scene-external .scene-fallback {
 body.scene-external .scene-frame {
   /* full bleed; talk bar lives inside the camp page bottom */
   z-index: 2;
+}
+/* Loft sits between hub world tabs and the Pay sheet so chrome never stacks */
+body[data-scene="loft"] .scene-frame {
+  top: calc(2.7rem + env(safe-area-inset-top, 0px));
+  bottom: calc(var(--sheet-peek) + env(safe-area-inset-bottom, 0px));
+  height: auto;
+}
+body[data-scene="loft"].sheet-open .scene-frame {
+  bottom: min(55vh, calc(100dvh - 5.5rem));
+}
+@media (max-width: 520px) {
+  body[data-scene="loft"] .scene-frame {
+    top: calc(2.85rem + env(safe-area-inset-top, 0px));
+  }
 }
 
 /* ===== FULLSCREEN 3D ===== */
