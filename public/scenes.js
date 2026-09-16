@@ -107,22 +107,27 @@ const SCENES = {
     id: "loft",
     label: "Voltage Loft",
     short: "Loft",
-    hint: "AGENT ALpha interactive viewport",
+    hint: "Live dynamic viewport · AGENT ALpha",
     url: "/voltage-loft/",
+    cacheBust: true,
     mode: "external",
   },
 };
 
 function sceneUrl(scene) {
   if (!scene) return null;
-  if (scene.url) return scene.url;
-  if (scene.urlKey) {
+  let url = null;
+  if (scene.url) url = scene.url;
+  else if (scene.urlKey) {
     const u = campUrls();
-    if (scene.urlKey === "three") return u.three;
-    if (scene.urlKey === "sense") return u.sense;
-    return u.play;
+    if (scene.urlKey === "three") url = u.three;
+    else if (scene.urlKey === "sense") url = u.sense;
+    else url = u.play;
   }
-  return null;
+  if (url && scene.cacheBust) {
+    url += (url.indexOf("?") >= 0 ? "&" : "?") + "v=v141-dynamic";
+  }
+  return url;
 }
 
 const STORAGE_KEY = "telephantim-scene";
