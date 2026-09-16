@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Voltage Loft — Viewport</title>
+  <link rel="stylesheet" href="css/viewport.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- Full-bleed stage -->
+    <div id="stage" class="stage" aria-live="polite">
+      <div id="bg" class="bg" role="img" aria-label="Room view"></div>
+      <div class="vignette" aria-hidden="true"></div>
+      <div class="scanlines" aria-hidden="true"></div>
+      <div id="hotspots" class="hotspots"></div>
+    </div>
+
+    <!-- Top chrome -->
+    <header class="chrome-top">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="brand-text">
+          <h1>Voltage Loft</h1>
+          <p class="subtitle">Viewport · Music Penthouse</p>
+        </div>
+      </div>
+      <nav id="room-nav" class="room-nav" aria-label="Rooms"></nav>
+      <div class="chrome-actions">
+        <button type="button" id="btn-back" class="btn ghost" title="Esc / Back">← Back</button>
+      </div>
+    </header>
+
+    <!-- Dialogue panel -->
+    <aside class="dialogue" id="dialogue">
+      <div class="dialogue-head">
+        <div class="avatar" aria-hidden="true">
+          <span class="crystal"></span>
+        </div>
+        <div class="who">
+          <strong>AGENT ALpha</strong>
+          <span class="status"><span class="dot"></span> Online · Host</span>
+        </div>
+        <span id="room-tag" class="room-tag">Portal Gate</span>
+      </div>
+      <div id="chat" class="chat" role="log" aria-relevant="additions"></div>
+      <div class="dialogue-actions">
+        <button type="button" id="btn-talk" class="btn primary">Talk to ALpha</button>
+        <button type="button" id="btn-enter" class="btn amber hidden">Step Through</button>
+      </div>
+    </aside>
+
+    <!-- Footer hint -->
+    <footer class="chrome-foot">
+      <span id="hint">Click hotspots · Esc returns toward Portal</span>
+      <span class="coords" id="coords">1280×800</span>
+    </footer>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -103,6 +103,14 @@ const SCENES = {
     urlKey: "sense",
     mode: "external",
   },
+  loft: {
+    id: "loft",
+    label: "Voltage Loft",
+    short: "Loft",
+    hint: "AGENT ALpha interactive viewport",
+    url: "/voltage-loft/",
+    mode: "external",
+  },
 };
 
 function sceneUrl(scene) {
@@ -138,6 +146,7 @@ function worldSlug(id) {
   if (id === "luna-3d") return "3d";
   if (id === "telephantim") return "relics";
   if (id === "sense") return "4d";
+  if (id === "loft") return "loft";
   if (id === "studio") return "studio";
   return "bio";
 }
@@ -152,6 +161,7 @@ function mapWorldToken(raw) {
   if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
   if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
   if (t === "sense" || t === "sixth" || t === "field" || t === "matrix" || t === "4d" || t === "4-d") return "sense";
+  if (t === "loft" || t === "voltage" || t === "voltage-loft" || t === "alpha") return "loft";
   if (t === "aether" || t === "cottage" || t === "house") return DEFAULT_SCENE;
   if (t === "prophecy" || t === "oracle" || t === "omen") return "sense";
   if (t === "studio" || t === "music" || t === "lab" || t === "jam") return DEFAULT_SCENE;
@@ -178,6 +188,7 @@ function readPathWorld() {
     if (last === "2d" || last === "2d.html") return "luna-2d";
     if (last === "3d" || last === "3d.html") return "luna-3d";
     if (last === "sense" || last === "sense.html" || last === "prophecy" || last === "prophecy.html") return "sense";
+    if (last === "loft" || last === "loft.html" || last === "voltage-loft") return "loft";
     if (last === "relics" || last === "relics.html") return "telephantim";
     if (last === "studio" || last === "studio.html") return "studio";
   } catch (_) {}
@@ -233,6 +244,7 @@ function updateChrome(scene) {
 }
 
 function sceneUrlKeyRewrite(sceneId) {
+  if (sceneId === "loft") return "/voltage-loft/";
   const base = lunaCampBase().replace(/\/$/, "");
   if (sceneId === "luna-3d") return `${base}/firmament/3d?hub=1`;
   if (sceneId === "sense") return `${base}/sense`;
@@ -303,7 +315,13 @@ function setScene(id, { persist = true, fromHash = false, fromUrl = false } = {}
     if (fallbackOpen) {
       fallbackOpen.href = want.replace(/\?hub=1/, "").replace(/&hub=1/, "") || want;
       fallbackOpen.textContent =
-        sceneId === "luna-3d" ? "Open 3D full page (8767)" : "Open 2D full page (8767)";
+        sceneId === "loft"
+          ? "Open Voltage Loft full page"
+          : sceneId === "luna-3d"
+            ? "Open 3D full page (8767)"
+            : sceneId === "sense"
+              ? "Open 4D full page"
+              : "Open 2D full page (8767)";
       fallbackOpen.target = "_blank";
       fallbackOpen.rel = "noopener";
     }
