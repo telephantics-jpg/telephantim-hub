@@ -109,6 +109,10 @@ let musicPanelDrag = null;
 let djRadio = null;
 /** true only when user deliberately paused (controls / lock-screen Pause) */
 let userPaused = false;
+/** Vox is talking — Chrome/Edge will pause <audio>; that is not a user pause. */
+let voxHold = false;
+/** Internal play() (soft-resume / keep-alive) must not clear userPaused. */
+let resumeGuard = false;
 let mediaSessionApi = null;
 let bgKeepAliveInstalled = false;
 let lastSoftResumeAt = 0;
@@ -948,10 +952,20 @@ function saveMusicPersist() {
   } catch (_) {}
 }
 
+function keepPlaying(why) {
+  if (userPaused || !userStarted) return;
+  softResumeMusic(why || "keep");
+}
+
+function setVoxHold(on) {
+  voxHold = !!on;
+  if (voxHold && !userPaused) keepPlaying("vox-hold");
+}
+
 function softResumeMusic(why) {
   if (!wantBackgroundPlay()) return;
   const now = Date.now();
-  if (now - lastSoftResumeAt < 400) return;
+  if (now - lastSoftResumeAt < 250) return;
   lastSoftResumeAt = now;
   const audio = liveAudioEl();
   const cur = current();
@@ -965,6 +979,7 @@ function softResumeMusic(why) {
     updateMediaSessionMeta(true);
     return;
   }
+  resumeGuard = true;
   try {
     // Ensure src matches current track without rewinding if same file
     const same =
@@ -976,6 +991,9 @@ function softResumeMusic(why) {
     const p = audio.play();
     if (p && typeof p.catch === "function") p.catch(() => {});
   } catch (_) {}
+  window.setTimeout(() => {
+    resumeGuard = false;
+  }, 80);
   updateMediaSessionMeta(true);
   try {
     console.info("[telephantim-music] soft-resume", why, "t=", Math.floor(audio.currentTime || 0));
@@ -1564,7 +1582,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v24-vox-whole`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v26-vox-fluid`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
@@ -1612,6 +1630,8 @@ async function ensureDjRadio() {
       advanceOnEnded: false,
       isWantedOn: () => wantBackgroundPlay(),
       isUserPaused: () => !!userPaused,
+      keepPlaying: (why) => keepPlaying(why),
+      setVoxHold: (on) => setVoxHold(on),
       setStatus: setDjStatus,
       onUi: ({ enabled, status: st }) => {
         const btn = $("music-dj");
@@ -1973,7 +1993,14 @@ function wire() {
     prepAudioElement(audio);
     audio.addEventListener("ended", onAudioEnded);
     audio.addEventListener("play", () => {
-      userPaused = false;
+      if (userPaused && !resumeGuard) {
+        // Auto-start against a real pause — snap it back off.
+        try {
+          audio.pause();
+        } catch (_) {}
+        return;
+      }
+      if (!resumeGuard) userPaused = false;
       updateMusicChrome();
       updateMediaSessionMeta(true);
       saveMusicPersist();
@@ -1981,6 +2008,13 @@ function wire() {
     audio.addEventListener("pause", () => {
       updateMusicChrome();
       if (ignoringAudioEvents || mixing) return;
+      // Vox / speechSynthesis pauses HTML audio — keep the bed, don't mark user-pause.
+      if (voxHold && !userPaused) {
+        setTimeout(() => {
+          if (!userPaused) keepPlaying("vox-pause");
+        }, 40);
+        return;
+      }
       // Lock-screen / hidden tab: OS may pause us — only fight if user didn't pause
       if (document.hidden && wantBackgroundPlay() && !userPaused) {
         setTimeout(() => {
@@ -1988,7 +2022,8 @@ function wire() {
         }, 180);
         return;
       }
-      // Visible pause = user. Stick it and kill Vox so he doesn't start another line.
+      if (resumeGuard) return;
+      // Visible pause = user. Stick it and hush Vox so he doesn't restart the bed.
       userPaused = true;
       try {
         djRadio?.hush?.();
