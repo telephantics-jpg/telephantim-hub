@@ -500,6 +500,13 @@ body.scene-bio .float-actions {
   gap: 0.55rem;
   margin-top: 0.35rem;
 }
+.bio-links:empty,
+.bio-links[hidden] {
+  display: none !important;
+}
+body.scene-bio .sheet-featured {
+  display: none !important;
+}
 .bio-links-label {
   margin: 0.65rem 0 0.1rem;
   font-size: 0.68rem;
