@@ -851,24 +851,57 @@ function loadTrack(autoPlayHint) {
     } catch (_) {}
     if (autoPlayHint) {
       userPaused = false;
-      ignorePauseUntil = Date.now() + 800;
+      ignorePauseUntil = Date.now() + 2500;
       unlockRadio();
-      const startVox = () => {
-        setTimeout(() => notifyDjTrackChange(), 700);
-      };
-      try {
-        const p = audio.play();
-        if (p && typeof p.then === "function") {
-          p.then(startVox).catch((err) => {
-            console.warn("[radio] play blocked", err);
-            setDjStatus("Tap ♪ Play music once if iPhone muted it");
-            audio.play().catch(() => {});
-          });
-        } else {
-          startVox();
+      if (isDjWanted()) {
+        // Prime the element in this tap, then hold for Vox intro.
+        try {
+          audio.volume = 0;
+        } catch (_) {}
+        const holdForVox = () => {
+          ignorePauseUntil = Date.now() + 2500;
+          try {
+            audio.pause();
+            if ((audio.currentTime || 0) > 0.15) audio.currentTime = 0;
+            audio.volume = 0;
+          } catch (_) {}
+          setDjStatus("Vox intro…");
+          void notifyDjTrackChange();
+        };
+        try {
+          const p = audio.play();
+          if (p && typeof p.then === "function") {
+            p.then(holdForVox).catch((err) => {
+              console.warn("[radio] play blocked", err);
+              setDjStatus("Tap ♪ Play music once if iPhone muted it");
+              holdForVox();
+            });
+          } else {
+            holdForVox();
+          }
+        } catch (err) {
+          console.warn("[radio] play", err);
+          holdForVox();
         }
-      } catch (err) {
-        console.warn("[radio] play", err);
+      } else {
+        const startVox = () => {
+          setTimeout(() => notifyDjTrackChange(), 700);
+        };
+        try {
+          audio.volume = 1;
+          const p = audio.play();
+          if (p && typeof p.then === "function") {
+            p.then(startVox).catch((err) => {
+              console.warn("[radio] play blocked", err);
+              setDjStatus("Tap ♪ Play music once if iPhone muted it");
+              audio.play().catch(() => {});
+            });
+          } else {
+            startVox();
+          }
+        } catch (err) {
+          console.warn("[radio] play", err);
+        }
       }
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
@@ -919,7 +952,7 @@ function isAudioPlaying() {
 
 /** True while we want continuous radio until browser close or user pause */
 function wantBackgroundPlay() {
-  return !!(userStarted && !userPaused && PLAYLIST.length);
+  return !!(userStarted && !userPaused && !voxHold && PLAYLIST.length);
 }
 
 function prepAudioElement(audio) {
@@ -959,12 +992,21 @@ function saveMusicPersist() {
 
 function keepPlaying(why) {
   if (userPaused || !userStarted) return;
+  if (voxHold && why !== "vox-done") return;
   softResumeMusic(why || "keep");
 }
 
 function setVoxHold(on) {
   voxHold = !!on;
-  if (voxHold && !userPaused) keepPlaying("vox-hold");
+}
+
+function isDjWanted() {
+  if (djRadio && typeof djRadio.isEnabled === "function" && djRadio.isEnabled()) return true;
+  try {
+    return localStorage.getItem(DJ_PREF_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
 }
 
 function softResumeMusic(why) {
@@ -1587,7 +1629,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v26-vox-fluid`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v28-vox-first`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),

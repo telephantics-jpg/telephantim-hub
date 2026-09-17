@@ -195,12 +195,27 @@ export function createDjRadio(api = {}) {
     return api.isWantedOn?.() !== false;
   }
 
+  function holdBed() {
+    const a = getMusic();
+    if (!a) return;
+    try {
+      a.volume = 0;
+    } catch (_) {}
+    try {
+      a.pause();
+    } catch (_) {}
+  }
+
   function resumeBed() {
-    unduckMusic({ ramp: true });
+    unduckMusic({ ramp: false });
     if (!wantedOn()) return;
     try {
+      const a = getMusic();
+      if (a) a.volume = BED_VOL;
+    } catch (_) {}
+    try {
       if (typeof api.keepPlaying === "function") {
-        api.keepPlaying("vox-resume");
+        api.keepPlaying("vox-done");
         return;
       }
       const m = getMusic();
@@ -216,8 +231,6 @@ export function createDjRadio(api = {}) {
       window.speechSynthesis?.cancel();
     } catch (_) {}
     micBusy = false;
-    if (wantedOn()) resumeBed();
-    else unduckMusic({ ramp: false });
   }
 
   function playMicB64(b64) {
@@ -614,16 +627,8 @@ export function createDjRadio(api = {}) {
     lastAnnouncedKey = key;
     micBusy = true;
     try {
-      try {
-        if (wantedOn()) {
-          if (typeof api.keepPlaying === "function") api.keepPlaying("vox-announce");
-          else {
-            const m = getMusic();
-            if (m?.paused) await m.play?.();
-          }
-        }
-      } catch (_) {}
-
+      api.setVoxHold?.(true);
+      holdBed();
       const data = await dropOrTalk(next, prevTrack, kind);
       if (gen !== announceGen || index() !== ni) return;
       if (!wantedOn()) return;
@@ -639,15 +644,22 @@ export function createDjRadio(api = {}) {
         dj: data.dj,
       });
       status(label);
-      await speakNow(data, `Vox on the boards — ${title}.`);
+      const talk = speakNow(data, `Vox on the boards — ${title}.`);
+      await Promise.race([
+        talk,
+        new Promise((resolve) => setTimeout(resolve, 8000)),
+      ]);
     } catch (err) {
       console.warn("[dj] mic", err);
       try {
         await speakBrowser(`Vox · ${title}`);
       } catch (_) {}
     } finally {
-      if (wantedOn()) resumeBed();
-      else unduckMusic({ ramp: false });
+      try {
+        api.setVoxHold?.(false);
+      } catch (_) {}
+      if (gen === announceGen && wantedOn()) resumeBed();
+      else if (gen === announceGen) unduckMusic({ ramp: false });
       if (gen === announceGen) {
         micBusy = false;
         status(`♫ ${title}`);
@@ -720,17 +732,7 @@ export function createDjRadio(api = {}) {
 
   async function speakNow(data, fallbackText) {
     const text = (data && data.text) || fallbackText || "";
-    const hasVox = !!(data?.audio_b64) || (!isIOS() && text);
-    try {
-      api.setVoxHold?.(true);
-    } catch (_) {}
-    if (hasVox) duckMusic(DUCK_TALK);
-    const keep = setInterval(() => {
-      if (!wantedOn()) return;
-      try {
-        api.keepPlaying?.("vox-talk");
-      } catch (_) {}
-    }, 320);
+    holdBed();
     try {
       if (data?.audio_b64) {
         try {
@@ -740,12 +742,7 @@ export function createDjRadio(api = {}) {
       }
       if (text) await speakBrowser(text);
     } finally {
-      clearInterval(keep);
-      try {
-        api.setVoxHold?.(false);
-      } catch (_) {}
-      if (wantedOn()) resumeBed();
-      else unduckMusic({ ramp: false });
+      /* caller starts the song after intro */
     }
   }
 
@@ -827,13 +824,7 @@ export function createDjRadio(api = {}) {
       warmAhead();
       const music = getMusic();
       if (!music) return;
-      // Browser may have paused the bed for TTS — kick it if the user didn't pause.
-      if (music.paused && wantedOn() && !music.ended) {
-        try {
-          api.keepPlaying?.("vox-watch");
-        } catch (_) {}
-        return;
-      }
+      if (micBusy) return;
       const dur = Number(music.duration) || 0;
       const t = Number(music.currentTime) || 0;
       if (dur > MIN_TRACK_FOR_END_PREFETCH && dur - t < PREFETCH_LEAD_SEC) {
@@ -872,18 +863,19 @@ export function createDjRadio(api = {}) {
     if (enabled) {
       startWatch();
       bindEnded(getMusic());
-      status("DJ Vox · live booth · talk-overs + mixes");
+      status("DJ Vox · intro then song");
       songsSinceTruth = 0;
       truthInterval = 3 + Math.floor(Math.random() * 2);
       warmAhead();
-      // Comment on whatever is already playing
-      if (api.isWantedOn?.()) {
+      const m = getMusic();
+      if (m && !m.paused && (m.currentTime || 0) > 1) {
+        // Already in a song — don't cut it; intro starts on the next track.
+        lastAnnouncedKey = trackKey(trackAt(index()));
+      } else if (api.isWantedOn?.()) {
         lastAnnouncedKey = "";
         scheduleAnnounceForCurrent(null);
-        if (!saidId) {
-          saidId = true;
-        }
       }
+      if (!saidId) saidId = true;
     } else {
       announceGen++;
       if (settleTimer) clearTimeout(settleTimer);
