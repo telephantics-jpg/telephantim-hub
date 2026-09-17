@@ -107,7 +107,7 @@ const SCENES = {
     id: "loft",
     label: "Voltage Loft",
     short: "Loft",
-    hint: "Live dynamic viewport · AGENT ALpha",
+    hint: "Daylight rabbit hole · soft keys · AGENT ALpha",
     url: "/voltage-loft/",
     cacheBust: true,
     mode: "external",
@@ -125,7 +125,7 @@ function sceneUrl(scene) {
     else url = u.play;
   }
   if (url && scene.cacheBust) {
-    url += (url.indexOf("?") >= 0 ? "&" : "?") + "v=v161-full";
+    url += (url.indexOf("?") >= 0 ? "&" : "?") + "v=v162-rabbit";
   }
   return url;
 }
