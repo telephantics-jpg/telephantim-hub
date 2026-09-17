@@ -2,7 +2,7 @@
  * Bio page: fixed bg video/image + scrollable quote & links.
  */
 import { BIO } from "./bio-config.js";
-import { PROFILE, SUPPORT, FEATURED, SOCIALS, ICONS } from "./links.js";
+import { PROFILE, SOCIALS, ICONS } from "./links.js";
 import { hydrateSiteContent } from "./load-site.js";
 function $(id) {
   return document.getElementById(id);
@@ -104,8 +104,14 @@ function applyMedia() {
   const poster = BIO.poster || "";
   let videoUrl = BIO.video || "";
   const path = String(videoUrl).split("?")[0];
-  if (!path || /\/bio-bg\.mp4$/i.test(path) || path === "media/bio-bg.mp4") {
-    videoUrl = "media/bio-bg-grok.mp4";
+  if (
+    !path ||
+    /bio-bg\.mp4$/i.test(path) ||
+    /bio-bg-grok\.mp4$/i.test(path) ||
+    path === "media/bio-bg.mp4" ||
+    path === "media/bio-bg-grok.mp4"
+  ) {
+    videoUrl = "media/bio-bg-caduceus-red.mp4";
   }
   if (mode === "image") {
     setImageBg(BIO.image || poster);
@@ -145,19 +151,6 @@ function renderProfile() {
   renderQuote();
 }
 
-function linkButton(item) {
-  const a = document.createElement("a");
-  a.className = "bio-link";
-  a.href = item.url;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
-  const ico = ICONS[item.icon] || "→";
-  a.innerHTML = `<span class="bio-link-ico">${escapeHtml(ico)}</span><span class="bio-link-copy"><strong>${escapeHtml(
-    item.title
-  )}</strong>${item.subtitle ? `<small>${escapeHtml(item.subtitle)}</small>` : ""}</span>`;
-  return a;
-}
-
 /** Top-of-bio social chips (always visible — not buried under Support). */
 function renderSocials() {
   const row = $("bio-socials");
@@ -182,55 +175,13 @@ function renderSocials() {
 
 function renderLinks() {
   const host = $("bio-links");
-  if (!host) return;
-  host.innerHTML = "";
-
-  // Socials live in #bio-socials (above Daily Word) — refresh them here too
+  if (host) {
+    host.innerHTML = "";
+    host.hidden = true;
+  }
+  // Social chips stay on Bio. Support lives in the collapsible Pay sheet.
+  // Featured and Worlds stay off this page.
   renderSocials();
-
-  // Classic bio stack: Support · Featured · Worlds
-  const blocks = [
-    { title: "Support", items: SUPPORT },
-    { title: "Featured", items: FEATURED },
-  ];
-
-  blocks.forEach((block) => {
-    if (!block.items?.length) return;
-    const h = document.createElement("p");
-    h.className = "bio-links-label";
-    h.textContent = block.title;
-    host.appendChild(h);
-    block.items.forEach((item) => {
-      if (!item?.url) return;
-      host.appendChild(linkButton(item));
-    });
-  });
-
-  // World jumps — same hub, no page reload
-  const worlds = document.createElement("p");
-  worlds.className = "bio-links-label";
-  worlds.textContent = "Worlds";
-  host.appendChild(worlds);
-
-  [
-    { title: "Relics hub", subtitle: "Mjolnir + Caduceus", scene: "telephantim", ico: "T" },
-    { title: "Luna Camp 2D", subtitle: "Show as main scene", scene: "luna-2d", ico: "2D" },
-    { title: "Luna Camp 3D", subtitle: "Show as main scene", scene: "luna-3d", ico: "3D" },
-  ].forEach((w) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "bio-link bio-link-btn";
-    b.setAttribute("data-scene", w.scene);
-    b.innerHTML = `<span class="bio-link-ico">${escapeHtml(w.ico)}</span><span class="bio-link-copy"><strong>${escapeHtml(
-      w.title
-    )}</strong><small>${escapeHtml(w.subtitle)}</small></span>`;
-    b.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      window.TelephantimScenes?.setScene(w.scene);
-    });
-    host.appendChild(b);
-  });
 }
 
 function pauseMedia() {
