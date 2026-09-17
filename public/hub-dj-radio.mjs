@@ -195,36 +195,10 @@ export function createDjRadio(api = {}) {
     return api.isWantedOn?.() !== false;
   }
 
-  function holdBed() {
-    const a = getMusic();
-    if (!a) return;
-    try {
-      a.volume = 0;
-    } catch (_) {}
-    // Do not pause — a later play() would be blocked as autoplay.
-  }
-
   function resumeBed() {
-    if (api.isUserPaused?.()) {
-      unduckMusic({ ramp: false });
-      return;
-    }
+    unduckMusic({ ramp: true });
+    if (!wantedOn()) return;
     try {
-      if (typeof api.startBedAfterVox === "function") {
-        api.startBedAfterVox();
-        return;
-      }
-    } catch (_) {}
-    unduckMusic({ ramp: false });
-    try {
-      const a = getMusic();
-      if (a) a.volume = BED_VOL;
-    } catch (_) {}
-    try {
-      if (typeof api.keepPlaying === "function") {
-        api.keepPlaying("vox-done");
-        return;
-      }
       const m = getMusic();
       if (m && m.paused && !m.ended) {
         m.play()?.catch?.(() => {});
@@ -238,6 +212,8 @@ export function createDjRadio(api = {}) {
       window.speechSynthesis?.cancel();
     } catch (_) {}
     micBusy = false;
+    if (wantedOn()) resumeBed();
+    else unduckMusic({ ramp: false });
   }
 
   function playMicB64(b64) {
@@ -412,7 +388,7 @@ export function createDjRadio(api = {}) {
     if (voxVoice) return voxVoice;
     const list = voices || [];
     const skip = /new zealand|en-NZ|en_NZ|kiwi|en-AU|en_AU|australia|en-IN|india|en-ZA|south africa|irish|en-IE/i;
-    const prefer = /AndrewMultilingual|Andrew Neural|en-US-Andrew|GuyNeural|Microsoft David|Google US English|David Desktop/i;
+    const prefer = /GuyNeural|en-US-Guy|Microsoft David|Google US English|David Desktop/i;
     voxVoice =
       list.find((v) => prefer.test(v.name) && !skip.test(`${v.name} ${v.lang}`)) ||
       list.find((v) => /en(-|_)US/i.test(v.lang) && /guy|david/i.test(v.name)) ||
@@ -634,11 +610,14 @@ export function createDjRadio(api = {}) {
     lastAnnouncedKey = key;
     micBusy = true;
     try {
-      api.setVoxHold?.(true);
-      holdBed();
+      try {
+        const m = getMusic();
+        if (m?.paused && wantedOn()) await m.play?.();
+      } catch (_) {}
+
       const data = await dropOrTalk(next, prevTrack, kind);
       if (gen !== announceGen || index() !== ni) return;
-      if (api.isUserPaused?.()) return;
+      if (!wantedOn()) return;
 
       const label = data.text || `Vox · ${title}`;
       api.onUi?.({
@@ -651,24 +630,17 @@ export function createDjRadio(api = {}) {
         dj: data.dj,
       });
       status(label);
-      const talk = speakNow(data, `Vox on the boards — ${title}.`);
-      await Promise.race([
-        talk,
-        new Promise((resolve) => setTimeout(resolve, 8000)),
-      ]);
+      await speakNow(data, `Vox on the boards — ${title}.`);
     } catch (err) {
       console.warn("[dj] mic", err);
       try {
         await speakBrowser(`Vox · ${title}`);
       } catch (_) {}
     } finally {
-      try {
-        api.setVoxHold?.(false);
-      } catch (_) {}
+      if (wantedOn()) resumeBed();
+      else unduckMusic({ ramp: false });
       if (gen === announceGen) {
         micBusy = false;
-        if (!api.isUserPaused?.()) resumeBed();
-        else unduckMusic({ ramp: false });
         status(`♫ ${title}`);
         try {
           api.onUi?.({ enabled, micBusy: false, status: lastStatus });
@@ -739,7 +711,8 @@ export function createDjRadio(api = {}) {
 
   async function speakNow(data, fallbackText) {
     const text = (data && data.text) || fallbackText || "";
-    holdBed();
+    const hasVox = !!(data?.audio_b64) || (!isIOS() && text);
+    if (hasVox) duckMusic(DUCK_TALK);
     try {
       if (data?.audio_b64) {
         try {
@@ -749,7 +722,7 @@ export function createDjRadio(api = {}) {
       }
       if (text) await speakBrowser(text);
     } finally {
-      /* caller starts the song after intro */
+      unduckMusic({ ramp: false });
     }
   }
 
@@ -830,14 +803,18 @@ export function createDjRadio(api = {}) {
       if (!enabled || !wantedOn()) return;
       warmAhead();
       const music = getMusic();
-      if (!music) return;
-      if (micBusy) return;
+      if (!music || music.paused) return;
       const dur = Number(music.duration) || 0;
       const t = Number(music.currentTime) || 0;
+      const key = trackKey(trackAt(index()));
+      if (interjectAt === 0 && dur > INTERJECT_MIN_DUR) {
+        armInterjectTime(dur);
+      }
       if (dur > MIN_TRACK_FOR_END_PREFETCH && dur - t < PREFETCH_LEAD_SEC) {
         warmAhead();
       }
-      // Intros only on track change. Never talk-over or mix-out mid-song.
+      // No mid-song talk-over and no early mix-out — those cut the track
+      // and made Vox speak on its own. Intros still fire on track change.
       if (api.advanceOnEnded !== false && dur > 2 && t >= dur - 0.12 && music.paused) {
         onMusicEnded();
       }
@@ -870,19 +847,18 @@ export function createDjRadio(api = {}) {
     if (enabled) {
       startWatch();
       bindEnded(getMusic());
-      status("DJ Vox · intro then song");
+      status("DJ Vox · live booth · talk-overs + mixes");
       songsSinceTruth = 0;
       truthInterval = 3 + Math.floor(Math.random() * 2);
       warmAhead();
-      const m = getMusic();
-      if (m && !m.paused && (m.currentTime || 0) > 1) {
-        // Already in a song — don't cut it; intro starts on the next track.
-        lastAnnouncedKey = trackKey(trackAt(index()));
-      } else if (api.isWantedOn?.()) {
+      // Comment on whatever is already playing
+      if (api.isWantedOn?.()) {
         lastAnnouncedKey = "";
         scheduleAnnounceForCurrent(null);
+        if (!saidId) {
+          saidId = true;
+        }
       }
-      if (!saidId) saidId = true;
     } else {
       announceGen++;
       if (settleTimer) clearTimeout(settleTimer);
@@ -916,7 +892,8 @@ export function createDjRadio(api = {}) {
       lastAnnouncedKey = "";
       mixArmedKey = "";
       interjectDoneKey = "";
-      interjectAt = 0;
+      const music = getMusic();
+      armInterjectTime(Number(music?.duration) || Number(prevTrack?.duration_sec) || 180);
       scheduleAnnounceForCurrent(prevTrack || null);
     },
 
@@ -943,9 +920,6 @@ export function createDjRadio(api = {}) {
         clearTimeout(settleTimer);
         settleTimer = null;
       }
-      try {
-        api.setVoxHold?.(false);
-      } catch (_) {}
       cancelMic();
     },
 
