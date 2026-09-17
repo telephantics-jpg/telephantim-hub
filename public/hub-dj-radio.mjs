@@ -201,14 +201,21 @@ export function createDjRadio(api = {}) {
     try {
       a.volume = 0;
     } catch (_) {}
-    try {
-      a.pause();
-    } catch (_) {}
+    // Do not pause — a later play() would be blocked as autoplay.
   }
 
   function resumeBed() {
+    if (api.isUserPaused?.()) {
+      unduckMusic({ ramp: false });
+      return;
+    }
+    try {
+      if (typeof api.startBedAfterVox === "function") {
+        api.startBedAfterVox();
+        return;
+      }
+    } catch (_) {}
     unduckMusic({ ramp: false });
-    if (!wantedOn()) return;
     try {
       const a = getMusic();
       if (a) a.volume = BED_VOL;
@@ -631,7 +638,7 @@ export function createDjRadio(api = {}) {
       holdBed();
       const data = await dropOrTalk(next, prevTrack, kind);
       if (gen !== announceGen || index() !== ni) return;
-      if (!wantedOn()) return;
+      if (api.isUserPaused?.()) return;
 
       const label = data.text || `Vox · ${title}`;
       api.onUi?.({
@@ -658,10 +665,10 @@ export function createDjRadio(api = {}) {
       try {
         api.setVoxHold?.(false);
       } catch (_) {}
-      if (gen === announceGen && wantedOn()) resumeBed();
-      else if (gen === announceGen) unduckMusic({ ramp: false });
       if (gen === announceGen) {
         micBusy = false;
+        if (!api.isUserPaused?.()) resumeBed();
+        else unduckMusic({ ramp: false });
         status(`♫ ${title}`);
         try {
           api.onUi?.({ enabled, micBusy: false, status: lastStatus });
