@@ -422,7 +422,7 @@ function armEmbedAdvance(track) {
   if (!userStarted || userPaused) return;
   if (!track || (track.type !== "suno" && track.type !== "audio")) return;
   const sec = Number(track.duration_sec);
-  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : 180;
+  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : 420;
   embedAdvanceTimer = setTimeout(() => {
     embedAdvanceTimer = null;
     if (!userStarted || userPaused) return;
@@ -1564,7 +1564,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v134-unduck`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v24-vox-whole`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
@@ -1673,10 +1673,7 @@ async function notifyDjTrackChange() {
   try {
     const dj = await ensureDjRadio();
     if (!dj) return;
-    if (!dj.isEnabled()) {
-      dj.setEnabled(true);
-    }
-    // Don't hush the line we're about to start unless mid-rant from a prior skip
+    if (!dj.isEnabled()) return;
     dj.onTrackChanged?.(null);
   } catch (err) {
     console.warn("[music] Vox notify", err);
@@ -2005,7 +2002,15 @@ function wire() {
       if (ignoringAudioEvents || mixing) return;
       const dur = Number(audio.duration) || 0;
       const t = Number(audio.currentTime) || 0;
-      if (dur > 8 && t >= dur - 0.45 && userStarted && !userPaused) {
+      if (
+        Number.isFinite(dur) &&
+        dur > 20 &&
+        dur < 900 &&
+        t >= dur - 0.35 &&
+        t > 8 &&
+        userStarted &&
+        !userPaused
+      ) {
         requestAdvance(true);
         return;
       }
@@ -2086,11 +2091,16 @@ function wire() {
   loadSunoCatalog();
   updateMusicChrome();
 
-  // Local booth: Vox on until they tap DJ Vox off
+  // Vox stays off unless they already turned it on
+  let voxPref = "0";
   try {
-    localStorage.setItem(DJ_PREF_KEY, "1");
+    voxPref = localStorage.getItem(DJ_PREF_KEY) || "0";
   } catch (_) {}
-  setDjEnabled(true).catch(() => {});
+  if (voxPref === "1") {
+    setDjEnabled(true).catch(() => {});
+  } else {
+    setDjEnabled(false).catch(() => {});
+  }
 }
 
 if (document.readyState === "loading") {

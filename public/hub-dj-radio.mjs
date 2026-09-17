@@ -813,32 +813,8 @@ export function createDjRadio(api = {}) {
       if (dur > MIN_TRACK_FOR_END_PREFETCH && dur - t < PREFETCH_LEAD_SEC) {
         warmAhead();
       }
-      // Live talk-over once per song
-      if (
-        !micBusy &&
-        interjectAt > 0 &&
-        t >= interjectAt &&
-        dur - t > MIX_LEAD_SEC + 6 &&
-        key &&
-        key !== interjectDoneKey
-      ) {
-        interjectDoneKey = key;
-        void announceInterject();
-        return;
-      }
-      // Mix-out: talk + blend into the next record
-      if (
-        !micBusy &&
-        dur > 40 &&
-        dur - t <= MIX_LEAD_SEC &&
-        dur - t > 0.4 &&
-        key &&
-        key !== mixArmedKey
-      ) {
-        mixArmedKey = key;
-        void announceMix();
-        return;
-      }
+      // No mid-song talk-over and no early mix-out — those cut the track
+      // and made Vox speak on its own. Intros still fire on track change.
       if (api.advanceOnEnded !== false && dur > 2 && t >= dur - 0.12 && music.paused) {
         onMusicEnded();
       }
