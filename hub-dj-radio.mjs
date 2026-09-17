@@ -199,6 +199,10 @@ export function createDjRadio(api = {}) {
     unduckMusic({ ramp: true });
     if (!wantedOn()) return;
     try {
+      if (typeof api.keepPlaying === "function") {
+        api.keepPlaying("vox-resume");
+        return;
+      }
       const m = getMusic();
       if (m && m.paused && !m.ended) {
         m.play()?.catch?.(() => {});
@@ -611,8 +615,13 @@ export function createDjRadio(api = {}) {
     micBusy = true;
     try {
       try {
-        const m = getMusic();
-        if (m?.paused && wantedOn()) await m.play?.();
+        if (wantedOn()) {
+          if (typeof api.keepPlaying === "function") api.keepPlaying("vox-announce");
+          else {
+            const m = getMusic();
+            if (m?.paused) await m.play?.();
+          }
+        }
       } catch (_) {}
 
       const data = await dropOrTalk(next, prevTrack, kind);
@@ -712,7 +721,16 @@ export function createDjRadio(api = {}) {
   async function speakNow(data, fallbackText) {
     const text = (data && data.text) || fallbackText || "";
     const hasVox = !!(data?.audio_b64) || (!isIOS() && text);
+    try {
+      api.setVoxHold?.(true);
+    } catch (_) {}
     if (hasVox) duckMusic(DUCK_TALK);
+    const keep = setInterval(() => {
+      if (!wantedOn()) return;
+      try {
+        api.keepPlaying?.("vox-talk");
+      } catch (_) {}
+    }, 320);
     try {
       if (data?.audio_b64) {
         try {
@@ -722,7 +740,12 @@ export function createDjRadio(api = {}) {
       }
       if (text) await speakBrowser(text);
     } finally {
-      unduckMusic({ ramp: false });
+      clearInterval(keep);
+      try {
+        api.setVoxHold?.(false);
+      } catch (_) {}
+      if (wantedOn()) resumeBed();
+      else unduckMusic({ ramp: false });
     }
   }
 
@@ -803,18 +826,20 @@ export function createDjRadio(api = {}) {
       if (!enabled || !wantedOn()) return;
       warmAhead();
       const music = getMusic();
-      if (!music || music.paused) return;
+      if (!music) return;
+      // Browser may have paused the bed for TTS — kick it if the user didn't pause.
+      if (music.paused && wantedOn() && !music.ended) {
+        try {
+          api.keepPlaying?.("vox-watch");
+        } catch (_) {}
+        return;
+      }
       const dur = Number(music.duration) || 0;
       const t = Number(music.currentTime) || 0;
-      const key = trackKey(trackAt(index()));
-      if (interjectAt === 0 && dur > INTERJECT_MIN_DUR) {
-        armInterjectTime(dur);
-      }
       if (dur > MIN_TRACK_FOR_END_PREFETCH && dur - t < PREFETCH_LEAD_SEC) {
         warmAhead();
       }
-      // No mid-song talk-over and no early mix-out — those cut the track
-      // and made Vox speak on its own. Intros still fire on track change.
+      // Intros only on track change. Never talk-over or mix-out mid-song.
       if (api.advanceOnEnded !== false && dur > 2 && t >= dur - 0.12 && music.paused) {
         onMusicEnded();
       }
@@ -892,8 +917,7 @@ export function createDjRadio(api = {}) {
       lastAnnouncedKey = "";
       mixArmedKey = "";
       interjectDoneKey = "";
-      const music = getMusic();
-      armInterjectTime(Number(music?.duration) || Number(prevTrack?.duration_sec) || 180);
+      interjectAt = 0;
       scheduleAnnounceForCurrent(prevTrack || null);
     },
 
@@ -920,6 +944,9 @@ export function createDjRadio(api = {}) {
         clearTimeout(settleTimer);
         settleTimer = null;
       }
+      try {
+        api.setVoxHold?.(false);
+      } catch (_) {}
       cancelMic();
     },
 
