@@ -24,9 +24,10 @@
 }
 
 html, body {
+  width: 100%;
   height: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
+  min-height: 100%;
+  min-height: 100dvh;
   background: var(--void);
   color: var(--text);
   font-family: var(--font);
@@ -44,9 +45,12 @@ button {
 
 .app {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
   min-height: 100%;
+  min-height: 100dvh;
   max-width: 100%;
   overflow: hidden;
   background: #000;
@@ -54,8 +58,9 @@ button {
 
 /* —— Stage —— */
 .stage {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   z-index: 0;
 }
 
@@ -169,17 +174,18 @@ button {
 
 /* —— Top chrome —— */
 .chrome-top {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 10;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.85rem 1.25rem;
   background: linear-gradient(180deg, rgba(8,6,14,0.92) 0%, rgba(8,6,14,0.55) 70%, transparent 100%);
   border-bottom: 1px solid transparent;
+}
+html.in-hub .chrome-top {
+  padding-top: calc(2.65rem + env(safe-area-inset-top, 0px));
 }
 
 .brand {
@@ -318,11 +324,12 @@ button {
 
 /* —— Dialogue —— */
 .dialogue {
-  position: absolute;
+  position: relative;
   z-index: 12;
-  left: 1.25rem;
-  bottom: 2.6rem;
-  width: min(420px, calc(100vw - 2.5rem));
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin: 0 1.25rem 0.65rem;
+  width: min(420px, calc(100% - 2.5rem));
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -453,11 +460,9 @@ button {
 
 /* —— Footer —— */
 .chrome-foot {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 10;
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -504,10 +509,9 @@ button {
 /* Responsive tweaks */
 @media (max-width: 900px) {
   .dialogue {
-    left: 0.75rem;
-    right: 0.75rem;
+    margin: 0 0.75rem 0.5rem;
     width: auto;
-    bottom: 2.2rem;
+    align-self: stretch;
   }
   .hotspot { font-size: 0.7rem; padding: 0.4rem 0.65rem; }
 }
@@ -566,13 +570,14 @@ button {
     font-size: 0.68rem;
   }
   .dialogue {
-    left: 0.5rem;
-    right: 0.5rem;
-    bottom: calc(1.85rem + env(safe-area-inset-bottom, 0px));
-    width: auto;
-    max-height: min(46dvh, 340px);
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    max-height: min(42dvh, 320px);
     display: flex;
     flex-direction: column;
+    border-radius: 14px 14px 0 0;
   }
   .dialogue-head { padding: 0.55rem 0.7rem; gap: 0.5rem; }
   .avatar { width: 32px; height: 32px; }

@@ -8,7 +8,10 @@
 
   const ASSETS = "assets/";
   const STORAGE_KEY = "voltage-loft-session-v1";
-  const BUILD = "v160-phone";
+  const BUILD = "v161-full";
+  if (window.parent !== window) {
+    document.documentElement.classList.add("in-hub");
+  }
 
   /** Embedded fallback if config.json cannot load (file:// or network fail) */
   const FALLBACK_CONFIG = {

@@ -125,7 +125,7 @@ function sceneUrl(scene) {
     else url = u.play;
   }
   if (url && scene.cacheBust) {
-    url += (url.indexOf("?") >= 0 ? "&" : "?") + "v=v160-phone";
+    url += (url.indexOf("?") >= 0 ? "&" : "?") + "v=v161-full";
   }
   return url;
 }
