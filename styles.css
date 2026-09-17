@@ -2135,6 +2135,171 @@ body:not(.sheet-open) .sheet-body {
 .bio-social-chip.ico-threads { background: #101010; border-color: #444; }
 .bio-social-chip.ico-truth { background: #5000b9; border-color: transparent; }
 
+/* Phone: compact chrome so Bio video + stage read top-to-bottom */
+@media (max-width: 720px) {
+  :root {
+    --sheet-peek: 52px;
+  }
+  .world-switch {
+    padding: 2px;
+    gap: 1px;
+    top: max(2px, env(safe-area-inset-top, 0px));
+  }
+  .world-tab {
+    font-size: 0.58rem;
+    padding: 0.3rem 0.42rem;
+    min-height: 26px;
+    min-width: 2.35rem;
+  }
+  .bio-scroll {
+    padding: calc(2.2rem + env(safe-area-inset-top, 0px)) 0.65rem calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+  .bio-card {
+    gap: 0.22rem;
+    padding-bottom: 1.1rem;
+  }
+  .bio-avatar {
+    width: 52px;
+    height: 52px;
+  }
+  .bio-name {
+    margin: 0.08rem 0 0;
+    font-size: 1.02rem;
+  }
+  .bio-handle {
+    font-size: 0.74rem;
+  }
+  .bio-quote {
+    margin: 0.28rem 0 0.1rem;
+    padding: 0.5rem 0.65rem 0.55rem;
+    border-radius: 12px;
+  }
+  .bio-quote p {
+    font-size: 0.8rem;
+    line-height: 1.38;
+    font-weight: 500;
+  }
+  .bio-quote p.bio-quote-story {
+    font-size: 0.76rem;
+    font-weight: 500;
+    line-height: 1.4;
+    max-height: min(22vh, 8.6rem);
+  }
+  .bio-quote cite {
+    margin-top: 0.32rem;
+    font-size: 0.66rem;
+  }
+  .bio-latest {
+    width: 100%;
+    margin: 0.4rem auto 0.2rem;
+  }
+  .bio-latest .bio-links-label {
+    margin-bottom: 0.18rem;
+  }
+  .bio-latest-title {
+    margin: 0 0 0.22rem;
+    font-size: 0.95rem;
+  }
+  .bio-video-views {
+    margin: -0.08rem 0 0.28rem;
+    font-size: 0.66rem;
+  }
+  .bio-embed {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+  .bio-embed iframe,
+  .bio-embed .bio-latest-video,
+  .bio-embed .bio-latest-poster {
+    object-fit: contain;
+  }
+  .bio-latest-play {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.15rem;
+  }
+  .bio-latest .bio-more-videos {
+    margin-top: 0.65rem;
+  }
+  .bio-socials-label {
+    margin: 0.2rem 0 0.05rem !important;
+  }
+  .bio-socials-row {
+    gap: 0.28rem;
+    margin: 0 0 0.28rem;
+  }
+  .bio-social-chip {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 0.32rem;
+    border-radius: 9px;
+    font-size: 0.66rem;
+  }
+  .bio-social-chip.ico-fb {
+    font-size: 0.95rem;
+  }
+  .daily-word-bio {
+    margin: 0.2rem 0 0.15rem;
+    padding: 0.5rem 0.65rem 0.55rem;
+    border-radius: 12px;
+  }
+  .daily-word-title {
+    font-size: 0.82rem;
+    margin: 0 0 0.25rem;
+  }
+  .daily-word-body {
+    font-size: 0.72rem;
+    line-height: 1.38;
+  }
+  .visitor-count {
+    margin: 0.2rem 0 0.08rem;
+    font-size: 0.68rem;
+  }
+  .music-chrome #btn-music {
+    min-width: 7.4rem;
+    min-height: 40px;
+    font-size: 0.76rem;
+    padding: 0.48rem 0.95rem;
+  }
+  .sheet-handle {
+    padding: 0.32rem 0.7rem 0.28rem;
+  }
+  .sheet-handle-bar {
+    width: 36px;
+    height: 3px;
+    margin: 0 auto 0.22rem;
+  }
+  .sheet-handle-row strong {
+    font-size: 0.78rem;
+  }
+  body:not(.sheet-open) .sheet-handle-row .sub {
+    display: none;
+  }
+  .sheet-toggle {
+    font-size: 0.68rem;
+    padding: 0.22rem 0.5rem;
+  }
+  .relics-quote {
+    padding: 0.55rem 0.7rem;
+    bottom: max(5.4rem, 11vh);
+  }
+  .relics-quote-text {
+    font-size: 0.82rem;
+    line-height: 1.38;
+  }
+}
+@media (max-width: 380px) {
+  .bio-quote p.bio-quote-story {
+    max-height: min(18vh, 7.2rem);
+  }
+  .bio-avatar {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 .foot {
   margin-top: 1rem;
   padding-bottom: 0.5rem;
