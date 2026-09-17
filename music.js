@@ -77,23 +77,6 @@ function requestAdvance(force) {
   advancingUntil = now + 2200;
   next(!!force);
 }
-
-function catalogSec(track) {
-  const n = Number(track && track.duration_sec);
-  return Number.isFinite(n) && n > 15 ? n : 0;
-}
-
-/** True only when we've actually reached the end of this song — not a truncated buffer. */
-function songNearEnd(audio, track) {
-  const t = Number(audio && audio.currentTime) || 0;
-  if (t < 12) return false;
-  const cat = catalogSec(track);
-  if (cat && t < cat * 0.94) return false;
-  const media = Number(audio && audio.duration);
-  const dur = cat || (Number.isFinite(media) && media > 20 && media < 900 ? media : 0);
-  if (!dur) return !!(audio && audio.ended && t > 12);
-  return t >= dur - 0.8 || !!(audio && audio.ended && (!cat || t >= cat * 0.9));
-}
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
 /** Drag-placed music panel box */
@@ -109,14 +92,6 @@ let musicPanelDrag = null;
 let djRadio = null;
 /** true only when user deliberately paused (controls / lock-screen Pause) */
 let userPaused = false;
-/** Vox is talking — Chrome/Edge will pause <audio>; that is not a user pause. */
-let voxHold = false;
-/** Internal play() (soft-resume / keep-alive) must not clear userPaused. */
-let resumeGuard = false;
-/** Ignore pause events while we swap src / call play() (those are not the user). */
-let ignorePauseUntil = 0;
-/** Vox intro in progress — bed is muted, not user-paused. */
-let introLock = false;
 let mediaSessionApi = null;
 let bgKeepAliveInstalled = false;
 let lastSoftResumeAt = 0;
@@ -447,7 +422,7 @@ function armEmbedAdvance(track) {
   if (!userStarted || userPaused) return;
   if (!track || (track.type !== "suno" && track.type !== "audio")) return;
   const sec = Number(track.duration_sec);
-  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : catalogSec(track) || 420;
+  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : 420;
   embedAdvanceTimer = setTimeout(() => {
     embedAdvanceTimer = null;
     if (!userStarted || userPaused) return;
@@ -598,8 +573,20 @@ async function loadSunoCatalog() {
       // Already playing: keep same song + position (do not restart)
       if (userStarted) {
         const audio = liveAudioEl();
-        if (audio && !audio.paused && audio.currentTime > 0.4) {
+        const cur = current();
+        const same =
+          audio &&
+          cur &&
+          isSunoTrack(cur) &&
+          audio.src &&
+          (audio.src === cur.url || (cur.songId && audio.src.includes(cur.songId)));
+        if (same && !audio.paused) {
           updateMediaSessionMeta(true);
+        } else if (!userPaused) {
+          loadTrack(false);
+          softResumeMusic("catalog-refresh");
+        } else {
+          loadTrack(false);
         }
       } else if (sub && allSunoTracks.length) {
         sub.textContent = shuffleOn
@@ -738,7 +725,6 @@ function signalCampStopMusic() {
 }
 
 function stopAllMedia() {
-  ignorePauseUntil = Date.now() + 600;
   clearEmbedAdvance();
   const audio = liveAudioEl();
   const frame = $("music-embed");
@@ -844,7 +830,6 @@ function loadTrack(autoPlayHint) {
     const sameSrc =
       (want && (srcNow === want || srcNow.endsWith(want))) ||
       (t.songId && srcNow.includes(String(t.songId)));
-    ignorePauseUntil = Date.now() + 800;
     if (!sameSrc) {
       audio.src = t.url;
     }
@@ -853,56 +838,23 @@ function loadTrack(autoPlayHint) {
     } catch (_) {}
     if (autoPlayHint) {
       userPaused = false;
-      ignorePauseUntil = Date.now() + 2500;
       unlockRadio();
-      if (isDjWanted()) {
-        // Keep the element playing (muted) so the post-Vox start isn't autoplay-blocked.
-        beginVoxIntro();
-        try {
-          audio.volume = 0;
-        } catch (_) {}
-        const cueVox = () => {
-          try {
-            if ((audio.currentTime || 0) > 0.2) audio.currentTime = 0;
-            audio.volume = 0;
-          } catch (_) {}
-          setDjStatus("Vox intro…");
-          void notifyDjTrackChange();
-        };
-        try {
-          const p = audio.play();
-          if (p && typeof p.then === "function") {
-            p.then(cueVox).catch((err) => {
-              console.warn("[radio] play blocked", err);
-              setDjStatus("Tap ♪ Play music once if iPhone muted it");
-              cueVox();
-            });
-          } else {
-            cueVox();
-          }
-        } catch (err) {
-          console.warn("[radio] play", err);
-          cueVox();
+      const startVox = () => {
+        setTimeout(() => notifyDjTrackChange(), 700);
+      };
+      try {
+        const p = audio.play();
+        if (p && typeof p.then === "function") {
+          p.then(startVox).catch((err) => {
+            console.warn("[radio] play blocked", err);
+            setDjStatus("Tap ♪ Play music once if iPhone muted it");
+            audio.play().catch(() => {});
+          });
+        } else {
+          startVox();
         }
-      } else {
-        const startVox = () => {
-          setTimeout(() => notifyDjTrackChange(), 700);
-        };
-        try {
-          audio.volume = 1;
-          const p = audio.play();
-          if (p && typeof p.then === "function") {
-            p.then(startVox).catch((err) => {
-              console.warn("[radio] play blocked", err);
-              setDjStatus("Tap ♪ Play music once if iPhone muted it");
-              audio.play().catch(() => {});
-            });
-          } else {
-            startVox();
-          }
-        } catch (err) {
-          console.warn("[radio] play", err);
-        }
+      } catch (err) {
+        console.warn("[radio] play", err);
       }
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
@@ -951,13 +903,9 @@ function isAudioPlaying() {
   return native || isEmbedPlaying();
 }
 
-function radioOn() {
-  return !!(userStarted && !userPaused && PLAYLIST.length);
-}
-
 /** True while we want continuous radio until browser close or user pause */
 function wantBackgroundPlay() {
-  return radioOn() && !voxHold && !introLock;
+  return !!(userStarted && !userPaused && PLAYLIST.length);
 }
 
 function prepAudioElement(audio) {
@@ -995,86 +943,20 @@ function saveMusicPersist() {
   } catch (_) {}
 }
 
-function keepPlaying(why) {
-  if (userPaused || !userStarted) return;
-  if ((voxHold || introLock) && why !== "vox-done") return;
-  softResumeMusic(why || "keep");
-}
-
-function setVoxHold(on) {
-  voxHold = !!on;
-}
-
-function beginVoxIntro() {
-  introLock = true;
-  voxHold = true;
-  userPaused = false;
-  ignorePauseUntil = Date.now() + 20000;
-}
-
-function startBedAfterVox() {
-  introLock = false;
-  voxHold = false;
-  ignorePauseUntil = Date.now() + 1200;
-  if (!userStarted) return;
-  userPaused = false;
-  const audio = liveAudioEl();
-  const cur = current();
-  if (!audio || !cur) {
-    setDjStatus("Vox done — no track loaded");
-    return;
-  }
-  resumeGuard = true;
-  try {
-    audio.volume = 1;
-  } catch (_) {}
-  try {
-    if ((audio.currentTime || 0) > 0.35) audio.currentTime = 0;
-  } catch (_) {}
-  const kick = (why) => {
-    try {
-      const p = audio.play();
-      if (p && typeof p.catch === "function") {
-        p.catch((err) => {
-          console.warn("[radio] bed after vox", why, err);
-          setDjStatus("Tap ♪ Play music to start the song");
-        });
-      }
-    } catch (err) {
-      console.warn("[radio] bed after vox", why, err);
-    }
-  };
-  kick("now");
-  setTimeout(() => kick("200"), 200);
-  setTimeout(() => {
-    kick("700");
-    resumeGuard = false;
-  }, 700);
-  updateMediaSessionMeta(true);
-  saveMusicPersist();
-  updateMusicChrome();
-  setDjStatus(`♫ ${cur.title || "playing"}`);
-}
-
-function isDjWanted() {
-  if (djRadio && typeof djRadio.isEnabled === "function" && djRadio.isEnabled()) return true;
-  try {
-    return localStorage.getItem(DJ_PREF_KEY) === "1";
-  } catch (_) {
-    return false;
-  }
-}
-
 function softResumeMusic(why) {
   if (!wantBackgroundPlay()) return;
   const now = Date.now();
-  if (now - lastSoftResumeAt < 250) return;
+  if (now - lastSoftResumeAt < 400) return;
   lastSoftResumeAt = now;
   const audio = liveAudioEl();
   const cur = current();
   if (!audio || !cur || !isSunoTrack(cur)) return;
-  if (songNearEnd(audio, cur) && audio.paused) {
-    requestAdvance(true);
+  const dur = Number(audio.duration) || 0;
+  const atEnd =
+    !!audio.ended ||
+    (dur > 2 && Number.isFinite(dur) && audio.currentTime >= dur - 0.35 && audio.paused);
+  if (atEnd) {
+    next();
     return;
   }
   // Already healthy — leave position alone
@@ -1082,7 +964,6 @@ function softResumeMusic(why) {
     updateMediaSessionMeta(true);
     return;
   }
-  resumeGuard = true;
   try {
     // Ensure src matches current track without rewinding if same file
     const same =
@@ -1094,9 +975,6 @@ function softResumeMusic(why) {
     const p = audio.play();
     if (p && typeof p.catch === "function") p.catch(() => {});
   } catch (_) {}
-  window.setTimeout(() => {
-    resumeGuard = false;
-  }, 80);
   updateMediaSessionMeta(true);
   try {
     console.info("[telephantim-music] soft-resume", why, "t=", Math.floor(audio.currentTime || 0));
@@ -1241,8 +1119,9 @@ function installBackgroundKeepAlive() {
       saveMusicPersist();
       updateMediaSessionMeta(true);
     }
-    if (a.ended && songNearEnd(a, current())) {
-      requestAdvance(true);
+    if (a.ended) {
+      const dur = Number(a.duration) || 0;
+      if (dur >= 3) next(false);
       return;
     }
     // While tab is hidden, fight silent OS pauses
@@ -1685,7 +1564,7 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v29-bed`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v30-guy`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
@@ -1731,11 +1610,8 @@ async function ensureDjRadio() {
       },
       // Hub owns next/prev + ended; DJ only speaks
       advanceOnEnded: false,
-      isWantedOn: () => radioOn(),
+      isWantedOn: () => wantBackgroundPlay(),
       isUserPaused: () => !!userPaused,
-      keepPlaying: (why) => keepPlaying(why),
-      setVoxHold: (on) => setVoxHold(on),
-      startBedAfterVox: () => startBedAfterVox(),
       setStatus: setDjStatus,
       onUi: ({ enabled, status: st }) => {
         const btn = $("music-dj");
@@ -1977,8 +1853,7 @@ function onAudioEnded(ev) {
   const audio = (ev && ev.target) || liveAudioEl();
   const dur = Number(audio?.duration) || 0;
   const t = Number(audio?.currentTime) || 0;
-  const cat = catalogSec(cur);
-  if ((dur < 3 && t < 1) || (cat && t < cat * 0.85)) {
+  if (dur < 3 && t < 1) {
     consecutiveLoadFails += 1;
     if (consecutiveLoadFails > 2 && cur?.songId && !isMobileRadio() && cur.radio !== "distrokid") {
       cur.type = "suno";
@@ -2002,17 +1877,21 @@ function startRadioWatch() {
         clearInterval(mixTimer);
         mixTimer = null;
       }
+      requestAdvance(true);
       return;
     }
     const audio = liveAudioEl();
     if (cur && cur.type === "audio" && audio && !audio.paused && !mixing) {
-      if (songNearEnd(audio, cur)) {
+      const dur = Number(audio.duration) || 0;
+      const t = Number(audio.currentTime) || 0;
+      if (dur > 8 && t >= dur - 0.55) {
         requestAdvance(true);
         return;
       }
     }
     if (cur && cur.type === "suno" && embedStartedAt) {
-      const wait = ((catalogSec(cur) || 420) + 3) * 1000;
+      const sec = Number(cur.duration_sec);
+      const wait = ((Number.isFinite(sec) && sec > 20 ? sec : 180) + 2) * 1000;
       if (Date.now() - embedStartedAt >= wait) {
         requestAdvance(true);
       }
@@ -2097,23 +1976,14 @@ function wire() {
     prepAudioElement(audio);
     audio.addEventListener("ended", onAudioEnded);
     audio.addEventListener("play", () => {
-      if (!resumeGuard) userPaused = false;
+      userPaused = false;
       updateMusicChrome();
       updateMediaSessionMeta(true);
       saveMusicPersist();
     });
     audio.addEventListener("pause", () => {
       updateMusicChrome();
-      if (ignoringAudioEvents || mixing || resumeGuard) return;
-      if (Date.now() < ignorePauseUntil) return;
-      if (introLock || voxHold) return;
-      // Vox / speechSynthesis pauses HTML audio — keep the bed, don't mark user-pause.
-      if (voxHold && !userPaused) {
-        setTimeout(() => {
-          if (!userPaused) keepPlaying("vox-pause");
-        }, 40);
-        return;
-      }
+      if (ignoringAudioEvents || mixing) return;
       // Lock-screen / hidden tab: OS may pause us — only fight if user didn't pause
       if (document.hidden && wantBackgroundPlay() && !userPaused) {
         setTimeout(() => {
@@ -2121,27 +1991,26 @@ function wire() {
         }, 180);
         return;
       }
-      // Debounce: src swaps fire pause then play. Only stick if it stays paused.
-      setTimeout(() => {
-        if (voxHold || mixing || Date.now() < ignorePauseUntil) return;
-        const a = liveAudioEl();
-        if (!a || !a.paused || a.ended || !userStarted) return;
-        if (document.hidden && wantBackgroundPlay()) {
-          softResumeMusic("hidden-pause-late");
-          return;
-        }
-        userPaused = true;
-        try {
-          djRadio?.hush?.();
-        } catch (_) {}
-        updateMediaSessionMeta(false);
-      }, 240);
+      // Visible pause = user. Stick it and kill Vox so he doesn't start another line.
+      userPaused = true;
+      try {
+        djRadio?.hush?.();
+      } catch (_) {}
+      updateMediaSessionMeta(false);
     });
     audio.addEventListener("timeupdate", () => {
       if (ignoringAudioEvents || mixing) return;
       const dur = Number(audio.duration) || 0;
       const t = Number(audio.currentTime) || 0;
-      if (songNearEnd(audio, current()) && userStarted && !userPaused) {
+      if (
+        Number.isFinite(dur) &&
+        dur > 20 &&
+        dur < 900 &&
+        t >= dur - 0.35 &&
+        t > 8 &&
+        userStarted &&
+        !userPaused
+      ) {
         requestAdvance(true);
         return;
       }
@@ -2226,9 +2095,6 @@ function wire() {
   let voxPref = "0";
   try {
     voxPref = localStorage.getItem(DJ_PREF_KEY) || "0";
-  } catch (_) {}
-  try {
-    window.speechSynthesis?.cancel();
   } catch (_) {}
   if (voxPref === "1") {
     setDjEnabled(true).catch(() => {});
