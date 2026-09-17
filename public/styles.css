@@ -752,6 +752,10 @@ body.scene-external .scene-frame {
   z-index: 2;
 }
 /* Loft fills the whole viewport on every aspect ratio (iframe height:auto collapsed to a strip) */
+body[data-scene="loft"] .music-chrome #btn-music:not(.is-placed) {
+  z-index: 200;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+}
 body[data-scene="loft"] .scene-frame {
   inset: 0;
   width: 100%;

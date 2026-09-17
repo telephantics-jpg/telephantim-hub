@@ -77,6 +77,23 @@ function requestAdvance(force) {
   advancingUntil = now + 2200;
   next(!!force);
 }
+
+function catalogSec(track) {
+  const n = Number(track && track.duration_sec);
+  return Number.isFinite(n) && n > 15 ? n : 0;
+}
+
+/** True only when we've actually reached the end of this song — not a truncated buffer. */
+function songNearEnd(audio, track) {
+  const t = Number(audio && audio.currentTime) || 0;
+  if (t < 12) return false;
+  const cat = catalogSec(track);
+  if (cat && t < cat * 0.94) return false;
+  const media = Number(audio && audio.duration);
+  const dur = cat || (Number.isFinite(media) && media > 20 && media < 900 ? media : 0);
+  if (!dur) return !!(audio && audio.ended && t > 12);
+  return t >= dur - 0.8 || !!(audio && audio.ended && (!cat || t >= cat * 0.9));
+}
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
 /** Drag-placed music panel box */
@@ -422,7 +439,7 @@ function armEmbedAdvance(track) {
   if (!userStarted || userPaused) return;
   if (!track || (track.type !== "suno" && track.type !== "audio")) return;
   const sec = Number(track.duration_sec);
-  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : 420;
+  const waitSec = Number.isFinite(sec) && sec > 20 ? sec : catalogSec(track) || 420;
   embedAdvanceTimer = setTimeout(() => {
     embedAdvanceTimer = null;
     if (!userStarted || userPaused) return;
@@ -573,20 +590,8 @@ async function loadSunoCatalog() {
       // Already playing: keep same song + position (do not restart)
       if (userStarted) {
         const audio = liveAudioEl();
-        const cur = current();
-        const same =
-          audio &&
-          cur &&
-          isSunoTrack(cur) &&
-          audio.src &&
-          (audio.src === cur.url || (cur.songId && audio.src.includes(cur.songId)));
-        if (same && !audio.paused) {
+        if (audio && !audio.paused && audio.currentTime > 0.4) {
           updateMediaSessionMeta(true);
-        } else if (!userPaused) {
-          loadTrack(false);
-          softResumeMusic("catalog-refresh");
-        } else {
-          loadTrack(false);
         }
       } else if (sub && allSunoTracks.length) {
         sub.textContent = shuffleOn
@@ -951,12 +956,8 @@ function softResumeMusic(why) {
   const audio = liveAudioEl();
   const cur = current();
   if (!audio || !cur || !isSunoTrack(cur)) return;
-  const dur = Number(audio.duration) || 0;
-  const atEnd =
-    !!audio.ended ||
-    (dur > 2 && Number.isFinite(dur) && audio.currentTime >= dur - 0.35 && audio.paused);
-  if (atEnd) {
-    next();
+  if (songNearEnd(audio, cur) && audio.paused) {
+    requestAdvance(true);
     return;
   }
   // Already healthy — leave position alone
@@ -1119,9 +1120,8 @@ function installBackgroundKeepAlive() {
       saveMusicPersist();
       updateMediaSessionMeta(true);
     }
-    if (a.ended) {
-      const dur = Number(a.duration) || 0;
-      if (dur >= 3) next(false);
+    if (a.ended && songNearEnd(a, current())) {
+      requestAdvance(true);
       return;
     }
     // While tab is hidden, fight silent OS pauses
@@ -1853,7 +1853,8 @@ function onAudioEnded(ev) {
   const audio = (ev && ev.target) || liveAudioEl();
   const dur = Number(audio?.duration) || 0;
   const t = Number(audio?.currentTime) || 0;
-  if (dur < 3 && t < 1) {
+  const cat = catalogSec(cur);
+  if ((dur < 3 && t < 1) || (cat && t < cat * 0.85)) {
     consecutiveLoadFails += 1;
     if (consecutiveLoadFails > 2 && cur?.songId && !isMobileRadio() && cur.radio !== "distrokid") {
       cur.type = "suno";
@@ -1877,21 +1878,17 @@ function startRadioWatch() {
         clearInterval(mixTimer);
         mixTimer = null;
       }
-      requestAdvance(true);
       return;
     }
     const audio = liveAudioEl();
     if (cur && cur.type === "audio" && audio && !audio.paused && !mixing) {
-      const dur = Number(audio.duration) || 0;
-      const t = Number(audio.currentTime) || 0;
-      if (dur > 8 && t >= dur - 0.55) {
+      if (songNearEnd(audio, cur)) {
         requestAdvance(true);
         return;
       }
     }
     if (cur && cur.type === "suno" && embedStartedAt) {
-      const sec = Number(cur.duration_sec);
-      const wait = ((Number.isFinite(sec) && sec > 20 ? sec : 180) + 2) * 1000;
+      const wait = ((catalogSec(cur) || 420) + 3) * 1000;
       if (Date.now() - embedStartedAt >= wait) {
         requestAdvance(true);
       }
@@ -2002,15 +1999,7 @@ function wire() {
       if (ignoringAudioEvents || mixing) return;
       const dur = Number(audio.duration) || 0;
       const t = Number(audio.currentTime) || 0;
-      if (
-        Number.isFinite(dur) &&
-        dur > 20 &&
-        dur < 900 &&
-        t >= dur - 0.35 &&
-        t > 8 &&
-        userStarted &&
-        !userPaused
-      ) {
+      if (songNearEnd(audio, current()) && userStarted && !userPaused) {
         requestAdvance(true);
         return;
       }
@@ -2095,6 +2084,9 @@ function wire() {
   let voxPref = "0";
   try {
     voxPref = localStorage.getItem(DJ_PREF_KEY) || "0";
+  } catch (_) {}
+  try {
+    window.speechSynthesis?.cancel();
   } catch (_) {}
   if (voxPref === "1") {
     setDjEnabled(true).catch(() => {});
