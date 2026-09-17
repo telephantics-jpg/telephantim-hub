@@ -113,6 +113,8 @@ let userPaused = false;
 let voxHold = false;
 /** Internal play() (soft-resume / keep-alive) must not clear userPaused. */
 let resumeGuard = false;
+/** Ignore pause events while we swap src / call play() (those are not the user). */
+let ignorePauseUntil = 0;
 let mediaSessionApi = null;
 let bgKeepAliveInstalled = false;
 let lastSoftResumeAt = 0;
@@ -734,6 +736,7 @@ function signalCampStopMusic() {
 }
 
 function stopAllMedia() {
+  ignorePauseUntil = Date.now() + 600;
   clearEmbedAdvance();
   const audio = liveAudioEl();
   const frame = $("music-embed");
@@ -839,6 +842,7 @@ function loadTrack(autoPlayHint) {
     const sameSrc =
       (want && (srcNow === want || srcNow.endsWith(want))) ||
       (t.songId && srcNow.includes(String(t.songId)));
+    ignorePauseUntil = Date.now() + 800;
     if (!sameSrc) {
       audio.src = t.url;
     }
@@ -847,6 +851,7 @@ function loadTrack(autoPlayHint) {
     } catch (_) {}
     if (autoPlayHint) {
       userPaused = false;
+      ignorePauseUntil = Date.now() + 800;
       unlockRadio();
       const startVox = () => {
         setTimeout(() => notifyDjTrackChange(), 700);
@@ -1993,13 +1998,6 @@ function wire() {
     prepAudioElement(audio);
     audio.addEventListener("ended", onAudioEnded);
     audio.addEventListener("play", () => {
-      if (userPaused && !resumeGuard) {
-        // Auto-start against a real pause — snap it back off.
-        try {
-          audio.pause();
-        } catch (_) {}
-        return;
-      }
       if (!resumeGuard) userPaused = false;
       updateMusicChrome();
       updateMediaSessionMeta(true);
@@ -2007,7 +2005,8 @@ function wire() {
     });
     audio.addEventListener("pause", () => {
       updateMusicChrome();
-      if (ignoringAudioEvents || mixing) return;
+      if (ignoringAudioEvents || mixing || resumeGuard) return;
+      if (Date.now() < ignorePauseUntil) return;
       // Vox / speechSynthesis pauses HTML audio — keep the bed, don't mark user-pause.
       if (voxHold && !userPaused) {
         setTimeout(() => {
@@ -2022,13 +2021,21 @@ function wire() {
         }, 180);
         return;
       }
-      if (resumeGuard) return;
-      // Visible pause = user. Stick it and hush Vox so he doesn't restart the bed.
-      userPaused = true;
-      try {
-        djRadio?.hush?.();
-      } catch (_) {}
-      updateMediaSessionMeta(false);
+      // Debounce: src swaps fire pause then play. Only stick if it stays paused.
+      setTimeout(() => {
+        if (voxHold || mixing || Date.now() < ignorePauseUntil) return;
+        const a = liveAudioEl();
+        if (!a || !a.paused || a.ended || !userStarted) return;
+        if (document.hidden && wantBackgroundPlay()) {
+          softResumeMusic("hidden-pause-late");
+          return;
+        }
+        userPaused = true;
+        try {
+          djRadio?.hush?.();
+        } catch (_) {}
+        updateMediaSessionMeta(false);
+      }, 240);
     });
     audio.addEventListener("timeupdate", () => {
       if (ignoringAudioEvents || mixing) return;
