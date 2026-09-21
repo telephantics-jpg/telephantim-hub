@@ -52,7 +52,7 @@ function setVideoBg(url, poster) {
   video.setAttribute("loop", "");
   video.setAttribute("autoplay", "");
   // Cache-bust so phones don't keep a stale Mind-Over-Hell clip
-  const bust = String(url).includes("?") ? url : `${url}?v=1`;
+  const bust = String(url).includes("?") ? url : `${url}?v=v166-illusions`;
   if (poster) video.poster = poster;
   video.src = bust;
   const forceMute = () => {
