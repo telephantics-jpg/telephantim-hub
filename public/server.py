@@ -336,7 +336,7 @@ _visitors_load()
 # --- Bio music-video play counts (own system, not YouTube) ---
 VIDEO_VIEWS_FILE = ROOT / "data" / "video-views.json"
 _VIDEO_VIEWS_LOCK = threading.Lock()
-VIDEO_IDS = ("softer-claw", "boots-down", "stood-strong", "false-crown", "pull-on-desire", "unknown-force", "it-all", "what-isnt-is")
+VIDEO_IDS = ("united-we-are-alive", "softer-claw", "boots-down", "stood-strong", "false-crown", "pull-on-desire", "unknown-force", "it-all", "what-isnt-is")
 _VIDEO_VIEWS: dict = {"counts": {k: 0 for k in VIDEO_IDS}}
 
 
