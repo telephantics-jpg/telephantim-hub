@@ -77,13 +77,79 @@ function requestAdvance(force) {
   advancingUntil = now + 2200;
   next(!!force);
 }
+
+function catalogSec(track) {
+  const n = Number(track && track.duration_sec);
+  return Number.isFinite(n) && n > 15 ? n : 0;
+}
+
+/** True only when we've actually reached the end of this song — not a truncated buffer. */
+function songNearEnd(audio, track) {
+  const t = Number(audio && audio.currentTime) || 0;
+  if (t < 12) return false;
+  const cat = catalogSec(track);
+  if (cat && t < cat * 0.94) return false;
+  const media = Number(audio && audio.duration);
+  const dur = cat || (Number.isFinite(media) && media > 20 && media < 900 ? media : 0);
+  if (!dur) return !!(audio && audio.ended && t > 12);
+  return t >= dur - 0.8 || !!(audio && audio.ended && (!cat || t >= cat * 0.9));
+}
+
+function djBoothWanted() {
+  return !djUserOff;
+}
+
+function armIntroTimeout() {
+  if (introWatch) {
+    clearTimeout(introWatch);
+    introWatch = null;
+  }
+  introWatch = setTimeout(() => {
+    introWatch = null;
+    if (introLock || voxHold) startBedAfterVox();
+  }, 16000);
+}
+
+function startBedAfterVox() {
+  introLock = false;
+  voxHold = false;
+  if (introWatch) {
+    clearTimeout(introWatch);
+    introWatch = null;
+  }
+  if (userPaused) return;
+  const frame = $("music-embed");
+  if (pendingEmbedAfterVox && frame) {
+    const t = pendingEmbedAfterVox;
+    pendingEmbedAfterVox = null;
+    const nextSrc = embedSrc(t, true);
+    if (nextSrc && frame.getAttribute("src") !== nextSrc) {
+      frame.src = nextSrc;
+    }
+    if (t.type === "suno") armEmbedAdvance(t);
+    return;
+  }
+  const audio = liveAudioEl();
+  if (audio && !audio.hidden) {
+    try {
+      const t = Number(audio.currentTime) || 0;
+      if (t > 0.25) audio.currentTime = 0;
+    } catch (_) {}
+    try {
+      audio.volume = 1;
+    } catch (_) {}
+    try {
+      audio.play()?.catch?.(() => {});
+    } catch (_) {}
+  }
+}
 /** Drag-placed Play music button (null = default center-bottom) */
 const MUSIC_BTN_POS_KEY = "telephantim-music-btn-pos-v1";
 /** Drag-placed music panel box */
 const MUSIC_PANEL_POS_KEY = "telephantim-music-panel-pos-v1";
 /** Mid-song + "wanted playing" across tab hide / lock (cleared when browser dies) */
 const MUSIC_PERSIST_KEY = "telephantim-music-bg-v1";
-const DJ_PREF_KEY = "telephantim-dj-vox-on";
+const DJ_PREF_KEY = "telephantim-dj-vox-booth-v1";
 let musicBtnPos = null; // { x, y } top-left of button
 let musicBtnDrag = null;
 let musicPanelPos = null; // { x, y } top-left of panel
@@ -92,6 +158,14 @@ let musicPanelDrag = null;
 let djRadio = null;
 /** true only when user deliberately paused (controls / lock-screen Pause) */
 let userPaused = false;
+/** User tapped DJ Vox off this session / saved pref. */
+let djUserOff = false;
+/** Vox is talking — bed stays silent, pause events are not a user pause. */
+let voxHold = false;
+let introLock = false;
+let introWatch = null;
+/** Suno/Spotify/YouTube embed waiting until Vox finishes. */
+let pendingEmbedAfterVox = null;
 let mediaSessionApi = null;
 let bgKeepAliveInstalled = false;
 let lastSoftResumeAt = 0;
@@ -834,27 +908,35 @@ function loadTrack(autoPlayHint) {
       audio.src = t.url;
     }
     try {
-      audio.volume = 1;
+      audio.volume = djBoothWanted() ? 0 : 1;
     } catch (_) {}
     if (autoPlayHint) {
       userPaused = false;
       unlockRadio();
-      const startVox = () => {
-        setTimeout(() => notifyDjTrackChange(), 700);
+      const booth = djBoothWanted();
+      if (booth) {
+        introLock = true;
+        voxHold = true;
+        armIntroTimeout();
+      }
+      const afterPlay = () => {
+        if (booth) void notifyDjTrackChange();
       };
       try {
         const p = audio.play();
         if (p && typeof p.then === "function") {
-          p.then(startVox).catch((err) => {
+          p.then(afterPlay).catch((err) => {
             console.warn("[radio] play blocked", err);
             setDjStatus("Tap ♪ Play music once if iPhone muted it");
             audio.play().catch(() => {});
+            afterPlay();
           });
         } else {
-          startVox();
+          afterPlay();
         }
       } catch (err) {
         console.warn("[radio] play", err);
+        afterPlay();
       }
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
@@ -878,15 +960,26 @@ function loadTrack(autoPlayHint) {
       stage.classList.add("has-embed");
       stage.classList.remove("has-audio");
     }
-    const nextSrc = embedSrc(t, !!autoPlayHint);
-    if (nextSrc && frame.getAttribute("src") !== nextSrc) {
-      frame.src = nextSrc;
-    }
-    if (useSunoEmbed) armEmbedAdvance(t);
-    else clearEmbedAdvance();
-    if (autoPlayHint) {
+    const booth = autoPlayHint && djBoothWanted();
+    if (booth) {
+      pendingEmbedAfterVox = t;
+      introLock = true;
+      voxHold = true;
+      armIntroTimeout();
       userPaused = false;
       void notifyDjTrackChange();
+    } else {
+      pendingEmbedAfterVox = null;
+      const nextSrc = embedSrc(t, !!autoPlayHint);
+      if (nextSrc && frame.getAttribute("src") !== nextSrc) {
+        frame.src = nextSrc;
+      }
+      if (useSunoEmbed) armEmbedAdvance(t);
+      else clearEmbedAdvance();
+      if (autoPlayHint) {
+        userPaused = false;
+        void notifyDjTrackChange();
+      }
     }
     updateMediaSessionMeta(autoPlayHint || isAudioPlaying());
     saveMusicPersist();
@@ -944,6 +1037,7 @@ function saveMusicPersist() {
 }
 
 function softResumeMusic(why) {
+  if (introLock || voxHold) return;
   if (!wantBackgroundPlay()) return;
   const now = Date.now();
   if (now - lastSoftResumeAt < 400) return;
@@ -1564,11 +1658,21 @@ function setDjStatus(msg) {
 async function ensureDjRadio() {
   if (djRadio) return djRadio;
   try {
-    const mod = await import(`./hub-dj-radio.mjs?v=v30-guy`);
+    const mod = await import(`./hub-dj-radio.mjs?v=v31-vox-first`);
     djRadio = mod.createDjRadio({
       getAudio: () => liveAudioEl(),
       mixToNext: () => mixToNext(),
       setBoothFx: (fx) => setBoothFx(fx),
+      startBedAfterVox: () => startBedAfterVox(),
+      setVoxHold: (v) => {
+        voxHold = !!v;
+      },
+      setIntroLock: (v) => {
+        introLock = !!v;
+      },
+      keepPlaying: () => {
+        if (!userPaused) startBedAfterVox();
+      },
       playAt: (i) => {
         const n = PLAYLIST.length;
         if (!n) return;
@@ -1637,6 +1741,7 @@ async function setDjEnabled(on) {
     setDjStatus("Vox unavailable — hard refresh");
     return;
   }
+  djUserOff = !on;
   dj.setEnabled(!!on);
   try {
     localStorage.setItem(DJ_PREF_KEY, on ? "1" : "0");
@@ -1645,11 +1750,12 @@ async function setDjEnabled(on) {
     try {
       dj.hush?.();
     } catch (_) {}
+    startBedAfterVox();
     setDjStatus("");
     return;
   }
 
-  setDjStatus("DJ Vox · live booth…");
+  setDjStatus("DJ Vox · speaks, then the song…");
   try {
     const h = (location.hostname || "").toLowerCase();
     if (h === "localhost" || h === "127.0.0.1") {
@@ -1664,7 +1770,7 @@ async function setDjEnabled(on) {
     } catch (_) {}
     void notifyDjTrackChange();
   } else {
-    setDjStatus("DJ Vox · on — tap Play music / a song and Vox talks");
+    setDjStatus("DJ Vox · on — tap Play music and Vox talks first");
   }
 }
 
@@ -1672,12 +1778,22 @@ async function setDjEnabled(on) {
 async function notifyDjTrackChange() {
   try {
     const dj = await ensureDjRadio();
-    if (!dj) return;
-    if (!dj.isEnabled()) return;
+    if (!dj) {
+      startBedAfterVox();
+      return;
+    }
+    if (!dj.isEnabled()) {
+      if (djUserOff) {
+        startBedAfterVox();
+        return;
+      }
+      dj.setEnabled(true);
+    }
     dj.onTrackChanged?.(null);
   } catch (err) {
     console.warn("[music] Vox notify", err);
-    setDjStatus("Vox error — check Luna on :8767");
+    setDjStatus("Vox error — song still plays");
+    startBedAfterVox();
   }
 }
 
@@ -1833,7 +1949,7 @@ function playAllSuno(e) {
 }
 
 function onAudioEnded(ev) {
-  if (ignoringAudioEvents) return;
+  if (ignoringAudioEvents || introLock || voxHold) return;
   const cur = current();
   // Empty <audio> under a Suno embed is not a real end
   if (cur && (cur.type === "suno" || cur.type === "spotify" || cur.type === "youtube")) {
@@ -1851,9 +1967,13 @@ function onAudioEnded(ev) {
   }
   if (!userStarted || userPaused || !PLAYLIST.length) return;
   const audio = (ev && ev.target) || liveAudioEl();
-  const dur = Number(audio?.duration) || 0;
   const t = Number(audio?.currentTime) || 0;
-  if (dur < 3 && t < 1) {
+  const cat = catalogSec(cur);
+  if (cat && t < cat * 0.85) {
+    consecutiveLoadFails += 1;
+    return;
+  }
+  if (!songNearEnd(audio, cur) && t < 12) {
     consecutiveLoadFails += 1;
     if (consecutiveLoadFails > 2 && cur?.songId && !isMobileRadio() && cur.radio !== "distrokid") {
       cur.type = "suno";
@@ -1871,27 +1991,24 @@ function startRadioWatch() {
   radioWatch = setInterval(() => {
     if (!userStarted || userPaused || !PLAYLIST.length) return;
     const cur = current();
+    if (introLock || voxHold) return;
     if (mixing && Date.now() - lastAdvanceAt > 12000) {
       mixing = false;
       if (mixTimer) {
         clearInterval(mixTimer);
         mixTimer = null;
       }
-      requestAdvance(true);
       return;
     }
     const audio = liveAudioEl();
     if (cur && cur.type === "audio" && audio && !audio.paused && !mixing) {
-      const dur = Number(audio.duration) || 0;
-      const t = Number(audio.currentTime) || 0;
-      if (dur > 8 && t >= dur - 0.55) {
+      if (songNearEnd(audio, cur)) {
         requestAdvance(true);
         return;
       }
     }
     if (cur && cur.type === "suno" && embedStartedAt) {
-      const sec = Number(cur.duration_sec);
-      const wait = ((Number.isFinite(sec) && sec > 20 ? sec : 180) + 2) * 1000;
+      const wait = ((catalogSec(cur) || 420) + 3) * 1000;
       if (Date.now() - embedStartedAt >= wait) {
         requestAdvance(true);
       }
@@ -1947,10 +2064,6 @@ function wire() {
   $("music-dj")?.addEventListener("click", async () => {
     const on = !($("music-dj")?.classList.contains("on"));
     await setDjEnabled(on);
-    if (on && userStarted && isSunoTrack(current())) {
-      setDjStatus("Vox · cueing…");
-      void notifyDjTrackChange();
-    }
   });
   // Seamless radio across Relics / Bio / Luna 2D / Luna 3D
   window.addEventListener("telephantim-scene", onHubSceneChange);
@@ -1983,7 +2096,7 @@ function wire() {
     });
     audio.addEventListener("pause", () => {
       updateMusicChrome();
-      if (ignoringAudioEvents || mixing) return;
+      if (ignoringAudioEvents || mixing || introLock || voxHold) return;
       // Lock-screen / hidden tab: OS may pause us — only fight if user didn't pause
       if (document.hidden && wantBackgroundPlay() && !userPaused) {
         setTimeout(() => {
@@ -1999,18 +2112,9 @@ function wire() {
       updateMediaSessionMeta(false);
     });
     audio.addEventListener("timeupdate", () => {
-      if (ignoringAudioEvents || mixing) return;
-      const dur = Number(audio.duration) || 0;
+      if (ignoringAudioEvents || mixing || introLock || voxHold) return;
       const t = Number(audio.currentTime) || 0;
-      if (
-        Number.isFinite(dur) &&
-        dur > 20 &&
-        dur < 900 &&
-        t >= dur - 0.35 &&
-        t > 8 &&
-        userStarted &&
-        !userPaused
-      ) {
+      if (songNearEnd(audio, current()) && userStarted && !userPaused) {
         requestAdvance(true);
         return;
       }
@@ -2091,12 +2195,14 @@ function wire() {
   loadSunoCatalog();
   updateMusicChrome();
 
-  // Vox stays off unless they already turned it on
-  let voxPref = "0";
+  // DJ Vox is the booth — on unless they turned it off
+  let voxPref = "1";
   try {
-    voxPref = localStorage.getItem(DJ_PREF_KEY) || "0";
+    const stored = localStorage.getItem(DJ_PREF_KEY);
+    if (stored === "0") voxPref = "0";
   } catch (_) {}
-  if (voxPref === "1") {
+  djUserOff = voxPref === "0";
+  if (!djUserOff) {
     setDjEnabled(true).catch(() => {});
   } else {
     setDjEnabled(false).catch(() => {});
