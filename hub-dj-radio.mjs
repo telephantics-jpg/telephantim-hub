@@ -1,11 +1,10 @@
 /**
- * Telephantix DJ Vox — Spotify-style: every track gets a witty comment.
+ * Telephantix DJ Vox — intro then the song.
  *
- * - Song always changes instantly on Next (never waits on TTS).
- * - Prefetch + cache bridge drops for upcoming songs so Vox is ready.
- * - Most songs: slightly longer witty bridge naming the track.
- * - Every 3–4 songs: "truth from today's world" then land on the title.
- * - Spam-skip cancels the old rant and starts the new track's intro ASAP.
+ * - Every track: Vox speaks first (funny line + eternal truth), then the bed starts.
+ * - Next never waits on TTS — skip cancels the old rant and intros the new title.
+ * - Prefetch upcoming drops so the booth is ready.
+ * - No mid-song talk-over and no mix-out (those cut songs / talk on their own).
  */
 
 const BED_VOL = 1;
@@ -206,14 +205,45 @@ export function createDjRadio(api = {}) {
     } catch (_) {}
   }
 
+  function holdBedSilent() {
+    const a = getMusic();
+    clearRamp();
+    try {
+      api.setIntroLock?.(true);
+      api.setVoxHold?.(true);
+    } catch (_) {}
+    if (a) {
+      try {
+        a.volume = 0;
+      } catch (_) {}
+    }
+  }
+
+  function releaseBedAfterVox() {
+    try {
+      api.setVoxHold?.(false);
+      api.setIntroLock?.(false);
+    } catch (_) {}
+    if (!wantedOn()) {
+      unduckMusic({ ramp: false });
+      return;
+    }
+    try {
+      if (typeof api.startBedAfterVox === "function") {
+        api.startBedAfterVox();
+        return;
+      }
+    } catch (_) {}
+    resumeBed();
+  }
+
   function cancelMic() {
     stopMic();
     try {
       window.speechSynthesis?.cancel();
     } catch (_) {}
     micBusy = false;
-    if (wantedOn()) resumeBed();
-    else unduckMusic({ ramp: false });
+    // Caller decides whether the bed comes back (skip vs pause vs intro done).
   }
 
   function playMicB64(b64) {
@@ -305,6 +335,10 @@ export function createDjRadio(api = {}) {
     return [...new Set(bases.filter((b) => b != null))];
   }
 
+  function pickOne(bag) {
+    return bag[Math.floor(Math.random() * bag.length)];
+  }
+
   function localDropText(nextTrack, kind = "bridge") {
     const title = nextTrack?.title || "the next track";
     const artist = nextTrack?.artist || "Telephantix";
@@ -312,44 +346,25 @@ export function createDjRadio(api = {}) {
     const kn = normalizeKind(kind);
     if (kn === "interject") {
       const now = nextTrack?.title || "this one";
-      const bag = [
+      return pickOne([
         `Vox still in the booth — stay on ${now}. Chorus isn't a suggestion.`,
         `Talk-over: ${now} is doing the work. Phone face down.`,
-        `Don't skip ${now}. I'll mix you out when it's time.`,
         `Booth check. ${now} has a second act. Hear it.`,
-        `Riding the fader on ${now}. Background is for grocery stores.`,
-      ];
-      return bag[Math.floor(Math.random() * bag.length)];
+      ]);
     }
     if (kn === "mix") {
       const nxt = nextTrack?.title || "the next record";
-      const bag = [
+      return pickOne([
         `Vox blending into ${nxt}. Hands off skip — this is a mix.`,
-        `Riding the tail… slamming ${nxt} on top. That's the remix.`,
         `Two records, one pulse. ${nxt} catching the kick. Stay.`,
-        `Live mix — ${nxt} coming through the filter. Don't blink.`,
-        `We're not stopping. ${nxt} eats the fade. Collision incoming.`,
-      ];
-      return bag[Math.floor(Math.random() * bag.length)];
+        `We're not stopping. ${nxt} eats the fade.`,
+      ]);
     }
-    if (kn === "truth") {
-      const truths = [
-        `Hot take from the booth: we archived our childhoods in the cloud and still can't find Tuesday. Meanwhile — ${title}.`,
-        `Truth time: notifications trained us to treat every ping like an emergency. Most are coupons for anxiety. Here's ${title}.`,
-        `We optimized dating into a swipe economy then wondered why chemistry feels like customer support. Soft landing: ${title}.`,
-        `Fifteen seconds is a clip. Three minutes is a relationship. ${title} is the longer kind. Stay.`,
-        `We stacked so many subscriptions we need an app to cancel the apps. Peace is free. ${title} is the receipt.`,
-        `Forty-seven tabs open and one feeling you refuse to click. Close the feeling first. Cue ${title}.`,
-        `Phone at three percent, soul at three percent — we charge the wrong one. ${title} is the other plug.`,
-        `Focus playlist in one ear, doomscroll in the other. Hostage situation. ${title} is the release form.`,
-        `I'll start Monday is a religion with terrible attendance. Start in this chorus. Here's ${title}.`,
-      ];
-      return truths[Math.floor(Math.random() * truths.length)];
-    }
-    const specials = {
+
+    const jokes = {
       "odyssey revised": [
-        `Vox in the booth — ${title}. Second draft of the journey. Maps are for people who already know who they are. Hit play.`,
-        `Incoming: ${title} by ${artist}. Same road, new narrator. Stay in the car.`,
+        `Vox in the booth — ${title}. Same road, new narrator. Stay in the car.`,
+        `Incoming: ${title}. Second draft of the journey. Maps are for people who already know who they are.`,
       ],
       "chord that pleased the lord": [
         `One chord, full sermon. ${title} — church in a kick drum. Amen optional. Listening isn't.`,
@@ -377,10 +392,55 @@ export function createDjRadio(api = {}) {
       `Dropping ${title}. If you were waiting for a sign, this is a kick drum. More honest than a billboard.`,
       `${title} by ${artist}. Let the lyric clock you. If it stings, that's free diagnostics with a melody.`,
       `Playing ${title}. Not a mood board. A mood. Difference is one of them has drums.`,
+      `Vox says ${title} will not fix your life. It will fix the next four minutes, which is more honest than most self-help.`,
+      `Spinning ${title}. Skip culture is a democracy of cowards. Courage is thirty seconds long.`,
+      `Soft launch of ${title} except it's a real song, not a brand. Stay through the second chorus.`,
+      `Right into ${title}. Shorter than a corporate all-hands, twice as honest.`,
+      `Booth signed: ${title}. Windows-down energy in a civilization of loading spinners.`,
+      `${title} by ${artist}. Tiny rebellion against the infinite scroll. No streak to maintain. Just ears.`,
     ];
-    const extra = specials[key] || [];
-    const bag = extra.length ? bridges.concat(extra, extra) : bridges;
-    return bag[Math.floor(Math.random() * bag.length)];
+    const truths = [
+      `Eternal truth: we taught phones to finish our sentences, then got mad when they finished our personality.`,
+      `Eternal truth: notifications trained us to treat every ping like an emergency. Most are coupons for anxiety.`,
+      `Eternal truth: we archived our childhoods in the cloud and still can't find Tuesday.`,
+      `Eternal truth: fifteen seconds is a clip. Three minutes is a relationship. Stay for the longer kind.`,
+      `Eternal truth: we stacked so many subscriptions we need an app to cancel the apps. Peace is free.`,
+      `Eternal truth: forty-seven tabs open and one feeling you refuse to click. Close the feeling first.`,
+      `Eternal truth: phone at three percent, soul at three percent — we charge the wrong one.`,
+      `Eternal truth: I'll start Monday is a religion with terrible attendance. Start in this chorus.`,
+      `Eternal truth: we optimized dating into a swipe economy, then wondered why chemistry feels like customer support.`,
+      `Eternal truth: sleep is free. We treat it like optional DLC, then buy three apps to fix 2 a.m.`,
+      `Eternal truth: the news wants your cortisol. Your people want your Tuesday. Pick the voicemail that still loves you.`,
+      `Eternal truth: we're fluent in irony and rusty at sincerity. Joke first is fine. Mean it second.`,
+      `Eternal truth: your feed thinks you want more of what made you mad yesterday. That's a casino that learned your tells.`,
+      `Eternal truth: group chats are full. Living rooms are empty. Bandwidth without presence is loneliness with typing indicators.`,
+      `Eternal truth: everyone wants community until community needs a Tuesday night. Showing up with snacks is religion.`,
+      `Eternal truth: we live-stream sunsets and miss the wind. The sky doesn't need your caption to be real.`,
+      `Eternal truth: inbox zero is a personality now. Your actual life has three unread feelings and no archive folder.`,
+      `Eternal truth: kindness without spine is a welcome mat. Spine without kindness is a locked door. Be a porch light.`,
+      `Eternal truth: we want eternal youth and next-day delivery. Time still charges interest. Pay in walks and one honest nap.`,
+      `Eternal truth: AI can summarize the meeting. It cannot apologize for the meeting. Still hiring: humans.`,
+      `Eternal truth: we call it content so we don't have to call it a cry for connection with better lighting.`,
+      `Eternal truth: your nervous system is running prehistoric software on a 2026 update. The saber-tooth is usually a calendar invite.`,
+      `Eternal truth: advice is infinite. Follow-through is artisan and small-batch. Doing better is the plot twist.`,
+      `Eternal truth: we weather-app the sky instead of looking up. The sky is still free and doesn't need your location.`,
+      `Eternal truth: someone will circle back. They will not circle back. The song actually returns to the hook.`,
+      `Eternal truth: we outsourced memory to devices and intuition to influencers. Your gut is still free software.`,
+      `Eternal truth: craft is slow on purpose. Virality is fast on purpose. One builds a life.`,
+      `Eternal truth: public opinion updates every hour. Character updates when nobody's filming.`,
+      `Eternal truth: we multitask like it's a sport and wonder why nothing feels finished. Single-tasking is the new luxury.`,
+      `Eternal truth: self-care sold us a candle. Friendship still sells nothing and somehow keeps the lights on.`,
+      `Eternal truth: we fact-check strangers harder than we fact-check our own excuses. Bias has great PR.`,
+      `Eternal truth: love is inconvenient. That's how you know it isn't a subscription.`,
+    ];
+    const extra = jokes[key] || [];
+    const jokeBag = extra.length ? bridges.concat(extra, extra) : bridges;
+    const joke = pickOne(jokeBag);
+    const truth = pickOne(truths);
+    if (kn === "truth") {
+      return `${truth} Soft landing: ${title}.`;
+    }
+    return `${joke} ${truth}`;
   }
 
   let voxVoice = null;
@@ -609,6 +669,7 @@ export function createDjRadio(api = {}) {
 
     lastAnnouncedKey = key;
     micBusy = true;
+    holdBedSilent();
     try {
       try {
         const m = getMusic();
@@ -637,10 +698,9 @@ export function createDjRadio(api = {}) {
         await speakBrowser(`Vox · ${title}`);
       } catch (_) {}
     } finally {
-      if (wantedOn()) resumeBed();
-      else unduckMusic({ ramp: false });
       if (gen === announceGen) {
         micBusy = false;
+        releaseBedAfterVox();
         status(`♫ ${title}`);
         try {
           api.onUi?.({ enabled, micBusy: false, status: lastStatus });
@@ -711,8 +771,7 @@ export function createDjRadio(api = {}) {
 
   async function speakNow(data, fallbackText) {
     const text = (data && data.text) || fallbackText || "";
-    const hasVox = !!(data?.audio_b64) || (!isIOS() && text);
-    if (hasVox) duckMusic(DUCK_TALK);
+    duckMusic(0);
     try {
       if (data?.audio_b64) {
         try {
@@ -722,7 +781,7 @@ export function createDjRadio(api = {}) {
       }
       if (text) await speakBrowser(text);
     } finally {
-      unduckMusic({ ramp: false });
+      // Bed stays silent until announceTrack releases it (speak, then play).
     }
   }
 
@@ -847,12 +906,14 @@ export function createDjRadio(api = {}) {
     if (enabled) {
       startWatch();
       bindEnded(getMusic());
-      status("DJ Vox · live booth · talk-overs + mixes");
+      status("DJ Vox · speaks, then the song");
       songsSinceTruth = 0;
       truthInterval = 3 + Math.floor(Math.random() * 2);
       warmAhead();
-      // Comment on whatever is already playing
-      if (api.isWantedOn?.()) {
+      // Intro only if we're at the top of a track — never cut a song already rolling
+      const music = getMusic();
+      const t = Number(music?.currentTime) || 0;
+      if (api.isWantedOn?.() && t < 5) {
         lastAnnouncedKey = "";
         scheduleAnnounceForCurrent(null);
         if (!saidId) {
