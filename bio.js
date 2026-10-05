@@ -52,7 +52,7 @@ function setVideoBg(url, poster) {
   video.setAttribute("loop", "");
   video.setAttribute("autoplay", "");
   // Cache-bust so phones don't keep a stale Mind-Over-Hell clip
-  const bust = String(url).includes("?") ? url : `${url}?v=v166-illusions`;
+  const bust = String(url).includes("?") ? url : `${url}?v=v167-caduceus`;
   if (poster) video.poster = poster;
   video.src = bust;
   const forceMute = () => {
@@ -99,30 +99,33 @@ function setVideoBg(url, poster) {
   play();
 }
 
+const BIO_BG_VIDEO = "media/bio-bg-caduceus.mp4";
+const BIO_BG_STILL = "media/bio-bg-caduceus.jpg";
+const LEGACY_BIO_BG = /(?:^|\/)bio-bg(?:-grok|-caduceus-red)?\.(?:mp4|jpe?g)$/i;
+
+function isLegacyBioBg(url) {
+  const path = String(url || "").split("?")[0];
+  return !path || LEGACY_BIO_BG.test(path);
+}
+
 function applyMedia() {
   const mode = (BIO.mode || "auto").toLowerCase();
-  const poster = BIO.poster || "";
+  let poster = BIO.poster || "";
+  let image = BIO.image || "";
   let videoUrl = BIO.video || "";
-  const path = String(videoUrl).split("?")[0];
-  if (
-    !path ||
-    /bio-bg\.mp4$/i.test(path) ||
-    /bio-bg-grok\.mp4$/i.test(path) ||
-    path === "media/bio-bg.mp4" ||
-    path === "media/bio-bg-grok.mp4"
-  ) {
-    videoUrl = "media/bio-bg-caduceus-red.mp4";
-  }
+  if (isLegacyBioBg(videoUrl)) videoUrl = BIO_BG_VIDEO;
+  if (poster && isLegacyBioBg(poster)) poster = BIO_BG_STILL;
+  if (image && isLegacyBioBg(image)) image = BIO_BG_STILL;
   if (mode === "image") {
-    setImageBg(BIO.image || poster);
+    setImageBg(image || poster);
     return;
   }
   if (mode === "video") {
-    setVideoBg(videoUrl, poster || BIO.image);
+    setVideoBg(videoUrl, poster || image);
     return;
   }
-  if (videoUrl) setVideoBg(videoUrl, poster || BIO.image);
-  else setImageBg(BIO.image || poster);
+  if (videoUrl) setVideoBg(videoUrl, poster || image);
+  else setImageBg(image || poster);
 }
 
 function renderQuote() {

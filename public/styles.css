@@ -255,6 +255,7 @@ body.scene-bio .float-actions {
   inset: 0;
   z-index: 0;
   overflow: hidden;
+  background: #05060a;
 }
 .bio-video,
 .bio-image {
@@ -262,17 +263,16 @@ body.scene-bio .float-actions {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  /* Square Mjolnir loop — keep hammer head + strap centered */
+  /* 16:9 caduceus on black — show the whole emblem, letterbox on tall screens */
+  object-fit: contain;
   object-position: center center;
 }
 .bio-image {
-  background-size: cover;
+  background-size: contain;
   background-position: center center;
   background-repeat: no-repeat;
-  background-color: #0a0c14;
+  background-color: #05060a;
 }
-/* Landscape: still center the square so lightning and head stay in frame */
 @media (min-aspect-ratio: 1/1) {
   .bio-video,
   .bio-image {
@@ -282,7 +282,6 @@ body.scene-bio .float-actions {
     background-position: center center;
   }
 }
-/* Phone portrait: center crop (sides trim, hammer stays) */
 @media (max-width: 899px) and (max-aspect-ratio: 1/1) {
   .bio-video,
   .bio-image {
