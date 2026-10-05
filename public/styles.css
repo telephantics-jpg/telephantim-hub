@@ -440,6 +440,10 @@ body.scene-bio .float-actions {
   object-fit: cover;
   background: #000;
 }
+.bio-embed.bio-embed-square .bio-latest-video,
+.bio-embed.bio-embed-square .bio-latest-poster {
+  object-fit: contain;
+}
 .bio-latest-poster {
   z-index: 2;
   pointer-events: none;
