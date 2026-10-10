@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#05080d">
+  <title>Arcane Runes - War of the Sundered Veil</title>
+  <meta name="description" content="A 3v3 battle-mage arena in the browser. Lead the Order against the Crimson Synod: three lanes, rift gates, the Obsidian Colossus, and spells drawn from real physics. Plays on PC and phone.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Arcane Runes - 3v3 Battle-Mage Arena">
+  <meta property="og:description" content="Lead the Order against the Crimson Synod. Three lanes, rift gates, a river colossus and physics-forged spells. Free in your browser, PC and phone.">
+  <meta property="og:image" content="og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="og-image.png">
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #05080d; overscroll-behavior: none; }
+    body { font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif; color: #dfe6f0; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    #unity-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; display: block; background: #05080d; touch-action: none; outline: none; }
+    #loader { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      background: radial-gradient(ellipse at 50% 65%, #3a1406 0%, #120a08 35%, #05080d 75%); z-index: 2; transition: opacity .6s; }
+    #loader h1 { margin: 0; font-size: clamp(38px, 9vw, 96px); letter-spacing: .12em; color: #ff6a1a; text-shadow: 0 0 22px rgba(255,90,20,.55), 0 4px 0 #3a0c02; }
+    #loader h2 { margin: 0; font-size: clamp(14px, 2.6vw, 26px); letter-spacing: .3em; color: #6fa8ff; font-weight: normal; }
+    #bar { width: min(70vw, 520px); height: 12px; border: 2px solid #6b7686; background: #0b1018; }
+    #fill { width: 0%; height: 100%; background: linear-gradient(90deg, #b8340a, #ff8a2a); box-shadow: 0 0 12px #ff6a1a; transition: width .2s; }
+    #status { font-size: 14px; letter-spacing: .15em; color: #8e98a6; }
+    #rotate { display: none; position: fixed; inset: 0; z-index: 3; background: #05080d; color: #dfe6f0; align-items: center; justify-content: center; text-align: center; font-size: 20px; letter-spacing: .1em; padding: 30px; }
+    @media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
+  </style>
+  <script>
+    /*
+     * telephantim.com hub bridge (only active when embedded in the site's Arcane tab).
+     * The hub never reloads this iframe; when you switch to another tab it posts
+     * "arcane-pause" and we freeze the Unity main loop + suspend game audio, so the
+     * match waits exactly where you left it. "arcane-resume" picks it back up.
+     * Must run BEFORE the Unity loader so the audio/frame hooks are in place.
+     */
+    (function () {
+      var paused = false;
+      var unity = null;
+      var ctxs = [];
+      // --- track every WebAudio context Unity creates ---
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        var Tracked = function (opts) {
+          var c = opts === undefined ? new AC() : new AC(opts);
+          ctxs.push(c);
+          if (paused) { try { c.suspend(); } catch (e) {} }
+          return c;
+        };
+        Tracked.prototype = AC.prototype;
+        window.AudioContext = Tracked;
+        if (window.webkitAudioContext) window.webkitAudioContext = Tracked;
+      }
+      // --- frame gate: while paused, no animation frames reach the game (works for any Unity loop) ---
+      var nativeRaf = window.requestAnimationFrame.bind(window);
+      var nativeCaf = window.cancelAnimationFrame.bind(window);
+      var held = {}, heldSeq = 0;
+      window.requestAnimationFrame = function (cb) {
+        if (paused) {
+          heldSeq -= 1; held[heldSeq] = cb; return heldSeq;
+        }
+        return nativeRaf(cb);
+      };
+      window.cancelAnimationFrame = function (id) {
+        if (id < 0) { delete held[id]; return; }
+        return nativeCaf(id);
+      };
+      function setAudio(on) {
+        ctxs.forEach(function (c) {
+          try { if (on) { if (c.state !== "running") c.resume(); } else if (c.state === "running") c.suspend(); } catch (e) {}
+        });
+      }
+      function apply() {
+        var M = unity && unity.Module;
+        if (M && M.pauseMainLoop && M.resumeMainLoop) {
+          try { paused ? M.pauseMainLoop() : M.resumeMainLoop(); } catch (e) {}
+        }
+        if (!paused) {
+          var ids = Object.keys(held); var cbs = ids.map(function (k) { return held[k]; }); held = {};
+          cbs.forEach(function (cb) { nativeRaf(cb); });
+        }
+        setAudio(!paused);
+        document.documentElement.classList.toggle("hub-paused", paused);
+      }
+      // iOS/Safari: audio may only restart from a gesture inside this frame
+      ["pointerdown", "touchend", "keydown"].forEach(function (ev) {
+        window.addEventListener(ev, function () { if (!paused) setAudio(true); }, { capture: true, passive: true });
+      });
+      window.addEventListener("message", function (e) {
+        if (e.source !== window.parent || window.parent === window) return;
+        var d = e.data || {};
+        if (d.source !== "telephantim-hub") return;
+        if (d.type === "arcane-pause") { paused = true; apply(); }
+        else if (d.type === "arcane-resume") {
+          paused = false; apply();
+          var c = document.getElementById("unity-canvas"); if (c) { try { c.focus(); } catch (x) {} }
+        }
+      });
+      window.__arcaneHub = {
+        setInstance: function (inst) { unity = inst; apply(); },
+        get paused() { return paused; },
+        get mode() { return (unity && unity.Module && unity.Module.pauseMainLoop ? "mainloop+" : "") + "frame-gate"; },
+        get held() { return Object.keys(held).length; },
+        get audio() { return ctxs.map(function (c) { return c.state; }); }
+      };
+    })();
+  </script>
+</head>
+<body>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <div id="loader">
+    <h1>ARCANE RUNES</h1>
+    <h2>WAR OF THE SUNDERED VEIL</h2>
+    <div id="bar"><div id="fill"></div></div>
+    <div id="status">FORGING THE ARENA...</div>
+  </div>
+  <div id="rotate">TURN YOUR PHONE SIDEWAYS<br><br>The arena needs landscape.</div>
+  <script>
+    var canvas = document.getElementById("unity-canvas");
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+    // stop iOS Safari from scrolling / zooming / long-press menus while you play
+    ["touchstart", "touchmove", "touchend", "gesturestart"].forEach(function (ev) {
+      canvas.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+    });
+    document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+
+    var buildUrl = "Build";
+    var config = {
+      dataUrl: buildUrl + "/Web.data.unityweb",
+      frameworkUrl: buildUrl + "/Web.framework.js.unityweb",
+      codeUrl: buildUrl + "/Web.wasm.unityweb",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "JoshuaLowden",
+      productName: "Arcane Runes",
+      productVersion: "1.0",
+      // phones: cap the render resolution so mid-range GPUs keep a steady frame rate
+      devicePixelRatio: isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(window.devicePixelRatio || 1, 2),
+      showBanner: function (msg, type) { if (type === "error") { document.getElementById("status").textContent = msg; } console.log(msg); }
+    };
+
+    var script = document.createElement("script");
+    script.src = buildUrl + "/Web.loader.js";
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) {
+        document.getElementById("fill").style.width = Math.round(progress * 100) + "%";
+      }).then(function (unityInstance) {
+        if (window.__arcaneHub) window.__arcaneHub.setInstance(unityInstance);
+        var l = document.getElementById("loader");
+        l.style.opacity = "0";
+        setTimeout(function () { l.style.display = "none"; }, 650);
+        if (!(window.__arcaneHub && window.__arcaneHub.paused)) canvas.focus();
+      }).catch(function (message) {
+        document.getElementById("status").textContent = "Could not start: " + message;
+      });
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>

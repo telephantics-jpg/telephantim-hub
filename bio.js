@@ -82,6 +82,8 @@ function setVideoBg(url, poster) {
   if (!video.__bioUnlockBound) {
     video.__bioUnlockBound = true;
     const unlock = () => {
+      // Only on Bio — taps inside other tabs (e.g. Arcane) must not wake the hidden bg video
+      if (document.body?.dataset?.scene !== "bio") return;
       forceMute();
       play();
     };
@@ -282,6 +284,12 @@ async function wire() {
   applyMedia();
   wireLatestVideo();
   window.addEventListener("telephantim-scene", onScene);
+  // Landing on Arcane / Relics: keep the hidden Bio bg video paused
+  if (document.body?.dataset?.scene !== "bio") {
+    pauseMedia();
+    const v = $("bio-video");
+    v?.addEventListener("play", () => { if (document.body.dataset.scene !== "bio") v.pause(); });
+  }
 }
 
 if (document.readyState === "loading") {

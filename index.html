@@ -31,7 +31,7 @@
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Telephantim — Relics, Music &amp; Luna Camp</title>
-  <meta name="build-stamp" content="dual-caduceus-mjolnir-2026-07-21" />
+  <meta name="build-stamp" content="v170-4d-back-2026-10-09" />
   <meta name="description" content="Telephantim: Mjolnir &amp; Caduceus, Telephantix music, and Luna Camp. Power, healing, pay links, and living worlds." />
   <meta property="og:type" content="video.other" />
   <meta property="og:site_name" content="Telephantim" />
@@ -67,10 +67,10 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v168-soli" />
+  <link rel="stylesheet" href="styles.css?v=v170-4d-back" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
-<body class="scene-bio" data-scene="bio">
+<body class="scene-arcane" data-scene="arcane">
   <div class="flash" id="flash"></div>
 
   <!-- Full-screen scene host: Luna 2D / Luna 3D load here; Telephantim uses native stage below -->
@@ -88,7 +88,7 @@
   </div>
 
   <!-- Beacons-style Bio: your video/image bg (fixed) + scrollable quote & links -->
-  <section class="bio-page" id="bio-page" aria-label="Bio">
+  <section class="bio-page" id="bio-page" aria-label="Bio" hidden>
     <div class="bio-media" aria-hidden="true">
       <video
         id="bio-video"
@@ -380,15 +380,35 @@
     </div>
   </section>
 
-  <!-- Compact world picker — Relics · Bio · 2D · 3D -->
+  <!-- Compact world picker — Arcane · Bio · 2D · 3D · 4D · Relics (Loft route ?world=loft kept, tab removed) -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
-    <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
-    <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
+    <a class="world-tab active" href="/" data-scene="arcane" title="Arcane Runes — 3v3 battle-mage arena" aria-current="true">Arcane</a>
+    <a class="world-tab" href="/?world=bio" data-scene="bio" title="Bio — video or photo background">Bio</a>
     <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
     <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
     <a class="world-tab" href="/?world=4d" data-scene="sense" title="4D — interactable hyper-form">4D</a>
-    <a class="world-tab" href="/?world=loft" data-scene="loft" title="Voltage Loft — daylight rabbit hole">Loft</a>
+    <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
   </nav>
+
+  <!--
+    Arcane Runes (Unity WebGL) — landing tab.
+    Its OWN iframe (never shares #scene-frame), so switching tabs never reloads the game:
+    hidden tabs pause + mute the match; coming back resumes exactly where you left it.
+  -->
+  <section class="stage-arcane" id="stage-arcane" aria-label="Arcane Runes">
+    <iframe
+      id="arcane-frame"
+      class="arcane-frame"
+      title="Arcane Runes — War of the Sundered Veil"
+      data-src="arcane/index.html?v=v169-arcane"
+      allow="autoplay; fullscreen; gamepad"
+      allowfullscreen
+    ></iframe>
+    <div class="arcane-actions" id="arcane-actions">
+      <button type="button" class="arcane-chip" id="arcane-fullscreen" title="Play full screen" hidden>&#x26F6; <span>Full screen</span></button>
+      <a class="arcane-chip" id="arcane-open" href="arcane/" target="_blank" rel="noopener" title="Open the game on its own page">&#x2197; <span>Own page</span></a>
+    </div>
+  </section>
 
   <!-- Full Music Studio tab -->
   <section class="stage-studio" id="stage-studio" hidden aria-label="Music Studio">
@@ -520,7 +540,7 @@
             <audio id="music-audio-b" class="music-audio" controls preload="none" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
-          <p class="music-hint">One radio · Relics · Bio · 2D · 3D · drag the box · minimize keeps the song</p>
+          <p class="music-hint">One radio · Arcane · Bio · 2D · 3D · 4D · Relics · drag the box · minimize keeps the song</p>
         </div>
       </div>
     </div>
@@ -621,7 +641,7 @@
       </section>
 
       <p class="foot">
-        <strong>telephantim.com</strong> · Relics · Bio · 2D · 3D
+        <strong>telephantim.com</strong> · Arcane · Bio · 2D · 3D · 4D · Relics
       </p>
     </div>
   </aside>
@@ -685,9 +705,9 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v162-rabbit"></script>
+  <script type="module" src="scenes.js?v=v170-4d-back"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v167-caduceus"></script>
+  <script type="module" src="bio.js?v=v169-arcane"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script type="module" src="music.js?v=v31-vox-first"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>

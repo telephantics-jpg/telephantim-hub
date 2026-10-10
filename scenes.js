@@ -1,6 +1,9 @@
 /**
- * Compact world switcher — Relics / Bio / Luna 2D / Luna 3D.
+ * Compact world switcher — Arcane / Bio / Luna 2D / Luna 3D / 4D / Relics.
+ * (Loft has no tab but ?world=loft still opens it.)
  * Switches in-place (no full page navigation). Iframes stay warm when hidden.
+ * Arcane Runes has its own iframe (#arcane-frame) that is never re-pointed, so the
+ * match survives tab switches: hidden = paused + muted, shown = resumed.
  */
 
 /**
@@ -54,6 +57,14 @@ function campUrls() {
 }
 
 const SCENES = {
+  arcane: {
+    id: "arcane",
+    label: "Arcane Runes",
+    short: "Arcane",
+    hint: "3v3 battle-mage arena · plays on PC + phone",
+    url: null,
+    mode: "arcane",
+  },
   telephantim: {
     id: "telephantim",
     label: "Telephantim",
@@ -132,10 +143,11 @@ function sceneUrl(scene) {
 
 const STORAGE_KEY = "telephantim-scene";
 
-/** Public landing on telephantim.com — Bio so visitors see Relics / 2D / 3D tabs. */
-const DEFAULT_SCENE = "bio";
+/** Public landing on telephantim.com — Arcane Runes (Bio / 2D / 3D / Relics / Loft stay one tap away). */
+const DEFAULT_SCENE = "arcane";
 
-let current = DEFAULT_SCENE;
+// null so the very first setScene() always fires "telephantim-scene" (bio/relics pause correctly)
+let current = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -153,17 +165,20 @@ function worldSlug(id) {
   if (id === "sense") return "4d";
   if (id === "loft") return "loft";
   if (id === "studio") return "studio";
+  if (id === "arcane") return "arcane";
   return "bio";
 }
 
 function mapWorldToken(raw) {
   const t = String(raw || "").replace(/^#/, "").toLowerCase().trim();
   if (!t) return "";
+  if (t === "arcane" || t === "runes" || t === "arcane-runes" || t === "game" || t === "moba") return "arcane";
   if (t === "luna" || t === "camp" || t === "luna2d" || t === "luna-2d" || t === "2d" || t === "play") {
     return "luna-2d";
   }
   if (t === "luna3d" || t === "luna-3d" || t === "3d") return "luna-3d";
-  if (t === "relics" || t === "hub" || t === "home" || t === "telephantim") return "telephantim";
+  if (t === "home") return DEFAULT_SCENE;
+  if (t === "relics" || t === "hub" || t === "telephantim") return "telephantim";
   if (t === "bio" || t === "beacons" || t === "links" || t === "quote") return "bio";
   if (t === "sense" || t === "sixth" || t === "field" || t === "matrix" || t === "4d" || t === "4-d") return "sense";
   if (t === "loft" || t === "voltage" || t === "voltage-loft" || t === "alpha") return "loft";
@@ -220,7 +235,7 @@ function readStartScene() {
 function writeUrl(id) {
   try {
     const u = new URL(location.href);
-    if (id === "bio") {
+    if (id === DEFAULT_SCENE) {
       u.searchParams.delete("world");
       u.searchParams.delete("w");
       u.searchParams.delete("scene");
@@ -256,6 +271,75 @@ function sceneUrlKeyRewrite(sceneId) {
   return `${base}/firmament/play?hub=1`;
 }
 
+/* ---------- Arcane Runes: persistent game iframe ---------- */
+let arcaneLoaded = false;
+let arcaneVisible = false;
+
+function arcaneFrame() {
+  return $("arcane-frame");
+}
+
+function arcaneSignal(action) {
+  const f = arcaneFrame();
+  try {
+    f?.contentWindow?.postMessage({ source: "telephantim-hub", type: "arcane-" + action }, "*");
+  } catch (_) {}
+}
+
+function setArcaneActive(on) {
+  const f = arcaneFrame();
+  const stage = $("stage-arcane");
+  if (!f || !stage) return;
+  if (on && !arcaneLoaded) {
+    // Load once, on first visit to the tab. Never changed again → match persists.
+    arcaneLoaded = true;
+    f.src = f.getAttribute("data-src") || "arcane/index.html";
+    f.addEventListener("load", () => arcaneSignal(arcaneVisible ? "resume" : "pause"));
+  }
+  stage.classList.toggle("is-active", !!on);
+  stage.setAttribute("aria-hidden", on ? "false" : "true");
+  if (on === arcaneVisible) return;
+  arcaneVisible = !!on;
+  if (!arcaneLoaded) return;
+  arcaneSignal(on ? "resume" : "pause");
+  if (on) {
+    setTimeout(() => {
+      try {
+        f.contentWindow?.focus();
+      } catch (_) {}
+    }, 60);
+  }
+}
+
+function wireArcaneChrome() {
+  const fsBtn = $("arcane-fullscreen");
+  const stage = $("stage-arcane");
+  const canFs = !!(
+    stage &&
+    (stage.requestFullscreen || stage.webkitRequestFullscreen) &&
+    (document.fullscreenEnabled || document.webkitFullscreenEnabled)
+  );
+  if (fsBtn && canFs) {
+    fsBtn.hidden = false;
+    fsBtn.addEventListener("click", () => {
+      const f = arcaneFrame();
+      const target = f || stage;
+      try {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else {
+          const req = target.requestFullscreen || target.webkitRequestFullscreen;
+          const p = req.call(target);
+          // Phones: lock landscape once fullscreen (ignored where unsupported)
+          if (p && p.then) {
+            p.then(() => screen.orientation?.lock?.("landscape").catch(() => {})).catch(() => {});
+          }
+        }
+      } catch (_) {}
+    });
+  }
+}
+
 function setScene(id, { persist = true, fromHash = false, fromUrl = false } = {}) {
   const sceneId = normalizeScene(id);
   const scene = SCENES[sceneId];
@@ -272,6 +356,7 @@ function setScene(id, { persist = true, fromHash = false, fromUrl = false } = {}
   const isBio = scene.mode === "bio";
   const isStudio = scene.mode === "studio" || sceneId === "studio";
   const isRelics = sceneId === "telephantim";
+  const isArcane = sceneId === "arcane";
 
   document.body.dataset.scene = sceneId;
   document.body.classList.toggle("scene-external", isExternal);
@@ -280,8 +365,11 @@ function setScene(id, { persist = true, fromHash = false, fromUrl = false } = {}
   document.body.classList.toggle("scene-luna-2d", sceneId === "luna-2d");
   document.body.classList.toggle("scene-luna-3d", sceneId === "luna-3d");
   document.body.classList.toggle("scene-native", isRelics);
+  document.body.classList.toggle("scene-arcane", isArcane);
 
-  if (isExternal || isBio || isStudio) {
+  setArcaneActive(isArcane);
+
+  if (isExternal || isBio || isStudio || isArcane) {
     document.body.classList.remove("sheet-open");
   }
   if (sceneId === "luna-2d") {
@@ -434,7 +522,9 @@ function wire() {
     if (e.target.closest?.(".world-tab")) e.preventDefault();
   });
 
-  // Bare telephantim.com → Bio. Shared links use ?world=2d (hash is fallback only).
+  wireArcaneChrome();
+
+  // Bare telephantim.com → Arcane. Shared links use ?world=bio / ?world=2d (hash is fallback only).
   const start = readStartScene();
   setScene(start, {
     persist: true,
