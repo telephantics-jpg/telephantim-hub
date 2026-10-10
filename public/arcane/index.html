@@ -25,9 +25,7 @@
     #bar { width: min(70vw, 520px); height: 12px; border: 2px solid #6b7686; background: #0b1018; }
     #fill { width: 0%; height: 100%; background: linear-gradient(90deg, #b8340a, #ff8a2a); box-shadow: 0 0 12px #ff6a1a; transition: width .2s; }
     #status { font-size: 14px; letter-spacing: .15em; color: #8e98a6; }
-    #rotate { display: none; position: fixed; inset: 0; z-index: 3; background: #05080d; color: #dfe6f0; align-items: center; justify-content: center; text-align: center; font-size: 20px; letter-spacing: .1em; padding: 30px; }
-    @media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
-  </style>
+    @media (orientation: portrait) and (pointer: coarse) {  </style>
   <script>
     /*
      * telephantim.com hub bridge (only active when embedded in the site's Arcane tab).
@@ -116,7 +114,6 @@
     <div id="bar"><div id="fill"></div></div>
     <div id="status">FORGING THE ARENA...</div>
   </div>
-  <div id="rotate">TURN YOUR PHONE SIDEWAYS<br><br>The arena needs landscape.</div>
   <script>
     var canvas = document.getElementById("unity-canvas");
     var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
@@ -125,6 +122,8 @@
       canvas.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
     });
     document.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+    // mouse wheel = camera zoom in-game: never scroll or zoom the page
+    canvas.addEventListener("wheel", function (e) { e.preventDefault(); }, { passive: false });
 
     var buildUrl = "Build";
     var config = {
