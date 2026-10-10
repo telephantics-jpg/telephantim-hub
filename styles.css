@@ -3161,3 +3161,129 @@ body.scene-studio .music-chrome #btn-studio {
   .stu-create-btn { min-height: 48px; width: 100%; }
   .stu-big-play { width: 56px; height: 56px; }
 }
+
+/* ===== ARCANE RUNES TAB (Unity WebGL · landing page) =====
+ * Own iframe that is never destroyed: hidden tabs keep it alive (visibility only,
+ * same size so the Unity canvas never collapses to 0×0).
+ * Palette: midnight navy · charcoal · steel blue · ember orange/gold · deep red.
+ */
+.stage-arcane {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  z-index: 6;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(184, 52, 10, 0.22), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(40, 70, 110, 0.35), transparent 60%),
+    #05080d;
+  visibility: hidden;
+  pointer-events: none;
+}
+.stage-arcane.is-active {
+  visibility: visible;
+  pointer-events: auto;
+}
+.arcane-frame {
+  /* Edge to edge: the game owns the whole viewport; tabs + music chip float on top */
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: block;
+  background: #05080d;
+}
+.arcane-actions {
+  position: absolute;
+  z-index: 3;
+  top: max(6px, env(safe-area-inset-top, 0px));
+  right: max(8px, env(safe-area-inset-right, 0px));
+  display: flex;
+  gap: 6px;
+}
+.arcane-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 30px;
+  padding: 0.38rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 138, 42, 0.6);
+  background: rgba(10, 16, 26, 0.9);
+  color: #f3d9b5;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.arcane-chip:hover { background: rgba(58, 20, 6, 0.95); color: #fff1dc; }
+.arcane-chip[hidden] { display: none !important; }
+.world-tab[data-scene="arcane"] {
+  color: #ffb070;
+}
+.world-tab[data-scene="arcane"].active {
+  color: #120a08;
+  background: linear-gradient(135deg, #ff8a2a, #b8340a);
+  box-shadow: 0 0 14px rgba(255, 106, 26, 0.45);
+}
+/* Arcane fills the screen: park other stages + Pay sheet (it would cover touch controls) */
+body.scene-arcane .stage {
+  visibility: hidden;
+  pointer-events: none;
+}
+body.scene-arcane .float-actions,
+body.scene-arcane .scene-fallback,
+body.scene-arcane .daily-word-stage {
+  display: none !important;
+}
+body[data-scene="arcane"] #link-sheet,
+body[data-scene="arcane"] .sheet {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+body[data-scene="arcane"] {
+  --sheet-peek: 0px;
+}
+body.scene-arcane .world-switch {
+  display: flex;
+  z-index: 120;
+  /* thin see-through overlay so the full-page game shows underneath */
+  background: rgba(6, 10, 18, 0.55);
+}
+body.scene-arcane .arcane-chip {
+  background: rgba(10, 16, 26, 0.55);
+}
+/* Play music: same global radio chip, docked top-left so it never sits on the joystick / spell buttons */
+body[data-scene="arcane"] .music-chrome #btn-music:not(.is-placed) {
+  left: max(8px, env(safe-area-inset-left, 0px));
+  right: auto;
+  transform: none;
+  top: max(4px, env(safe-area-inset-top, 0px));
+  bottom: auto;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.72rem;
+  border-color: rgba(255, 138, 42, 0.85);
+  background: linear-gradient(135deg, #3a1406 0%, #b8340a 55%, #1d3a5c 100%);
+  animation: none;
+}
+@media (max-width: 760px) {
+  /* narrow screens: world tabs take the top row, so music + chips drop just below it */
+  body[data-scene="arcane"] .music-chrome #btn-music:not(.is-placed) {
+    top: calc(max(4px, env(safe-area-inset-top, 0px)) + 48px);
+  }
+  .arcane-actions {
+    top: calc(max(4px, env(safe-area-inset-top, 0px)) + 48px);
+  }
+  .arcane-chip span { display: none; }
+}
