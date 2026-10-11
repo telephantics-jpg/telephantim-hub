@@ -84,7 +84,7 @@
         document.documentElement.classList.toggle("hub-paused", paused);
       }
       // iOS/Safari: audio may only restart from a gesture inside this frame
-      ["pointerdown", "touchend", "keydown"].forEach(function (ev) {
+      ["pointerdown", "touchstart", "touchend", "mousedown", "click", "keydown"].forEach(function (ev) {
         window.addEventListener(ev, function () { if (!paused) setAudio(true); }, { capture: true, passive: true });
       });
       window.addEventListener("message", function (e) {
