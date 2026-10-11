@@ -3287,3 +3287,13 @@ body[data-scene="arcane"] .music-chrome #btn-music:not(.is-placed) {
   }
   .arcane-chip span { display: none; }
 }
+
+/* ===== Arcane overlay chips vs. game touches (Oct 2026 SKIP fix) =====
+ * The chip row never catches taps itself: only the chips do. While an Arcane story scene is on
+ * screen the game posts {source:"arcane-game", type:"story"} and the chips step aside entirely.
+ */
+.arcane-actions { pointer-events: none; transition: opacity .25s, visibility .25s; }
+.arcane-actions .arcane-chip { pointer-events: auto; }
+body.arcane-story .arcane-actions { opacity: 0; visibility: hidden; }
+body.arcane-story .arcane-actions .arcane-chip { pointer-events: none; }
+body.arcane-story .arcane-actions { transition: none; }   /* vanish instantly when a story scene starts */
