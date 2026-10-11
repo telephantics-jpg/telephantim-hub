@@ -312,6 +312,13 @@ function setArcaneActive(on) {
 }
 
 function wireArcaneChrome() {
+  // Arcane story scenes: hide the overlay chips so they never sit over in-game buttons (SKIP etc.)
+  window.addEventListener("message", (e) => {
+    const fr = arcaneFrame();
+    if (!fr || e.source !== fr.contentWindow) return;
+    const d = e.data || {};
+    if (d.source === "arcane-game" && d.type === "story") document.body.classList.toggle("arcane-story", !!d.on);
+  });
   const fsBtn = $("arcane-fullscreen");
   const stage = $("stage-arcane");
   const canFs = !!(
