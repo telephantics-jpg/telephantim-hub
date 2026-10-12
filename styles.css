@@ -392,16 +392,13 @@ body.scene-bio .float-actions {
   color: var(--gold-bright);
   opacity: 0.9;
 }
-.bio-latest {
   width: min(94vw, 920px);
   margin: 1.1rem auto 0.5rem;
   text-align: left;
   align-self: center;
 }
-.bio-latest .bio-links-label {
   margin-bottom: 0.35rem;
 }
-.bio-latest-title {
   margin: 0 0 0.65rem;
   font-size: 1.22rem;
   font-weight: 800;
@@ -444,11 +441,9 @@ body.scene-bio .float-actions {
 .bio-embed.bio-embed-square .bio-latest-poster {
   object-fit: contain;
 }
-.bio-latest-poster {
   z-index: 2;
   pointer-events: none;
 }
-.bio-latest-play {
   position: absolute;
   z-index: 3;
   left: 50%;
@@ -465,8 +460,6 @@ body.scene-bio .float-actions {
   cursor: pointer;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
 }
-.bio-latest-play:hover,
-.bio-latest-play:focus-visible {
   background: rgba(201, 162, 39, 0.92);
   color: #111;
 }
@@ -474,7 +467,6 @@ body.scene-bio .float-actions {
 .bio-embed.is-playing .bio-latest-play {
   display: none;
 }
-.bio-latest .bio-more-videos {
   margin-top: 1.25rem;
 }
 .bio-hint {
@@ -3297,3 +3289,8 @@ body[data-scene="arcane"] .music-chrome #btn-music:not(.is-placed) {
 body.arcane-story .arcane-actions { opacity: 0; visibility: hidden; }
 body.arcane-story .arcane-actions .arcane-chip { pointer-events: none; }
 body.arcane-story .arcane-actions { transition: none; }   /* vanish instantly when a story scene starts */
+
+/* pre_pay: support blurb + centered music videos */
+.support-blurb{max-width:560px;margin:0 auto 14px;padding:12px 16px;text-align:center;font-size:1.02em;line-height:1.55;color:#e8e4dc;background:rgba(10,14,24,.6);border-left:3px solid #c8662a;border-radius:8px}
+/* room to watch the bio background loop */
+#bio::after, .bio-page::after, section#bio::after { content:''; display:block; height:75vh; }

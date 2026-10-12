@@ -69,6 +69,21 @@
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="stylesheet" href="styles.css?v=v171-arcane-skip" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
+  <style id="guest-views-style">
+    .guest-views {
+      margin: 1.25rem 0 0;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: #e8c07a;
+      opacity: 0.85;
+      text-align: center;
+      border: 1px solid rgba(200, 102, 42, 0.35);
+      border-radius: 999px;
+      background: rgba(10, 14, 24, 0.55);
+    }
+    .guest-views[hidden] { display: none !important; }
+  </style>
 </head>
 <body class="scene-bio" data-scene="bio">
   <div class="flash" id="flash"></div>
@@ -98,9 +113,9 @@
         playsinline
         autoplay
         preload="auto"
-        poster="media/bio-bg-caduceus.jpg?v=v167-caduceus"
+        poster="media/mjolnir_bg_poster.jpg?v=v173-mjolnir"
       >
-        <source src="media/bio-bg-caduceus.mp4?v=v167-caduceus" type="video/mp4" />
+        <source src="media/mjolnir_loop_720.mp4?v=v173-mjolnir" type="video/mp4" />
       </video>
       <div id="bio-image" class="bio-image" hidden></div>
     </div>
@@ -114,6 +129,53 @@
           <p id="bio-quote-text"></p>
           <cite id="bio-quote-by"></cite>
         </blockquote>
+
+        <section class="bio-game" aria-label="The Unburied" style="margin:28px auto;max-width:600px;text-align:center;padding:22px 18px;border-radius:14px;background:rgba(10,14,24,.82);border:1px solid #c8662a;box-shadow:0 0 24px rgba(200,102,42,.35);font-size:1.08em;color:#e8e4dc">
+          <video controls playsinline preload="none" poster="media/unburied_keyart_wide.jpg" aria-label="The Unburied trailer" style="width:100%;border-radius:10px;margin:0 0 12px;display:block;background:#000"><source src="media/unburied_trailer.mp4" type="video/mp4" /></video><p class="bio-links-label">New game</p><p style="font-weight:700;letter-spacing:.12em;color:#f0b25a;margin:4px 0;font-size:2em">THE UNBURIED</p><p style="font-style:italic;margin:2px 0 8px">The dead won't stay down. Neither will you.</p><p style="max-width:520px;margin:0 auto 12px;line-height:1.45">A dark action RPG where the graves have opened and the night belongs to the hungry. Carve through endless hordes with steel and spellfire, rally survivors who follow your orders, push past the forest gate into the Rootwood, and climb from a lone survivor to the thing the dead fear.</p>
+                    <div id="unburied-dl" style="margin-top:4px">
+            <a id="unburied-pc-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21g/TheUnburied_v21g_PC.zip" target="_blank" rel="noopener" style="display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR PC</a>
+            <p id="unburied-pc-note" style="opacity:.7;font-size:.85em;margin-top:6px">Windows 10/11, 64-bit, 1.4 GB</p>
+            <a id="unburied-android-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21g/TheUnburied_v21g.apk" target="_blank" rel="noopener" style="display:none;display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR ANDROID</a>
+            <p id="unburied-android-note" style="display:none;opacity:.7;font-size:.85em;margin-top:6px">Android 64-bit, 0.55 GB. Allow installs from unknown apps.</p>
+            <p id="unburied-ios-note" style="display:none;opacity:.85;font-size:.95em;margin-top:10px;color:#e8e4dc">Not on iPhone yet. Grab it on PC or Android.</p>
+            <p id="unburied-android-alt" style="margin-top:10px;font-size:.85em"><a href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21g/TheUnburied_v21g.apk" target="_blank" rel="noopener" style="color:#f0b25a;text-decoration:underline">On Android? Get the APK</a></p>
+          </div>
+          <script>
+          (function () {
+            var ua = navigator.userAgent || '';
+            var isAndroid = /Android/i.test(ua);
+            var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            var pc = document.getElementById('unburied-pc-download');
+            var pcNote = document.getElementById('unburied-pc-note');
+            var and = document.getElementById('unburied-android-download');
+            var andNote = document.getElementById('unburied-android-note');
+            var ios = document.getElementById('unburied-ios-note');
+            var alt = document.getElementById('unburied-android-alt');
+            if (isAndroid) {
+              if (pc) pc.style.display = 'none';
+              if (pcNote) pcNote.style.display = 'none';
+              if (alt) alt.style.display = 'none';
+              if (ios) ios.style.display = 'none';
+              if (and) and.style.display = 'inline-block';
+              if (andNote) andNote.style.display = 'block';
+            } else if (isIOS) {
+              if (pc) pc.style.display = 'none';
+              if (pcNote) pcNote.style.display = 'none';
+              if (and) and.style.display = 'none';
+              if (andNote) andNote.style.display = 'none';
+              if (alt) alt.style.display = 'none';
+              if (ios) ios.style.display = 'block';
+            } else {
+              if (and) and.style.display = 'none';
+              if (andNote) andNote.style.display = 'none';
+              if (ios) ios.style.display = 'none';
+              if (pc) pc.style.display = 'inline-block';
+              if (pcNote) pcNote.style.display = 'block';
+              if (alt) alt.style.display = 'block';
+            }
+          })();
+          </script>
+        </section>
 
         <section class="bio-latest" aria-label="Videos">
           <p class="bio-links-label">Latest video</p>
@@ -376,6 +438,8 @@
         </article>
 
         <div class="bio-links" id="bio-links" hidden></div>
+
+        <p id="guest-views" class="guest-views" hidden aria-live="polite">Guest views: <span data-guest-views>—</span></p>
       </div>
     </div>
   </section>
@@ -572,6 +636,7 @@
 
       <section class="section">
         <h3>Support / Pay</h3>
+        <p class="support-blurb">Right now I'm working to raise money that actually reaches me, not a middleman or a platform. Every bit of real support goes into improving my life, strengthening my will, and pushing these projects further than one driver's paycheck can. If a song, a game or a single line here reached you, tap Pay below and help me build what's next.</p>
         <div class="links">
           <a class="link" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer">
             <span class="ico ico-paypal" aria-hidden="true">PP</span>
@@ -695,6 +760,7 @@
   <script src="api-config.js?v=87-live-telephantim"></script>
   <script src="analytics.js?v=87-live-telephantim"></script>
   <script src="visitors.js?v=v155-bio"></script>
+  <script src="guest-views.js?v=v1-guest"></script>
   <!-- Local Three.js (no CDN) so Relics still load offline -->
   <script type="importmap">
   {
