@@ -15,12 +15,12 @@ export const BIO = {
   mode: "video",
 
   /** Bio background — 3D optical-illusion caduceus loops */
-  video: "media/bio-bg-caduceus.mp4?v=v167-caduceus",
-  image: "media/bio-bg-caduceus.jpg?v=v167-caduceus",
-  poster: "media/bio-bg-caduceus.jpg?v=v167-caduceus",
+  video: "media/mjolnir_loop_720.mp4?v=v173-mjolnir",
+  image: "media/mjolnir_bg_poster.jpg?v=v173-mjolnir",
+  poster: "media/mjolnir_bg_poster.jpg?v=v173-mjolnir",
 
   quote:
-    "I'm The Arcane Verse, known online as Telephantix—a soul who once drove the long roads as an OTR trucker and worked in a laboratory, now rooted in Western Pennsylvania and weaving technology, music, mystical symbols, and quiet truth-seeking into everything I create. Caduceus, ancient echoes, and the gentle pull of “as above, so below” live alongside my experiments with AI, art, and the hope of building something kind and real.\n\nWhen I'm not building, I play video games—especially Dota and Warframe—and you can find me on social media through the links below.\n\nMy telephantim.com (and the space around telephantix.com) is simply my own open ground—where relics of power and healing, original music, AI play, and direct support can live without the middle layers, just pure connection and the chance for something authentic to grow.",
+    "I'm The Arcane Verse, known online as Telephantix. I've driven the long roads as an OTR trucker, worked in a laboratory, and today I'm still a driver, rooted in Western Pennsylvania. Between the miles, I weave technology, music, mystical symbols and quiet truth-seeking into everything I create. The Caduceus, ancient echoes and the steady pull of 'as above, so below' live alongside my experiments with AI, art and the hope of building something kind and real.\n\nLately that hope has teeth. I've been making original music and hypnotic videos, the Arcane Runes game, which you can play right here in your browser, and The Unburied, a dark action RPG built in Unreal Engine where the dead won't stay down. My music runs heavy, from Breaking Benjamin grit to DragonForce speed to Pink Floyd haze. All of it is built after shifts and between drives with a small crew of AI collaborators I direct, and no label, no studio and no investors, just will, patience and a refusal to stop.\n\nWhen I'm not building, I'm gaming, especially Dota and Warframe, and you can find me on social media through the links below.\n\ntelephantim.com is my own open ground. Relics of power and healing, original music, AI play and direct support live here without the middle layers. It's pure connection and room for something authentic to grow.\n\nRight now I'm working to raise money that actually reaches me, not a middleman or a platform. Every bit of real support goes into improving my life, strengthening my will, and pushing these projects further than one driver's paycheck can. If a song, a game or a single line here reached you, tap Pay below and help me build what's next.",
   quoteBy: "Telephantix",
 
   /** Mute looping video (required for autoplay on phones) */

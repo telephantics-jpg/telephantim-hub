@@ -52,7 +52,7 @@ function setVideoBg(url, poster) {
   video.setAttribute("loop", "");
   video.setAttribute("autoplay", "");
   // Cache-bust so phones don't keep a stale Mind-Over-Hell clip
-  const bust = String(url).includes("?") ? url : `${url}?v=v167-caduceus`;
+  const bust = String(url).includes("?") ? url : `${url}?v=v173-mjolnir`;
   if (poster) video.poster = poster;
   video.src = bust;
   const forceMute = () => {
@@ -101,9 +101,9 @@ function setVideoBg(url, poster) {
   play();
 }
 
-const BIO_BG_VIDEO = "media/bio-bg-caduceus.mp4";
-const BIO_BG_STILL = "media/bio-bg-caduceus.jpg";
-const LEGACY_BIO_BG = /(?:^|\/)bio-bg(?:-grok|-caduceus-red)?\.(?:mp4|jpe?g)$/i;
+const BIO_BG_VIDEO = "media/mjolnir_loop_720.mp4";
+const BIO_BG_STILL = "media/mjolnir_bg_poster.jpg";
+const LEGACY_BIO_BG = /(?:^|\/)(?:bio-bg(?:-grok|-caduceus(?:-red)?)?|bio-bg-caduceus)\.(?:mp4|jpe?g)$/i;
 
 function isLegacyBioBg(url) {
   const path = String(url || "").split("?")[0];
