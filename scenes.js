@@ -3,7 +3,9 @@
  * (Loft has no tab but ?world=loft still opens it.)
  * Switches in-place (no full page navigation). Iframes stay warm when hidden.
  * Arcane Runes has its own iframe (#arcane-frame) that is never re-pointed, so the
- * match survives tab switches: hidden = paused + muted, shown = resumed.
+ * match survives tab switches: hidden = paused + ALL game audio muted (music + SFX),
+ * shown = resumed + unmuted. The site's own radio (music.js) is never touched by this.
+ * Bio is the landing tab (bare telephantim.com); Arcane is /?world=arcane.
  */
 
 /**
@@ -143,8 +145,8 @@ function sceneUrl(scene) {
 
 const STORAGE_KEY = "telephantim-scene";
 
-/** Public landing on telephantim.com — Arcane Runes (Bio / 2D / 3D / Relics / Loft stay one tap away). */
-const DEFAULT_SCENE = "arcane";
+/** Public landing on telephantim.com — Bio (Arcane / 2D / 3D / Relics / Loft stay one tap away). */
+const DEFAULT_SCENE = "bio";
 
 // null so the very first setScene() always fires "telephantim-scene" (bio/relics pause correctly)
 let current = null;
@@ -531,7 +533,7 @@ function wire() {
 
   wireArcaneChrome();
 
-  // Bare telephantim.com → Arcane. Shared links use ?world=bio / ?world=2d (hash is fallback only).
+  // Bare telephantim.com → Bio. Shared links use ?world=arcane / ?world=2d (hash is fallback only).
   const start = readStartScene();
   setScene(start, {
     persist: true,

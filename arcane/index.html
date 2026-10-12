@@ -31,21 +31,56 @@
     /*
      * telephantim.com hub bridge (only active when embedded in the site's Arcane tab).
      * The hub never reloads this iframe; when you switch to another tab it posts
-     * "arcane-pause" and we freeze the Unity main loop + suspend game audio, so the
-     * match waits exactly where you left it. "arcane-resume" picks it back up.
+     * "arcane-pause" and we freeze the Unity main loop and MUTE ALL game audio
+     * (game music + SFX + voice), so the match waits exactly where you left it.
+     * "arcane-resume" picks it back up and unmutes.
+     * The game is also muted whenever the browser tab itself is hidden.
+     * The site's own radio player lives in the parent page on its own <audio>
+     * element; nothing here touches it, so it keeps playing through tab switches.
+     *
+     * Mute is two layers, because Unity re-resumes a suspended AudioContext on its
+     * own (a 400 ms retry timer + JS_Sound_ResumeIfNeeded):
+     *   1) every connection to ctx.destination is routed through a master GainNode,
+     *      which we set to 0 while muted (Unity can't undo this), and
+     *   2) the AudioContext is suspended to stop the audio thread.
+     * Unity's music clips play through <audio> elements wired in with
+     * createMediaElementSource, so they also pass through the master gain.
      * Must run BEFORE the Unity loader so the audio/frame hooks are in place.
      */
     (function () {
-      var paused = false;
+      var paused = false;      // hub says: you are not the active tab
       var unity = null;
       var ctxs = [];
-      // --- track every WebAudio context Unity creates ---
+      function muted() { return paused || document.hidden; }
+      // --- track every WebAudio context Unity creates + give it a master gain ---
       var AC = window.AudioContext || window.webkitAudioContext;
+      function masterFor(c) {
+        if (!c.__hubMaster) {
+          var g = c.createGain();
+          g.gain.value = muted() ? 0 : 1;
+          nativeConnect.call(g, c.destination);
+          c.__hubMaster = g;
+        }
+        return c.__hubMaster;
+      }
+      var nativeConnect = window.AudioNode && AudioNode.prototype.connect;
+      if (AC && nativeConnect) {
+        AudioNode.prototype.connect = function (dest) {
+          if (dest && typeof AudioDestinationNode !== "undefined" && dest instanceof AudioDestinationNode && this.context && ctxs.indexOf(this.context) !== -1) {
+            var args = Array.prototype.slice.call(arguments);
+            args[0] = masterFor(this.context);
+            nativeConnect.apply(this, args);
+            return dest;
+          }
+          return nativeConnect.apply(this, arguments);
+        };
+      }
       if (AC) {
         var Tracked = function (opts) {
           var c = opts === undefined ? new AC() : new AC(opts);
           ctxs.push(c);
-          if (paused) { try { c.suspend(); } catch (e) {} }
+          masterFor(c);
+          if (muted()) { try { c.suspend(); } catch (e) {} }
           return c;
         };
         Tracked.prototype = AC.prototype;
@@ -68,9 +103,28 @@
       };
       function setAudio(on) {
         ctxs.forEach(function (c) {
-          try { if (on) { if (c.state !== "running") c.resume(); } else if (c.state === "running") c.suspend(); } catch (e) {}
+          try {
+            var g = masterFor(c).gain;
+            if (on) {
+              if (c.state !== "running") c.resume();
+              g.cancelScheduledValues(c.currentTime);
+              g.setValueAtTime(1, c.currentTime);
+            } else {
+              g.cancelScheduledValues(c.currentTime);
+              g.setValueAtTime(0, c.currentTime);
+              g.value = 0;
+              if (c.state === "running") c.suspend();
+            }
+          } catch (e) {}
         });
       }
+      // Keep the mute in force even if Unity resumes the context behind our back.
+      setInterval(function () {
+        if (!muted()) return;
+        ctxs.forEach(function (c) {
+          try { if (c.__hubMaster && c.__hubMaster.gain.value !== 0) c.__hubMaster.gain.value = 0; if (c.state === "running") c.suspend(); } catch (e) {}
+        });
+      }, 250);
       function apply() {
         var M = unity && unity.Module;
         if (M && M.pauseMainLoop && M.resumeMainLoop) {
@@ -80,12 +134,16 @@
           var ids = Object.keys(held); var cbs = ids.map(function (k) { return held[k]; }); held = {};
           cbs.forEach(function (cb) { nativeRaf(cb); });
         }
-        setAudio(!paused);
+        setAudio(!muted());
         document.documentElement.classList.toggle("hub-paused", paused);
       }
+      // Browser tab hidden / shown: mute / unmute (the hub tab state still wins)
+      document.addEventListener("visibilitychange", function () { setAudio(!muted()); });
+      window.addEventListener("pagehide", function () { setAudio(false); });
+      window.addEventListener("pageshow", function () { setAudio(!muted()); });
       // iOS/Safari: audio may only restart from a gesture inside this frame
       ["pointerdown", "touchstart", "touchend", "mousedown", "click", "keydown"].forEach(function (ev) {
-        window.addEventListener(ev, function () { if (!paused) setAudio(true); }, { capture: true, passive: true });
+        window.addEventListener(ev, function () { if (!muted()) setAudio(true); }, { capture: true, passive: true });
       });
       window.addEventListener("message", function (e) {
         if (e.source !== window.parent || window.parent === window) return;
@@ -100,9 +158,10 @@
       window.__arcaneHub = {
         setInstance: function (inst) { unity = inst; apply(); },
         get paused() { return paused; },
+        get muted() { return muted(); },
         get mode() { return (unity && unity.Module && unity.Module.pauseMainLoop ? "mainloop+" : "") + "frame-gate"; },
         get held() { return Object.keys(held).length; },
-        get audio() { return ctxs.map(function (c) { return c.state; }); }
+        get audio() { return ctxs.map(function (c) { return c.state + (c.__hubMaster ? " gain=" + c.__hubMaster.gain.value : ""); }); }
       };
     })();
   </script>
