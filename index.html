@@ -31,7 +31,7 @@
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Telephantim — Relics, Music &amp; Luna Camp</title>
-  <meta name="build-stamp" content="v170-4d-back-2026-10-09" />
+  <meta name="build-stamp" content="v172-bio-default-2026-10-11" />
   <meta name="description" content="Telephantim: Mjolnir &amp; Caduceus, Telephantix music, and Luna Camp. Power, healing, pay links, and living worlds." />
   <meta property="og:type" content="video.other" />
   <meta property="og:site_name" content="Telephantim" />
@@ -70,7 +70,7 @@
   <link rel="stylesheet" href="styles.css?v=v171-arcane-skip" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
-<body class="scene-arcane" data-scene="arcane">
+<body class="scene-bio" data-scene="bio">
   <div class="flash" id="flash"></div>
 
   <!-- Full-screen scene host: Luna 2D / Luna 3D load here; Telephantim uses native stage below -->
@@ -88,7 +88,7 @@
   </div>
 
   <!-- Beacons-style Bio: your video/image bg (fixed) + scrollable quote & links -->
-  <section class="bio-page" id="bio-page" aria-label="Bio" hidden>
+  <section class="bio-page" id="bio-page" aria-label="Bio">
     <div class="bio-media" aria-hidden="true">
       <video
         id="bio-video"
@@ -380,10 +380,10 @@
     </div>
   </section>
 
-  <!-- Compact world picker — Arcane · Bio · 2D · 3D · 4D · Relics (Loft route ?world=loft kept, tab removed) -->
+  <!-- Compact world picker — Arcane · Bio · 2D · 3D · 4D · Relics (Bio is the landing tab; Loft route ?world=loft kept, tab removed) -->
   <nav class="world-switch" id="world-switch" aria-label="Switch world">
-    <a class="world-tab active" href="/" data-scene="arcane" title="Arcane Runes — 3v3 battle-mage arena" aria-current="true">Arcane</a>
-    <a class="world-tab" href="/?world=bio" data-scene="bio" title="Bio — video or photo background">Bio</a>
+    <a class="world-tab" href="/?world=arcane" data-scene="arcane" title="Arcane Runes — 3v3 battle-mage arena">Arcane</a>
+    <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
     <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
     <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
     <a class="world-tab" href="/?world=4d" data-scene="sense" title="4D — interactable hyper-form">4D</a>
@@ -391,16 +391,16 @@
   </nav>
 
   <!--
-    Arcane Runes (Unity WebGL) — landing tab.
+    Arcane Runes (Unity WebGL) — loads on first visit to the tab (Bio is the landing tab).
     Its OWN iframe (never shares #scene-frame), so switching tabs never reloads the game:
-    hidden tabs pause + mute the match; coming back resumes exactly where you left it.
+    hidden tabs pause the match + mute ALL game audio (site radio keeps playing); coming back resumes exactly where you left it.
   -->
   <section class="stage-arcane" id="stage-arcane" aria-label="Arcane Runes">
     <iframe
       id="arcane-frame"
       class="arcane-frame"
       title="Arcane Runes — War of the Sundered Veil"
-      data-src="arcane/index.html?v=v171-arcane-skip"
+      data-src="arcane/index.html?v=v172-arcane-mute"
       allow="autoplay; fullscreen; gamepad"
       allowfullscreen
     ></iframe>
@@ -704,7 +704,7 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v171-arcane-skip"></script>
+  <script type="module" src="scenes.js?v=v172-bio-default"></script>
   <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
   <script type="module" src="bio.js?v=v169-arcane"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
