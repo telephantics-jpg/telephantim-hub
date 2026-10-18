@@ -67,7 +67,15 @@
 <meta property="og:image:width" content="1024">
 <meta property="og:image:height" content="683">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://telephantim.com/media/share_card.jpg"></head>
+<meta name="twitter:image" content="https://telephantim.com/media/share_card.jpg">  <style id="help-pay-style">
+    .help-pay-btn{display:inline-block;padding:15px 38px;font-size:1.3em;font-weight:800;letter-spacing:.12em;border-radius:999px;background:#e8902a;color:#0d1320;text-decoration:none;border:1px solid #f0b25a;box-shadow:0 0 14px rgba(232,144,42,.45);animation:helpPayPulse 2.4s ease-in-out 1.5s 1}
+    .help-pay-btn:hover,.help-pay-btn:focus-visible{background:#f0a040;color:#0d1320;box-shadow:0 0 22px rgba(232,144,42,.6)}
+    @keyframes helpPayPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+    @media (prefers-reduced-motion:reduce){.help-pay-btn{animation:none}}
+    @media (max-width:480px){.help-pay-btn{font-size:1.15em;padding:13px 30px}}
+    #sheet-toggle-label.sheet-toggle{font-size:1.05rem;padding:.5rem 1.05rem;background:#e8902a;color:#0d1320;border-color:#f0b25a;box-shadow:0 0 10px rgba(232,144,42,.4)}
+  </style>
+</head>
 <body class="scene-bio" data-scene="bio">
   <div class="flash" id="flash"></div>
 
@@ -114,14 +122,14 @@
         </blockquote>
 
         <section class="bio-game" aria-label="The Unburied" style="margin:28px auto;max-width:600px;text-align:center;padding:22px 18px;border-radius:14px;background:rgba(10,14,24,.82);border:1px solid #c8662a;box-shadow:0 0 24px rgba(200,102,42,.35);font-size:1.08em;color:#e8e4dc">
-          <video controls playsinline preload="none" poster="media/unburied_keyart_wide.jpg" aria-label="The Unburied trailer" style="width:100%;border-radius:10px;margin:0 0 12px;display:block;background:#000"><source src="media/unburied_trailer.mp4" type="video/mp4" /></video><p class="bio-links-label">New game</p><p style="font-weight:700;letter-spacing:.12em;color:#f0b25a;margin:4px 0;font-size:2em">THE UNBURIED</p><p style="font-style:italic;margin:2px 0 8px">The dead won't stay down. Neither will you.</p><p style="max-width:520px;margin:0 auto 12px;line-height:1.45">A dark action RPG where the graves have opened and the night belongs to the hungry. Carve through endless hordes with steel and spellfire, rally survivors who follow your orders, push past the forest gate into the Rootwood, and climb from a lone survivor to the thing the dead fear.</p>
+          <video controls playsinline preload="none" poster="media/unburied_keyart_wide.jpg" aria-label="The Unburied trailer" style="width:100%;border-radius:10px;margin:0 0 12px;display:block;background:#000"><source src="media/unburied_trailer.mp4" type="video/mp4" /></video><div id="unburied-support" style="margin:0 0 16px;text-align:center"><a id="unburied-support-banner" class="help-pay-open" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer" aria-label="Support The Unburied: open Help Pay options" style="display:block"><img src="media/support_banner.png" alt="Support The Unburied" width="1200" height="220" loading="lazy" style="display:block;width:100%;max-width:100%;height:auto;border-radius:10px" /></a><p style="margin:8px 0 12px;font-size:.88em;font-style:italic;opacity:.85">Built by one guy after long shifts. If it hit, fuel the next build.</p><a id="unburied-help-pay" class="help-pay-btn help-pay-open" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer">HELP PAY</a></div><p class="bio-links-label">New game</p><p style="font-weight:700;letter-spacing:.12em;color:#f0b25a;margin:4px 0;font-size:2em">THE UNBURIED</p><p style="font-style:italic;margin:2px 0 8px">The dead won't stay down. Neither will you.</p><p style="max-width:520px;margin:0 auto 12px;line-height:1.45">A dark action RPG where the graves have opened and the night belongs to the hungry. Carve through endless hordes with steel and spellfire, rally survivors who follow your orders, push past the forest gate into the Rootwood, and climb from a lone survivor to the thing the dead fear.</p>
                     <div id="unburied-dl" style="margin-top:4px">
-            <a id="unburied-pc-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21g/TheUnburied_v21g_PC.zip" target="_blank" rel="noopener" style="display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR PC</a>
-            <p id="unburied-pc-note" style="opacity:.7;font-size:.85em;margin-top:6px">Windows 10/11, 64-bit, 1.4 GB</p>
-            <a id="unburied-android-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21k/TheUnburied_v21k.apk" target="_blank" rel="noopener" style="display:none;display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR ANDROID</a>
-            <p id="unburied-android-note" style="display:none;opacity:.7;font-size:.85em;margin-top:6px">Android 64-bit, 0.55 GB. Allow installs from unknown apps.</p>
+            <a id="unburied-pc-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21m/TheUnburied_v21m_PC.zip" target="_blank" rel="noopener" style="display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR PC</a>
+            <p id="unburied-pc-note" style="opacity:.7;font-size:.85em;margin-top:6px">Windows 10/11, 64-bit, 1.6 GB &middot; v21m</p>
+            <a id="unburied-android-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21m/TheUnburied_v21m.apk" target="_blank" rel="noopener" style="display:none;display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR ANDROID</a>
+            <p id="unburied-android-note" style="display:none;opacity:.7;font-size:.85em;margin-top:6px">Android 64-bit, 0.58 GB &middot; v21m. Allow installs from unknown apps.</p>
             <p id="unburied-ios-note" style="display:none;opacity:.85;font-size:.95em;margin-top:10px;color:#e8e4dc">Not on iPhone yet. Grab it on PC or Android.</p>
-            <p id="unburied-android-alt" style="margin-top:10px;font-size:.85em"><a href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21k/TheUnburied_v21k.apk" target="_blank" rel="noopener" style="color:#f0b25a;text-decoration:underline">On Android? Get the APK</a></p>
+            <p id="unburied-android-alt" style="margin-top:10px;font-size:.85em"><a href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21m/TheUnburied_v21m.apk" target="_blank" rel="noopener" style="color:#f0b25a;text-decoration:underline">On Android? Get the APK</a></p>
           </div>
           <script>
           (function () {
@@ -807,5 +815,21 @@
   <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
   <script type="module" src="mjolnir.js?v=v130-boot-camp"></script>
+  <script>
+    // Help Pay: banner + button open the Pay sheet (PayPal link is the no-JS fallback)
+    (function () {
+      var links = document.querySelectorAll('.help-pay-open');
+      for (var i = 0; i < links.length; i++) {
+        links[i].addEventListener('click', function (e) {
+          var t = document.getElementById('sheet-toggle');
+          if (!t || !t.offsetParent) return;
+          e.preventDefault();
+          if (!document.body.classList.contains('sheet-open')) t.click();
+          var s = document.getElementById('link-sheet');
+          if (s && s.scrollIntoView) s.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
