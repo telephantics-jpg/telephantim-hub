@@ -1,7 +1,7 @@
 /**
  * Bio page: fixed bg video/image + scrollable quote & links.
  */
-import { BIO } from "./bio-config.js";
+import { BIO } from "./bio-config.js?v=v174-portrait";
 import { PROFILE, SOCIALS, ICONS } from "./links.js";
 import { hydrateSiteContent } from "./load-site.js";
 function $(id) {
@@ -52,7 +52,7 @@ function setVideoBg(url, poster) {
   video.setAttribute("loop", "");
   video.setAttribute("autoplay", "");
   // Cache-bust so phones don't keep a stale Mind-Over-Hell clip
-  const bust = String(url).includes("?") ? url : `${url}?v=v167-caduceus`;
+  const bust = String(url).includes("?") ? url : `${url}?v=v174-portrait`;
   if (poster) video.poster = poster;
   video.src = bust;
   const forceMute = () => {
@@ -101,9 +101,9 @@ function setVideoBg(url, poster) {
   play();
 }
 
-const BIO_BG_VIDEO = "media/bio-bg-caduceus.mp4";
-const BIO_BG_STILL = "media/bio-bg-caduceus.jpg";
-const LEGACY_BIO_BG = /(?:^|\/)bio-bg(?:-grok|-caduceus-red)?\.(?:mp4|jpe?g)$/i;
+const BIO_BG_VIDEO = "media/bio-bg-caduceus-portrait.mp4";
+const BIO_BG_STILL = "media/bio-bg-caduceus-portrait.jpg";
+const LEGACY_BIO_BG = /(?:^|\/)(?:bio-bg(?:-grok|-caduceus(?:-red)?)?|mjolnir_loop_720|mjolnir_bg_poster)\.(?:mp4|jpe?g)$/i;
 
 function isLegacyBioBg(url) {
   const path = String(url || "").split("?")[0];
