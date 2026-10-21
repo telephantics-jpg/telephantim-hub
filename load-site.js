@@ -10,7 +10,7 @@ import {
   SOCIALS,
   ICONS,
 } from "./links.js";
-import { applyBioContent, BIO } from "./bio-config.js?v=v174-portrait";
+import { applyBioContent, BIO } from "./bio-config.js?v=v175-wide";
 
 const LOCAL_URL = "site-content.json";
 
