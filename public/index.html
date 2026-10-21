@@ -67,7 +67,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v171-arcane-skip" />
+  <link rel="stylesheet" href="styles.css?v=v176-daily-top" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
 </head>
 <body class="scene-bio" data-scene="bio">
@@ -107,6 +107,17 @@
     <div class="bio-scrim" aria-hidden="true"></div>
     <div class="bio-scroll">
       <div class="bio-card">
+        <article class="daily-word daily-word-bio" id="daily-word-bio" aria-label="Daily Word">
+          <header class="daily-word-head">
+            <span class="daily-word-kicker">Daily Word</span>
+            <span class="daily-word-meta" data-daily-meta>…</span>
+            <button type="button" class="daily-word-min" id="daily-word-bio-min" aria-expanded="true" title="Minimize Daily Word">−</button>
+          </header>
+          <div class="daily-word-expand">
+            <h2 class="daily-word-title" data-daily-title>Loading…</h2>
+            <p class="daily-word-body" data-daily-body>A new powerful paragraph each day.</p>
+          </div>
+        </article>
         <img id="bio-avatar" class="bio-avatar" alt="" width="88" height="88" />
         <h1 id="bio-name" class="bio-name">Telephantix</h1>
         <p id="bio-handle" class="bio-handle">@telephantix</p>
@@ -408,21 +419,9 @@
           <a class="bio-social-chip ico-truth" href="https://truthsocial.com/@Telephantics" target="_blank" rel="noopener noreferrer" title="Truth Social">T</a>
         </div>
 
-        <!-- Daily Word: new esoteric-true paragraph each calendar day (minimizable) -->
-        <article class="daily-word daily-word-bio" id="daily-word-bio" aria-label="Daily Word">
-          <header class="daily-word-head">
-            <span class="daily-word-kicker">Daily Word</span>
-            <span class="daily-word-meta" data-daily-meta>…</span>
-            <button type="button" class="daily-word-min" id="daily-word-bio-min" aria-expanded="true" title="Minimize Daily Word">−</button>
-          </header>
-          <div class="daily-word-expand">
-            <h2 class="daily-word-title" data-daily-title>Loading…</h2>
-            <p class="daily-word-body" data-daily-body>A new powerful paragraph each day.</p>
-          </div>
-        </article>
-
         <div class="bio-links" id="bio-links" hidden></div>
       </div>
+      <div class="bio-video-peek" aria-hidden="true"></div>
     </div>
   </section>
 
