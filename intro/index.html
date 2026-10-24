@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telephantim</title>
+<meta property="og:title" content="Telephantim"><meta property="og:url" content="https://telephantim.com/intro/"><meta property="og:description" content="Music, games and videos by Telephantix"><meta property="og:image" content="https://telephantim.com/intro/share-card.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image" content="https://telephantim.com/intro/caduceus-loop.gif"><meta property="og:video" content="https://telephantim.com/intro/caduceus-loop.mp4"><meta property="og:video:secure_url" content="https://telephantim.com/intro/caduceus-loop.mp4"><meta property="og:video:type" content="video/mp4"><meta property="og:video:width" content="1080"><meta property="og:video:height" content="1080"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://telephantim.com/intro/share-card.jpg">
+<style>html,body{margin:0;height:100%;background:#080e20;overflow:hidden;font-family:Georgia,serif}
+#gate{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+video{width:min(80vw,80vh);height:auto;border-radius:6px;transition:transform .6s,opacity .6s}
+p{color:#5a82af;letter-spacing:.3em;font-size:14px;margin-top:18px;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}} .go video{transform:scale(1.15);opacity:0;filter:brightness(2) sepia(1)}#fl{position:fixed;inset:0;background:radial-gradient(#d4aa46aa,transparent 60%);opacity:0;pointer-events:none;transition:opacity .25s}.go #fl{opacity:1}</style></head>
+<body><div id="fl"></div><div id="gate"><video src="caduceus-loop.mp4" autoplay muted loop playsinline></video><p>TAP TO ENTER</p></div>
+<script>if(localStorage.seenIntro)location.replace('https://telephantim.com/');
+const g=document.getElementById('gate');let done=false;
+g.onclick=()=>{if(done)return;done=true;try{new Audio('enter.mp3').play().catch(()=>{})}catch(e){}
+localStorage.seenIntro=1;g.querySelector('video').playbackRate=3;g.classList.add('go');setTimeout(()=>location.href='https://telephantim.com/',700)};
+</script></body></html>
