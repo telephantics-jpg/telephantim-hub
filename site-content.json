@@ -177,8 +177,8 @@
   "relics": {
     "title": "Telephantim",
     "hint": "Click a relic for a new phrase · drag to toss · Talk for a duel",
-    "backgroundVideo": "media/bg.mp4",
-    "backgroundImage": "media/bg.jpg",
+    "backgroundVideo": "media/relics_caduceus_loop.mp4",
+    "backgroundImage": "",
     "quote": "Power without healing is a storm that only breaks. Healing without power is a hymn no one can hear. Hold both.",
     "quoteBy": "Telephantim",
     "showQuote": true

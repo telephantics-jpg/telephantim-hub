@@ -43,7 +43,7 @@
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v176-daily-top" />
+  <link rel="stylesheet" href="styles.css?v=v178-steel-music" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
   <style id="guest-views-style">
     .guest-views {
@@ -135,7 +135,30 @@
           <cite id="bio-quote-by"></cite>
         </blockquote>
 
-        <section class="bio-game" aria-label="The Unburied" style="margin:28px auto;max-width:600px;text-align:center;padding:22px 18px;border-radius:14px;background:rgba(10,14,24,.82);border:1px solid #c8662a;box-shadow:0 0 24px rgba(200,102,42,.35);font-size:1.08em;color:#e8e4dc">
+        <!-- newest-video spotlight (local preview) -->
+        <style id="newest-video-style">
+          .nv-wrap{margin:22px auto;max-width:640px;text-align:center;padding:20px 16px;border-radius:14px;background:linear-gradient(160deg,rgba(18,30,58,.92),rgba(42,48,58,.92));border:1px solid #c9a227;box-shadow:0 0 26px rgba(201,162,39,.28),inset 0 0 0 1px rgba(140,26,38,.45);color:#e6e9ef}
+          .nv-tag{display:inline-block;font-size:.72em;letter-spacing:.18em;text-transform:uppercase;color:#f4ecd8;background:#8c1a26;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+          .nv-title{font-size:1.9em;letter-spacing:.06em;margin:4px 0;color:#e2c15a}
+          .nv-line{font-style:italic;margin:0 0 12px;color:#b8c2d0}
+          .nv-wrap video{width:100%;border-radius:10px;display:block;background:#1b2436;border:1px solid #5a6474}
+          .nv-meta{font-size:.85em;color:#9aa6b8;margin-top:8px}
+          .nv-jump{position:fixed;right:16px;bottom:84px;z-index:60;padding:9px 14px;border-radius:999px;border:1px solid #c9a227;background:#14213d;color:#e2c15a;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(20,33,61,.6)}
+          .nv-jump:hover{background:#8c1a26;color:#f4ecd8}
+          .nv-drops{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0 0}
+          .nv-drops span{font-size:.78em;padding:5px 10px;border-radius:8px;background:rgba(58,66,80,.85);border:1px solid #5a6474;color:#d5dbe4}
+          .nv-drops b{color:#e2c15a}
+        </style>
+        <section class="nv-wrap" id="newest-video" aria-label="Newest Video">
+          <span class="nv-tag">Newest Video</span>
+          <h2 class="nv-title">Nobility's Plight</h2>
+          <p class="nv-line">Nobility's plight is to carry the light</p>
+          <video controls playsinline preload="metadata" poster="media/nobilitys_plight_poster.jpg" aria-label="Nobility's Plight music video"><source src="media/nobilitys_plight.mp4" type="video/mp4" /></video>
+          <p class="nv-meta">4:54 &middot; Goku vs Thor &middot; Telephantix</p>
+          <div class="nv-drops" aria-label="Latest drops"><span><b>Video</b> Nobility's Plight</span><span><b>Game</b> The Unburied</span><span><b>Play</b> Arcane Runes</span></div>
+        </section>
+        <button type="button" class="nv-jump" id="nv-jump" onclick="document.getElementById('newest-video').scrollIntoView({behavior:'smooth',block:'center'})">&#9654; Newest Video</button>
+        <section class="bio-game" id="unburied" aria-label="The Unburied" style="margin:28px auto;max-width:600px;text-align:center;padding:22px 18px;border-radius:14px;background:rgba(10,14,24,.82);border:1px solid #c8662a;box-shadow:0 0 24px rgba(200,102,42,.35);font-size:1.08em;color:#e8e4dc">
           <video controls playsinline preload="none" poster="media/unburied_keyart_wide.jpg" aria-label="The Unburied trailer" style="width:100%;border-radius:10px;margin:0 0 12px;display:block;background:#000"><source src="media/unburied_trailer.mp4" type="video/mp4" /></video><div id="unburied-support" style="margin:0 0 16px;text-align:center"><a id="unburied-support-banner" class="help-pay-open" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer" aria-label="Support The Unburied: open Help Pay options" style="display:block"><img src="media/support_banner.png?v=2" alt="Support The Unburied" width="1200" height="220" loading="lazy" style="display:block;width:100%;max-width:100%;height:auto;border-radius:10px" /></a><p style="margin:8px 0 12px;font-size:.88em;font-style:italic;opacity:.85">Built by one guy after long shifts. If it hit, fuel the next build.</p><a id="unburied-help-pay" class="help-pay-btn help-pay-open" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer">HELP PAY</a></div><p class="bio-links-label">New game</p><p style="font-weight:700;letter-spacing:.12em;color:#f0b25a;margin:4px 0;font-size:2em">THE UNBURIED</p><p style="font-style:italic;margin:2px 0 8px">The dead won't stay down. Neither will you.</p><p style="max-width:520px;margin:0 auto 12px;line-height:1.45">A dark action RPG where the graves have opened and the night belongs to the hungry. Carve through endless hordes with steel and spellfire, rally survivors who follow your orders, push past the forest gate into the Rootwood, and climb from a lone survivor to the thing the dead fear.</p>
                     <div id="unburied-dl" style="margin-top:4px">
             <a id="unburied-pc-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/unburied-v21m/TheUnburied_v21m_PC.zip" target="_blank" rel="noopener" style="display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR PC</a>
@@ -182,7 +205,7 @@
           </script>
         </section>
 
-        <section class="bio-latest" aria-label="Videos">
+        <section class="bio-latest" id="bio-latest" aria-label="Videos">
           <p class="bio-links-label">Latest video</p>
           <h2 class="bio-latest-title">SUPER HIGH INTELLIGENCE</h2>
           <p class="bio-video-views"><span data-video-views="super-high-intelligence">—</span> views</p>
@@ -523,7 +546,8 @@
     <video
       id="stage-bg-video"
       class="stage-bg-video"
-      src="media/bg.mp4?v=caduceus-3d"
+      src="media/relics_caduceus_loop.mp4?v=caduceus-3d"
+      poster="media/relics_caduceus_poster.jpg"
       muted
       loop
       playsinline
@@ -810,13 +834,15 @@
   }
   </script>
   <script type="module" src="scenes.js?v=v172-bio-default"></script>
-  <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
+  <script type="module" src="relics-cms.js?v=v124-cad-quotes"></script>
   <script type="module" src="bio.js?v=v175-wide"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
+  <script src="explore.js?v=1-local" defer></script>
   <script type="module" src="music.js?v=v31-vox-first"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
-  <script type="module" src="mjolnir.js?v=v130-boot-camp"></script>
+  <script type="module" src="mjolnir.js?v=v134-relic-duo"></script>
+  <script type="module" src="caduceus-mind.js?v=3-duo"></script>
   <script>
     // Help Pay: banner + button open the Pay sheet (PayPal link is the no-JS fallback)
     (function () {

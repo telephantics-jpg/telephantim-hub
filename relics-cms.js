@@ -14,6 +14,12 @@ let _quoteTimerStarted = false;
 
 function paintRelicsQuote() {
   const relics = _relicsCms || {};
+  if (window.CaduceusQuotes) {
+    // caduceus-mind.js owns the Relics quote (12s rotation + live line)
+    const box = document.getElementById("relics-quote");
+    if (box) { box.dataset.off = relics.showQuote === false ? "1" : ""; box.hidden = relics.showQuote === false; }
+    return;
+  }
   applyRotatingQuote(
     { textId: "relics-quote-text", byId: "relics-quote-by", boxId: "relics-quote" },
     {

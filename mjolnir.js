@@ -81,7 +81,9 @@ if (stageBgVideo) {
   else if ("encoding" in bgTex) bgTex.encoding = THREE.sRGBEncoding;
   bgTex.minFilter = THREE.LinearFilter;
   bgTex.magFilter = THREE.LinearFilter;
-  scene.background = bgTex;
+  // DOM <video> shows behind the transparent canvas (square loop stays centered, not stretched)
+  void bgTex;
+  scene.background = null;
 } else {
   scene.background = new THREE.Color(0x05070c);
 }
@@ -93,7 +95,8 @@ const camera = new THREE.PerspectiveCamera(isMobile() ? 28 : 34, sw0 / sh0, 0.1,
 // Start zoomed out + centered so BOTH relics are on screen
 camera.position.set(0, isMobile() ? 2.55 : 2.35, isMobile() ? 14.2 : 11.2);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: false });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: true });
+renderer.setClearColor(0x000000, 0); // transparent: DOM caduceus video shows behind relics
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(sw0, sh0, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -666,7 +669,9 @@ function updateSparks(dt) {
 
 let composer = null;
 let bloom = { strength: 0.5, setSize() {} };
-if (bloomAvailable) {
+// UnrealBloomPass writes opaque alpha and hides the DOM caduceus video behind the canvas,
+// so skip the composer whenever the stage has a background video.
+if (bloomAvailable && !stageBgVideo) {
   try {
     composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
@@ -1090,6 +1095,7 @@ function onPointerUp(event) {
       window.ArtifactAI?.speakPhrase?.(pid, "toss");
     } else {
       window.ArtifactAI?.speakPhrase?.(pid, "press");
+      window.dispatchEvent(new CustomEvent(pid === "caduceus" ? "caduceus-talk" : "mjolnir-talk"));
     }
   } catch (_) {}
 
@@ -1261,6 +1267,10 @@ function animate() {
   snakeMatA.emissiveIntensity = 0.45 + 0.25 * Math.sin(t * 3) + grab.cadPulse * 0.8;
   snakeMatB.emissiveIntensity = 0.45 + 0.25 * Math.cos(t * 3.2) + grab.cadPulse * 0.8;
   grab.cadPulse = Math.max(0, grab.cadPulse - dt * 1.4);
+  if (window.__caduceusThinking) {
+    grab.cadPulse = Math.max(grab.cadPulse, 0.6 + 0.4 * Math.sin(t * 6));
+    caduceus.rotation.y += dt * 2.4;
+  }
 
   const held = grab.active ? grab.target : null;
 
@@ -1341,6 +1351,10 @@ function animate() {
     0.15 + strikeTime * 1.2 + (grab.active && grab.kind === "hammer" ? 0.4 : 0);
   staffGold.emissiveIntensity =
     0.12 + strikeTime * 1.0 + (grab.active && grab.kind === "caduceus" ? 0.5 : 0);
+  if (window.__mjolnirThinking) {
+    metalGold.emissiveIntensity += 0.6 + 0.4 * Math.sin(t * 9);
+    if (Math.random() < dt * 2.2) strike(hammer);
+  }
   updateSparks(dt);
   const fxAt = held || lastTossed || hammer;
   lightningGroup.position.copy(fxAt.position);
