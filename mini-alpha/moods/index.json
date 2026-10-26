@@ -1,0 +1,17 @@
+{
+  "moods": [
+    "calm",
+    "thinking",
+    "firedup",
+    "wise",
+    "playful"
+  ],
+  "sounds": [
+    "calm",
+    "thinking",
+    "firedup",
+    "wise",
+    "playful"
+  ],
+  "_note": "moods = names with moods/avatars/avatar-<name>.png; sounds = names with moods/<name>.mp3. 'focused' uses the emblem's deep-red rim only until art/sound arrive."
+}

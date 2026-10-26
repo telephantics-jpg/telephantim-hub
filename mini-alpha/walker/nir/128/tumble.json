@@ -1,0 +1,10 @@
+{
+ "state": "tumble",
+ "frames": 24,
+ "width": 128,
+ "height": 128,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "tumble.webp",
+ "sprite": "tumble.png"
+}

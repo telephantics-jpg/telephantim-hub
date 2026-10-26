@@ -1,0 +1,10 @@
+{
+ "state": "hit",
+ "frames": 12,
+ "width": 128,
+ "height": 128,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "hit.webp",
+ "sprite": "hit.png"
+}

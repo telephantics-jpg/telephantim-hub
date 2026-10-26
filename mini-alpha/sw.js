@@ -1,0 +1,18 @@
+// Mini Alpha service worker: caches the app shell (scope /mini-alpha/).
+// WebLLM keeps its own model cache (Cache Storage / IndexedDB), untouched here.
+const SHELL = "mini-alpha-shell-v61";
+const FILES = ["./", "sculpt/sculpt-boot.js", "sculpt/sculpt.js", "sculpt/sculpt.css", "sculpt/vendor/three.module.js", "sculpt/vendor/addons/OrbitControls.js", "sculpt/vendor/addons/TransformControls.js", "sculpt/vendor/addons/GLTFExporter.js", "sculpt/vendor/addons/GLTFLoader.js", "sculpt/vendor/addons/RoomEnvironment.js", "sculpt/vendor/addons/BufferGeometryUtils.js", "sculpt/vendor/addons/TextureUtils.js", "sculpt/vendor/THREE-LICENSE.txt", "index.html", "app.js", "persona.js", "styles.css", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon-180.png", "icons/splash-1080x1920.png", "moods/index.json", "will.js", "studio.js", "beast.js", "bubbles.js", "beast.css", "nav/nav.js", "nav/nav.css", "actions/actions.js", "actions/actions.css", "canvas/scene.js", "bg3d-hook.js", "bg3d/bg3d.js", "walker/walker.js", "walker/walker.css", "dance/dance.js", "dance/dance.css", "walker/helix-128.webp", "walker/helix.webp", "walker/helix-128.gif", "walker/states.json", "walker/128/idle.webp?v=2", "walker/128/spin.webp?v=2", "walker/128/bump.webp", "walker/128/wave.webp", "canvas/brushes.js", "canvas/canvas.css", "canvas/palette.json", "den/den.css", "den/room/room.js", "den/room/room.css", "den/room/slots.json", "den/room/brazier.png", "den/room/brazier@2x.png", "den/room/frame-empty.png", "den/room/frame-empty@2x.png", "den/room/lantern.png", "den/room/lantern@2x.png", "den/room/room-bg.png", "den/room/room-bg@2x.png", "den/room/shelf.png", "den/room/shelf@2x.png", "den/room/objects/alpha-medallion.png", "den/room/objects/alpha-medallion@2x.png", "den/room/objects/crystal.png", "den/room/objects/crystal@2x.png", "den/room/objects/gear.png", "den/room/objects/gear@2x.png", "den/room/objects/map.png", "den/room/objects/map@2x.png", "den/room/objects/notebook.png", "den/room/objects/notebook@2x.png", "den/room/objects/tuning-fork.png", "den/room/objects/tuning-fork@2x.png", "den/door-left.png", "den/door-right.png", "den/seal.png", "den/moodglow.png", "backdrops/backdrops.js", "backdrops/index.json", "emblem.js", "emblem.css", "moods/calm.mp3", "moods/avatars/avatar-calm.png", "moods/thinking.mp3", "moods/avatars/avatar-thinking.png", "moods/firedup.mp3", "moods/avatars/avatar-firedup.png", "moods/wise.mp3", "moods/avatars/avatar-wise.png", "moods/playful.mp3", "moods/avatars/avatar-playful.png"];
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(SHELL).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("mini-alpha-shell") && k !== SHELL).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", (e) => {
+  const u = new URL(e.request.url);
+  if (e.request.method !== "GET" || u.origin !== location.origin || !u.pathname.startsWith("/mini-alpha/")) return;
+  // network first (fresh when online), cache fallback (offline)
+  e.respondWith((e.request.mode === "navigate" ? fetch(e.request.url, { cache: "no-cache" }) : /\/(walker|dance|pets)\/|\.(js|json|css)$/.test(u.pathname) ? fetch(new Request(e.request, { cache: "no-cache" })) : fetch(e.request)).then((r) => {
+    const copy = r.clone(); caches.open(SHELL).then((c) => c.put(e.request, copy)); return r;
+  }).catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match("index.html"))));
+});

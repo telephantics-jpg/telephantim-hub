@@ -51,6 +51,19 @@ export async function hydrateSiteContent() {
   if (!content) return null;
   applySiteContent(content);
   applyBioContent(content.bio || content);
+  // Local bio wins over remote /api/content (site-content.json is the source of truth for the bio).
+  try {
+    const res = await fetch(`${LOCAL_URL}?v=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const local = await res.json();
+      if (local && local.bio) {
+        applyBioContent(local.bio);
+        content.bio = local.bio;
+      }
+    }
+  } catch (err) {
+    console.warn("[site-content] local bio fetch failed", err);
+  }
   return content;
 }
 

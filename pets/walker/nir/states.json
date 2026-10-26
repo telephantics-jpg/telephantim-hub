@@ -1,0 +1,242 @@
+{
+ "core": [
+  "idle",
+  "spin",
+  "bump",
+  "wave"
+ ],
+ "extras": [
+  "walk",
+  "talk",
+  "sleep",
+  "hop",
+  "tumble",
+  "strike",
+  "hit",
+  "win",
+  "dazed"
+ ],
+ "states": {
+  "idle": {
+   "frames": 48,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 8.45,
+   "mean_step_diff": 6.12,
+   "256": {
+    "webp": "256/idle.webp",
+    "sprite": "256/idle.png",
+    "json": "256/idle.json"
+   },
+   "128": {
+    "webp": "128/idle.webp",
+    "sprite": "128/idle.png",
+    "json": "128/idle.json"
+   }
+  },
+  "spin": {
+   "frames": 24,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 11.75,
+   "mean_step_diff": 10.1,
+   "256": {
+    "webp": "256/spin.webp",
+    "sprite": "256/spin.png",
+    "json": "256/spin.json"
+   },
+   "128": {
+    "webp": "128/spin.webp",
+    "sprite": "128/spin.png",
+    "json": "128/spin.json"
+   }
+  },
+  "bump": {
+   "frames": 24,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 29.79,
+   "mean_step_diff": 10.94,
+   "256": {
+    "webp": "256/bump.webp",
+    "sprite": "256/bump.png",
+    "json": "256/bump.json"
+   },
+   "128": {
+    "webp": "128/bump.webp",
+    "sprite": "128/bump.png",
+    "json": "128/bump.json"
+   }
+  },
+  "wave": {
+   "frames": 48,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 11.05,
+   "mean_step_diff": 8.23,
+   "256": {
+    "webp": "256/wave.webp",
+    "sprite": "256/wave.png",
+    "json": "256/wave.json"
+   },
+   "128": {
+    "webp": "128/wave.webp",
+    "sprite": "128/wave.png",
+    "json": "128/wave.json"
+   }
+  },
+  "walk": {
+   "frames": 48,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 10.08,
+   "mean_step_diff": 7.8,
+   "256": {
+    "webp": "256/walk.webp",
+    "sprite": "256/walk.png",
+    "json": "256/walk.json"
+   },
+   "128": {
+    "webp": "128/walk.webp",
+    "sprite": "128/walk.png",
+    "json": "128/walk.json"
+   }
+  },
+  "talk": {
+   "frames": 24,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 10.31,
+   "mean_step_diff": 11.01,
+   "256": {
+    "webp": "256/talk.webp",
+    "sprite": "256/talk.png",
+    "json": "256/talk.json"
+   },
+   "128": {
+    "webp": "128/talk.webp",
+    "sprite": "128/talk.png",
+    "json": "128/talk.json"
+   }
+  },
+  "sleep": {
+   "frames": 48,
+   "fps": 12,
+   "loop": true,
+   "seam_diff": 7.02,
+   "mean_step_diff": 4.38,
+   "256": {
+    "webp": "256/sleep.webp",
+    "sprite": "256/sleep.png",
+    "json": "256/sleep.json"
+   },
+   "128": {
+    "webp": "128/sleep.webp",
+    "sprite": "128/sleep.png",
+    "json": "128/sleep.json"
+   }
+  },
+  "hop": {
+   "frames": 24,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 13.57,
+   "mean_step_diff": 9.77,
+   "256": {
+    "webp": "256/hop.webp",
+    "sprite": "256/hop.png",
+    "json": "256/hop.json"
+   },
+   "128": {
+    "webp": "128/hop.webp",
+    "sprite": "128/hop.png",
+    "json": "128/hop.json"
+   }
+  },
+  "tumble": {
+   "frames": 24,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 16.63,
+   "mean_step_diff": 14.29,
+   "256": {
+    "webp": "256/tumble.webp",
+    "sprite": "256/tumble.png",
+    "json": "256/tumble.json"
+   },
+   "128": {
+    "webp": "128/tumble.webp",
+    "sprite": "128/tumble.png",
+    "json": "128/tumble.json"
+   }
+  },
+  "strike": {
+   "frames": 15,
+   "fps": 24,
+   "loop": false,
+   "seam_diff": 0.0,
+   "mean_step_diff": 27.77,
+   "256": {
+    "webp": "256/strike.webp",
+    "sprite": "256/strike.png",
+    "json": "256/strike.json"
+   },
+   "128": {
+    "webp": "128/strike.webp",
+    "sprite": "128/strike.png",
+    "json": "128/strike.json"
+   }
+  },
+  "hit": {
+   "frames": 12,
+   "fps": 24,
+   "loop": false,
+   "seam_diff": 0.0,
+   "mean_step_diff": 19.51,
+   "256": {
+    "webp": "256/hit.webp",
+    "sprite": "256/hit.png",
+    "json": "256/hit.json"
+   },
+   "128": {
+    "webp": "128/hit.webp",
+    "sprite": "128/hit.png",
+    "json": "128/hit.json"
+   }
+  },
+  "win": {
+   "frames": 24,
+   "fps": 24,
+   "loop": false,
+   "seam_diff": 0.0,
+   "mean_step_diff": 12.15,
+   "256": {
+    "webp": "256/win.webp",
+    "sprite": "256/win.png",
+    "json": "256/win.json"
+   },
+   "128": {
+    "webp": "128/win.webp",
+    "sprite": "128/win.png",
+    "json": "128/win.json"
+   }
+  },
+  "dazed": {
+   "frames": 24,
+   "fps": 24,
+   "loop": true,
+   "seam_diff": 13.91,
+   "mean_step_diff": 8.67,
+   "256": {
+    "webp": "256/dazed.webp",
+    "sprite": "256/dazed.png",
+    "json": "256/dazed.json"
+   },
+   "128": {
+    "webp": "128/dazed.webp",
+    "sprite": "128/dazed.png",
+    "json": "128/dazed.json"
+   }
+  }
+ }
+}

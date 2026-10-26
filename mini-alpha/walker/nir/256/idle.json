@@ -1,0 +1,10 @@
+{
+ "state": "idle",
+ "frames": 48,
+ "width": 256,
+ "height": 256,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "idle.webp",
+ "sprite": "idle.png"
+}

@@ -1,0 +1,31 @@
+.ma-emblem{--s:128px;width:var(--s);height:var(--s);display:inline-block;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ma-emblem svg{width:100%;height:100%;overflow:visible;display:block}
+.ma-emblem *{transform-box:view-box;transform-origin:50% 50%}
+.ma-aura,.ma-runner,.ma-sweep,.ma-shimmer,.ma-ring{opacity:0;transition:opacity .6s}
+/* calm */
+.m-calm .ma-aura{opacity:1;fill:url(#ma-gBlue);animation:ma-pulse 4s ease-in-out infinite}
+/* thinking */
+.m-thinking .ma-streaks{animation:ma-spin 3s linear infinite}
+.m-thinking .ma-runner{opacity:1;animation:ma-spin 1.6s linear infinite}
+/* firedup */
+.m-firedup .ma-aura{opacity:1;fill:url(#ma-gEmber);animation:ma-pulse .9s ease-in-out infinite}
+.m-firedup .ma-alpha{fill:url(#ma-gFlare)}
+.m-firedup .ma-shimmer{opacity:1;animation:ma-shim 1.2s ease-in-out infinite}
+/* wise */
+.m-wise .ma-ring{opacity:.75;animation:ma-spin 40s linear infinite}
+.m-wise .ma-shimmer{opacity:.6;animation:ma-shim 3.5s ease-in-out infinite}
+.m-wise .ma-aura{opacity:.7;fill:url(#ma-gGold);animation:ma-pulse 5s ease-in-out infinite}
+/* playful */
+.m-playful .ma-alphaG{animation:ma-tilt 1.4s ease-in-out infinite}
+.m-playful .ma-glints{opacity:1;animation:ma-twinkle 1.1s ease-in-out infinite}
+.ma-glints{opacity:0}
+/* focused (kept for compatibility) */
+.m-focused .ma-sweep{opacity:1;animation:ma-spin 6s linear infinite}
+.m-focused .ma-rimglow{stroke:#8e1b14;opacity:1}
+.ma-rimglow{opacity:0;transition:opacity .6s}
+@keyframes ma-pulse{0%,100%{transform:scale(.97);opacity:.55}50%{transform:scale(1.04);opacity:1}}
+@keyframes ma-spin{to{transform:rotate(360deg)}}
+@keyframes ma-shim{0%{transform:translateX(-60%) rotate(20deg)}100%{transform:translateX(60%) rotate(20deg)}}
+@keyframes ma-tilt{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(8deg) scale(1.04)}}
+@keyframes ma-twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ma-emblem *{animation:none!important}}

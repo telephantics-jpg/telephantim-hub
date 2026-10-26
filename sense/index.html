@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>4D - The Sense</title>
+<style>
+  html,body{margin:0;height:100%;background:#07111f;color:#c9d3df;overflow:hidden;font-family:ui-sans-serif,system-ui,Segoe UI,sans-serif}
+  #view{position:fixed;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+  .title{position:fixed;left:0;right:0;top:calc(max(4px,env(safe-area-inset-top)) + 48px);text-align:center;pointer-events:none;z-index:2}
+  .title b{display:block;letter-spacing:.38em;font-size:.68rem;color:#c9a227;font-weight:800}
+  .title span{display:block;margin-top:4px;font-size:.72rem;color:#9fb3c8;min-height:1em;letter-spacing:.06em}
+  .dock{position:fixed;left:50%;transform:translateX(-50%);top:calc(max(4px,env(safe-area-inset-top)) + 92px);width:min(560px,calc(100% - 20px));z-index:3;display:flex;flex-direction:column;gap:8px}
+  .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .chips::-webkit-scrollbar{display:none}
+  .chips button{flex:0 0 auto;border:1px solid rgba(156,175,196,.45);background:rgba(18,30,48,.85);color:#d6dee8;border-radius:999px;padding:6px 11px;font:700 .72rem/1 inherit;cursor:pointer}
+  .chips button:hover{border-color:#c9a227;color:#f1d27a}
+  form{display:flex;gap:6px;margin:0}
+  input{flex:1;min-width:0;border-radius:999px;padding:11px 14px;font-size:16px;border:1px solid rgba(201,162,39,.55);background:rgba(10,20,36,.9);color:#eef2f6;outline:none}
+  input:focus{border-color:#e8c860;box-shadow:0 0 0 2px rgba(201,162,39,.25)}
+  input::placeholder{color:#7f93a8}
+  .btn{border-radius:999px;padding:0 15px;font:800 .8rem/1 inherit;cursor:pointer;white-space:nowrap}
+  #go{border:1px solid #c9a227;background:linear-gradient(#2a3d5c,#162740);color:#f1d27a}
+  #rel{border:1px solid rgba(156,175,196,.55);background:rgba(40,48,58,.9);color:#c9d3df}
+  #rel[disabled]{opacity:.45;cursor:default}
+  @media (max-width:420px){.btn{padding:0 11px;font-size:.74rem}}
+</style>
+</head>
+<body>
+<canvas id="view" aria-label="4D hyper-form. Type a word below to reshape it."></canvas>
+<div class="title"><b>THE SENSE</b><span id="status">drag to turn it through the fourth axis</span></div>
+<div class="dock">
+  <form id="f" autocomplete="off">
+    <input id="q" maxlength="40" placeholder="Shape it into... (dragon, heart, anything)" aria-label="What should it become?" />
+    <button class="btn" id="go" type="submit">Shape it</button>
+    <button class="btn" id="rel" type="button" disabled>Release</button>
+  </form>
+  <div class="chips" id="chips"></div>
+</div>
+<script>
+(() => {
+"use strict";
+const cv = document.getElementById("view"), ctx = cv.getContext("2d");
+const statusEl = document.getElementById("status");
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MOBILE = matchMedia("(pointer:coarse)").matches || Math.min(innerWidth, innerHeight) < 600;
+const N = MOBILE ? 2600 : 4200;
+const TAU = Math.PI * 2, R = Math.random;
+const rnd = (a, b) => a + (b - a) * R();
+
+/* palette: navy bg; points ice -> silver -> steel -> gold -> ember -> deep red */
+const PAL = [[150,205,235],[205,214,224],[120,145,170],[201,162,39],[232,120,48],[150,28,32]];
+function palColor(t){ t=Math.max(0,Math.min(.999,t))*(PAL.length-1); const i=t|0,f=t-i,a=PAL[i],b=PAL[i+1]; return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f]; }
+
+/* ---------- shape builders: return Float32Array of N*4 (x,y,z,w), roughly in [-1,1] ---------- */
+function make(fn){ const a=new Float32Array(N*4); for(let i=0;i<N;i++){ const p=fn(i,i/N); a[i*4]=p[0];a[i*4+1]=p[1];a[i*4+2]=p[2];a[i*4+3]=p[3]===undefined?0.25*Math.sin(p[0]*2+p[1]*3):p[3]; } return a; }
+function sph(){ const u=rnd(-1,1),t=R()*TAU,s=Math.sqrt(1-u*u); return [s*Math.cos(t),u,s*Math.sin(t)]; }
+function onSeg(a,b){ const t=R(); return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]; }
+function jit(p,j){ return [p[0]+rnd(-j,j),p[1]+rnd(-j,j),p[2]+rnd(-j,j),p[3]]; }
+function boxPt(cx,cy,cz,sx,sy,sz){ // surface of box
+  const f=(R()*6)|0, u=rnd(-1,1), v=rnd(-1,1); let p;
+  if(f<2)p=[f?1:-1,u,v]; else if(f<4)p=[u,f==3?1:-1,v]; else p=[u,v,f==5?1:-1];
+  return [cx+p[0]*sx,cy+p[1]*sy,cz+p[2]*sz]; }
+function poly2D(pts){ // sample inside 2D polygon by rejection, return [x,y]
+  let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9; for(const p of pts){mnx=Math.min(mnx,p[0]);mxx=Math.max(mxx,p[0]);mny=Math.min(mny,p[1]);mxy=Math.max(mxy,p[1]);}
+  for(let k=0;k<200;k++){ const x=rnd(mnx,mxx),y=rnd(mny,mxy); let c=false; for(let i=0,j=pts.length-1;i<pts.length;j=i++){ const a=pts[i],b=pts[j]; if(((a[1]>y)!=(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))c=!c; } if(c)return [x,y]; }
+  return pts[0]; }
+const starPoly=(n,ro,ri)=>{const p=[];for(let i=0;i<n*2;i++){const r=i%2?ri:ro,a=-Math.PI/2+i*Math.PI/n;p.push([Math.cos(a)*r,Math.sin(a)*r]);}return p;};
+const STAR=starPoly(5,1,.42), BOLT=[[.15,-1],[-.45,.1],[-.05,.1],[-.25,1],[.5,-.2],[.08,-.2],[.35,-1]];
+
+const HEART=[]; for(let i=0;i<64;i++){const a=i/64*TAU; HEART.push([16*Math.pow(Math.sin(a),3)/17,-(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))/17+.1]);}
+const TESS=[]; for(let i=0;i<16;i++)TESS.push([(i&1)?1:-1,(i&2)?1:-1,(i&4)?1:-1,(i&8)?1:-1]);
+const TEDGE=[]; for(let i=0;i<16;i++)for(let b=0;b<4;b++){const j=i^(1<<b); if(j>i)TEDGE.push([i,j]);}
+
+const SHAPES = {
+  hyper: (i,t)=>{ // tesseract wireframe + clifford torus veil
+    if(t<.62){ const e=TEDGE[i%TEDGE.length],a=TESS[e[0]],b=TESS[e[1]],s=R(); return [0,1,2,3].map(k=>(a[k]+(b[k]-a[k])*s)*.62); }
+    const u=R()*TAU,v=R()*TAU,r=.72; return [r*Math.cos(u),r*Math.sin(u),r*Math.cos(v),r*Math.sin(v)]; },
+  heart: ()=>{ const p=poly2D(HEART); const r=Math.hypot(p[0],p[1]+.1); const th=Math.max(.04,.36*(1-r*.8)); return [p[0],p[1],rnd(-th,th)]; },
+  star: ()=>{ const p=R()<.7?poly2D(STAR):onSeg([...STAR[(R()*10)|0],0],[0,0,0]); return [p[0],p[1],rnd(-.12,.12)]; },
+  sphere: ()=>sph().map(v=>v*.85),
+  planet: (i,t)=>{ if(t<.62)return sph().map(v=>v*.6); const a=R()*TAU,r=rnd(.82,1.15); return [Math.cos(a)*r,Math.sin(a)*r*.22,Math.sin(a)*r*.9*.0+Math.sin(a)*r*.25, .1]; },
+  moon: ()=>{ for(;;){const p=sph(); if((p[0]-.45)**2+p[1]**2+p[2]**2>.75) return p.map(v=>v*.85);} },
+  sun: (i,t)=>{ if(t<.55)return sph().map(v=>v*.5); const d=sph(),r=rnd(.55,1.05); return [d[0]*r,d[1]*r,d[2]*r*.3]; },
+  torus: ()=>{ const u=R()*TAU,v=R()*TAU; return [(.65+.28*Math.cos(v))*Math.cos(u),.28*Math.sin(v),(.65+.28*Math.cos(v))*Math.sin(u)]; },
+  ring: ()=>{ const u=R()*TAU,v=R()*TAU; return [(.8+.08*Math.cos(v))*Math.cos(u),(.8+.08*Math.cos(v))*Math.sin(u),.08*Math.sin(v)]; },
+  spiral: ()=>{ const t=Math.sqrt(R()),a=t*TAU*3.2; return [Math.cos(a)*t*.95,Math.sin(a)*t*.95,rnd(-.05,.05)+(t-.5)*.3]; },
+  galaxy: (i)=>{ const arm=i%3,t=Math.pow(R(),.7),a=t*TAU*1.4+arm*TAU/3; const s=.06+.12*(1-t); return [Math.cos(a)*t+rnd(-s,s),rnd(-.05,.05)*(1.5-t),Math.sin(a)*t+rnd(-s,s)]; },
+  helix: (i)=>{ const y=rnd(-1,1),a=y*TAU*1.6+(i%2)*Math.PI; if(R()<.18){const b=Math.round(y*10)/10,aa=b*TAU*1.6,s=rnd(-1,1); return [Math.cos(aa)*.4*s,b,Math.sin(aa)*.4*s];} return jit([Math.cos(a)*.4,y,Math.sin(a)*.4],.025); },
+  pyramid: ()=>{ const v=[[0,-.85,0],[-.8,.6,-.8],[.8,.6,-.8],[.8,.6,.8],[-.8,.6,.8]];
+    if(R()<.35){const e=[[0,1],[0,2],[0,3],[0,4],[1,2],[2,3],[3,4],[4,1]][(R()*8)|0];return onSeg(v[e[0]],v[e[1]]);}
+    const f=(R()*4)|0,a=v[0],b=v[1+f],c=v[1+(f+1)%4]; let s=R(),q=R(); if(s+q>1){s=1-s;q=1-q;} return [a[0]+(b[0]-a[0])*s+(c[0]-a[0])*q,a[1]+(b[1]-a[1])*s+(c[1]-a[1])*q,a[2]+(b[2]-a[2])*s+(c[2]-a[2])*q]; },
+  cube: ()=>boxPt(0,0,0,.6,.6,.6),
+  diamond: ()=>{ const d=sph(); const s=Math.abs(d[0])+Math.abs(d[1])*.75+Math.abs(d[2]); return [d[0]/s*.8,d[1]/s*.8*1.3,d[2]/s*.8]; },
+  mjolnir: (i,t)=>{ if(t<.62)return boxPt(0,-.45,0,.62,.32,.34); const y=rnd(-.13,.95),a=R()*TAU,r=y>.85?.11:.07; return [Math.cos(a)*r,y,Math.sin(a)*r]; },
+  tree: (i,t)=>{ if(t<.12){const a=R()*TAU;return [Math.cos(a)*.09,rnd(.55,1),Math.sin(a)*.09];}
+    const tier=(R()*3)|0,h=R(),top=-.95+tier*.38,r=h*(.45+tier*.18),a=R()*TAU; return [Math.cos(a)*r*Math.sqrt(R()*.3+.7),top+h*.6,Math.sin(a)*r]; },
+  eye: (i,t)=>{ if(t<.45){const a=R()*TAU,x=Math.cos(a); return [x*.95,Math.sin(a)*.42*(1-x*x*.0)*Math.sqrt(1-x*x)*1.4/1.4,0];}
+    if(t<.8){const a=R()*TAU,r=Math.sqrt(R())*.36; return [Math.cos(a)*r,Math.sin(a)*r,-.05];} const a=R()*TAU,r=Math.sqrt(R())*.14; return [Math.cos(a)*r,Math.sin(a)*r,-.1]; },
+  wave: ()=>{ const x=rnd(-1,1),z=rnd(-1,1); return [x,.25*Math.sin(x*5+z*2)*Math.cos(z*3)+.1,z, .3*Math.cos(x*4)]; },
+  cone: ()=>{ const h=Math.sqrt(R()),a=R()*TAU; return [Math.cos(a)*h*.6,-.9+h*1.7,Math.sin(a)*h*.6]; },
+  cylinder: ()=>{ const a=R()*TAU; return [Math.cos(a)*.5,rnd(-.85,.85),Math.sin(a)*.5]; },
+  infinity: ()=>{ const t=R()*TAU,d=1+Math.sin(t)**2,v=R()*TAU; const x=Math.cos(t)/d,y=Math.sin(t)*Math.cos(t)/d; return [x*.95+Math.cos(v)*.06,y*.95+Math.sin(v)*.06,Math.sin(v)*.08]; },
+  knot: ()=>{ const t=R()*TAU; return jit([(Math.sin(t)+2*Math.sin(2*t))*.3,(Math.cos(t)-2*Math.cos(2*t))*.3,-Math.sin(3*t)*.3],.05); },
+  mobius: ()=>{ const u=R()*TAU,v=rnd(-.3,.3); return [(.7+v*Math.cos(u/2))*Math.cos(u),(.7+v*Math.cos(u/2))*Math.sin(u),v*Math.sin(u/2)]; },
+  flower: (i,t)=>{ if(t<.1){return [rnd(-.02,.02),rnd(.1,1),0];} const a=R()*TAU,r=Math.abs(Math.cos(3*a))*.75*Math.sqrt(R()); return [Math.cos(a)*r,Math.sin(a)*r*.9-.25,rnd(-.04,.04)]; },
+  shell: ()=>{ const t=R()*TAU*2.2,v=R()*TAU,k=Math.exp(.13*t)*.12; return [k*Math.cos(t)*(1+Math.cos(v)),k*Math.sin(t)*(1+Math.cos(v)),k*Math.sin(v)*1.4-.3]; },
+  lightning: ()=>{ const p=poly2D(BOLT); return [p[0],p[1],rnd(-.1,.1)]; },
+  caduceus: (i,t)=>{ if(t<.15)return [rnd(-.03,.03),rnd(-.9,1),rnd(-.03,.03)]; if(t<.3){const a=R()*Math.PI,s=R()<.5?1:-1;return [s*Math.cos(a)*.7*R(),-.9+Math.sin(a)*.25*R()-.05,0];}
+    const y=rnd(-.7,1),a=y*TAU*1.25+(i%2)*Math.PI; return jit([Math.sin(a)*.3,y,Math.cos(a)*.15],.03); },
+  hourglass: ()=>{ const y=rnd(-1,1),a=R()*TAU,r=.08+Math.abs(y)*.6; return [Math.cos(a)*r,y*.9,Math.sin(a)*r]; },
+  crown: ()=>{ const a=R()*TAU,h=R()*(.35+.35*Math.max(0,Math.cos(a*5))); return [Math.cos(a)*.7,.3-h,Math.sin(a)*.7]; },
+  arrow: ()=>{ const p=poly2D([[-1,-.12],[.35,-.12],[.35,-.4],[1,0],[.35,.4],[.35,.12],[-1,.12]]); return [p[0],p[1],rnd(-.08,.08)]; },
+};
+SHAPES.tesseract = SHAPES.hyper;
+const WORDS = { // synonyms -> shape key
+  heart:"heart,love,valentine,hearts", star:"star,stars,starfish", sphere:"sphere,ball,orb,globe,circle", planet:"planet,saturn,world,jupiter",
+  moon:"moon,crescent,luna", sun:"sun,sol,solar,sunburst", torus:"torus,donut,doughnut,bagel", ring:"ring,halo,hoop,loop",
+  spiral:"spiral,swirl,vortex,whirlpool,coil", galaxy:"galaxy,milky way,nebula,cosmos,universe", helix:"helix,dna,double helix,gene",
+  pyramid:"pyramid,triangle,egypt,tetrahedron", cube:"cube,box,block,square", diamond:"diamond,gem,crystal,jewel,octahedron",
+  mjolnir:"mjolnir,mjölnir,hammer,thor,thor's hammer", tree:"tree,pine,forest,christmas tree,fir", eye:"eye,eyes,seer,vision,sight",
+  wave:"wave,waves,ocean,sea,water,surf,ripple", cone:"cone,cone shape", cylinder:"cylinder,tube,pillar,column,can",
+  infinity:"infinity,infinite,forever,eternity", knot:"knot,trefoil,tangle", mobius:"mobius,möbius,strip,band", flower:"flower,rose,bloom,petal,lotus",
+  shell:"shell,seashell,snail,nautilus", lightning:"lightning,bolt,thunder,zap,electric,voltage", caduceus:"caduceus,staff,hermes,serpent staff",
+  hourglass:"hourglass,time,sand timer", crown:"crown,king,queen,royal", arrow:"arrow,pointer", tesseract:"tesseract,hypercube,4d,hyper,hyper-form"
+};
+const SYN={}; for(const k in WORDS) for(const w of WORDS[k].split(",")) SYN[w.trim()]=k;
+const EMOJI = {dragon:"🐉",skull:"💀",skeleton:"💀",dog:"🐶",cat:"🐱",wolf:"🐺",lion:"🦁",tiger:"🐯",horse:"🐴",unicorn:"🦄",bird:"🐦",eagle:"🦅",owl:"🦉",
+  fish:"🐟",shark:"🦈",whale:"🐋",dolphin:"🐬",octopus:"🐙",snake:"🐍",turtle:"🐢",frog:"🐸",spider:"🕷️",butterfly:"🦋",bee:"🐝",bug:"🐛",
+  elephant:"🐘",monkey:"🐒",bear:"🐻",rabbit:"🐇",bunny:"🐇",mouse:"🐭",pig:"🐷",cow:"🐮",dinosaur:"🦖",trex:"🦖","t-rex":"🦖",crab:"🦀",
+  banana:"🍌",apple:"🍎",pizza:"🍕",burger:"🍔",cake:"🎂",coffee:"☕",cherry:"🍒",grapes:"🍇",lemon:"🍋",pineapple:"🍍",carrot:"🥕",mushroom:"🍄",
+  fire:"🔥",flame:"🔥",snowflake:"❄️",snow:"❄️",cloud:"☁️",rain:"🌧️",rainbow:"🌈",tornado:"🌪️",volcano:"🌋",mountain:"⛰️",cactus:"🌵",leaf:"🍃",
+  rocket:"🚀",car:"🚗",plane:"✈️",airplane:"✈️",ship:"🚢",boat:"⛵",bike:"🚲",train:"🚂",ufo:"🛸",robot:"🤖",alien:"👽",ghost:"👻",
+  sword:"🗡️",dagger:"🗡️",shield:"🛡️",bow:"🏹",key:"🔑",lock:"🔒",bell:"🔔",guitar:"🎸",music:"🎵",note:"🎵",drum:"🥁",headphones:"🎧",
+  house:"🏠",home:"🏠",castle:"🏰",church:"⛪",bridge:"🌉",anchor:"⚓",bomb:"💣",gift:"🎁",trophy:"🏆",medal:"🏅",clock:"🕰️",watch:"⌚",
+  phone:"📱",computer:"💻",camera:"📷",book:"📖",pencil:"✏️",scissors:"✂️",umbrella:"☂️",glasses:"👓",hat:"🎩",shoe:"👟",
+  hand:"✋",fist:"✊",peace:"✌️",thumbs:"👍",brain:"🧠",tooth:"🦷",bone:"🦴",smile:"😀",face:"🙂",angel:"😇",devil:"😈",clown:"🤡",
+  wizard:"🧙",mage:"🧙",ninja:"🥷",vampire:"🧛",zombie:"🧟",mermaid:"🧜",fairy:"🧚",crystal_ball:"🔮",dice:"🎲",chess:"♟️",football:"🏈",
+  soccer:"⚽",basketball:"🏀",earth:"🌍",atom:"⚛️",yin:"☯️",yinyang:"☯️",check:"✔️",question:"❓",peacock:"🦚",feather:"🪶",phoenix:"🐦‍🔥"};
+
+/* fallback: render emoji (or the word) to an offscreen canvas and sample lit pixels */
+function sampleGlyph(txt, isEmoji){
+  const S=180, oc=document.createElement("canvas"); oc.width=oc.height=S; const o=oc.getContext("2d",{willReadFrequently:true});
+  o.textAlign="center"; o.textBaseline="middle"; o.fillStyle="#fff";
+  if(isEmoji){ o.font=`${S*.78}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; o.fillText(txt,S/2,S/2+S*.04); }
+  else { let fs=S*.5; o.font=`900 ${fs}px Georgia,serif`; while(o.measureText(txt).width>S*.94&&fs>14){fs-=4;o.font=`900 ${fs}px Georgia,serif`;} o.fillText(txt,S/2,S/2); }
+  const d=o.getImageData(0,0,S,S).data, lit=[];
+  for(let y=0;y<S;y+=1)for(let x=0;x<S;x+=1){const k=(y*S+x)*4; if(d[k+3]>110) lit.push(x,y,(d[k]*.3+d[k+1]*.59+d[k+2]*.11)/255);}
+  if(lit.length<30) return null;
+  const n=lit.length/3;
+  return make(()=>{ const j=((R()*n)|0)*3, lum=lit[j+2]; const x=(lit[j]-S/2)/(S/2)+rnd(-.006,.006), y=(lit[j+1]-S/2)/(S/2)+rnd(-.006,.006);
+    return [x*1.05,y*1.05,(lum-.5)*.35+rnd(-.05,.05),(lum-.5)*.8]; });
+}
+function emojiSupported(e){ const c=document.createElement("canvas");c.width=c.height=24;const o=c.getContext("2d");o.font='20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';o.fillText(e,0,20);const d=o.getImageData(0,0,24,24).data;for(let i=3;i<d.length;i+=4)if(d[i]>0)return true;return false; }
+function resolve(raw){
+  const q=raw.trim().toLowerCase().replace(/[.!?]+$/,"").replace(/^(a|an|the|make it|make|turn into|become|into)\s+/,"").trim();
+  if(!q) return null;
+  if(/\p{Extended_Pictographic}/u.test(raw)) { const g=sampleGlyph(raw.trim(),true); if(g) return {pts:g,label:raw.trim()}; }
+  const tryKey=w=>{ if(SYN[w]) return {pts:make((i,t)=>SHAPES[SYN[w]](i,t)),label:SYN[w]==="tesseract"?"tesseract":w};
+    if(EMOJI[w]&&emojiSupported(EMOJI[w])){const g=sampleGlyph(EMOJI[w],true); if(g) return {pts:g,label:w};} return null; };
+  let r=tryKey(q)||tryKey(q.replace(/s$/,""))||tryKey(q.replace(/es$/,""));
+  if(!r) for(const w of q.split(/[\s,-]+/).reverse()){ r=tryKey(w)||tryKey(w.replace(/s$/,"")); if(r) break; }
+  if(!r){ const g=sampleGlyph(raw.trim().slice(0,14),false); if(g) r={pts:g,label:"“"+raw.trim().slice(0,14)+"”"}; }
+  return r;
+}
+
+/* ---------- state ---------- */
+const HYPER = make((i,t)=>SHAPES.hyper(i,t));
+let cur = new Float32Array(HYPER), from = new Float32Array(HYPER), to = HYPER;
+const seed = new Float32Array(N); for(let i=0;i<N;i++) seed[i]=R();
+let mT=1, mDur=RM?450:1750, shaped=false, fade=1, swapPending=null;
+let ang={xw:0,yw:0,zw:0,xy:0,yaw:0}, drag=null, spinV=0, form=0; // form: 0 hyper motion, 1 shape motion (blended)
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+
+function morphTo(pts,label,isHyper){
+  if(RM){ swapPending={pts,label,isHyper}; mT=0; return; }
+  from.set(cur); to=pts; mT=0; shaped=!isHyper;
+  statusEl.textContent = isHyper ? "released to the hyper-form" : "becoming "+label;
+  setTimeout(()=>{ if(!isHyper) statusEl.textContent=label+" (drag to turn it)"; }, mDur);
+}
+function release(){ morphTo(HYPER,"",true); relBtn.disabled=true; }
+
+/* ---------- render ---------- */
+let W=0,H=0,DPR=1;
+function resize(){ DPR=Math.min(devicePixelRatio||1,MOBILE?1.5:2); W=innerWidth;H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; }
+addEventListener("resize",resize); resize();
+const proj=new Float32Array(N*4); // sx,sy,depth,size
+const order=new Uint16Array(N); for(let i=0;i<N;i++)order[i]=i;
+let last=performance.now(), visible=true;
+document.addEventListener("visibilitychange",()=>{visible=!document.hidden; if(visible){last=performance.now();requestAnimationFrame(frame);}});
+
+function frame(now){
+  if(!visible) return;
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  // morph progress
+  if(mT<1){ mT=Math.min(1,mT+dt*1000/mDur);
+    if(RM){ if(swapPending&&mT>=.5){ cur.set(swapPending.pts); to=swapPending.pts; shaped=!swapPending.isHyper; statusEl.textContent=swapPending.isHyper?"released to the hyper-form":swapPending.label; swapPending=null; } fade=Math.abs(1-2*mT); }
+    else { for(let i=0;i<N;i++){ const d=seed[i]*.35, k=ease(Math.max(0,Math.min(1,(mT-d*.5)/(1-.35*.5)))); const o=i*4;
+      // swirl bulge mid-morph through w
+      const bul=Math.sin(k*Math.PI)*.35*(seed[i]-.5);
+      cur[o]=from[o]+(to[o]-from[o])*k; cur[o+1]=from[o+1]+(to[o+1]-from[o+1])*k; cur[o+2]=from[o+2]+(to[o+2]-from[o+2])*k+bul; cur[o+3]=from[o+3]+(to[o+3]-from[o+3])*k+bul; } }
+  } else fade=1;
+  // motion: hyper-form spins freely through 4D; shapes sway through 4D so they stay readable
+  const sp=RM?.15:1; form+=((shaped?1:0)-form)*Math.min(1,dt*2.5);
+  if(!drag){ ang.yaw+=(spinV+(.22*(1-form)))*dt*sp; spinV*=.96; }
+  const tt=now/1000*sp;
+  const xw=(1-form)*(tt*.31)+form*Math.sin(tt*.7)*.55, yw=(1-form)*(tt*.23)+form*Math.sin(tt*.53+1)*.4, zw=(1-form)*(tt*.17)+form*Math.sin(tt*.41+2)*.5;
+  const yaw=ang.yaw*(1-form)+form*(Math.sin(tt*.45)*.55+ang.yaw*0)+ (form>0?form*dragYaw:0), pitch=ang.pitch||0;
+  const c1=Math.cos(xw),s1=Math.sin(xw),c2=Math.cos(yw),s2=Math.sin(yw),c3=Math.cos(zw),s3=Math.sin(zw),cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),spp=Math.sin(pitch);
+  const scale=Math.min(W,H*.92)*(MOBILE?.44:.33), cx=W/2, cyy=H*.56;
+  for(let i=0;i<N;i++){ const o=i*4; let x=cur[o],y=cur[o+1],z=cur[o+2],w=cur[o+3],t;
+    t=x*c1-w*s1; w=x*s1+w*c1; x=t; t=y*c2-w*s2; w=y*s2+w*c2; y=t; t=z*c3-w*s3; w=z*s3+w*c3; z=t;
+    const k4=1.6/(2.4-w); x*=k4;y*=k4;z*=k4; // 4D -> 3D perspective
+    t=x*cy+z*sy; z=-x*sy+z*cy; x=t; t=y*cp-z*spp; z=y*spp+z*cp; y=t;
+    const k3=3/(3.6+z);
+    proj[o]=cx+x*k3*scale; proj[o+1]=cyy+y*k3*scale; proj[o+2]=z; proj[o+3]=w; }
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const g=ctx.createRadialGradient(cx,cyy,10,cx,cyy,Math.max(W,H)*.7); g.addColorStop(0,"#13243d"); g.addColorStop(1,"#060d18");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation="lighter";
+  const sz=MOBILE?1.7:1.6;
+  for(let i=0;i<N;i++){ const o=i*4, z=proj[o+2], w=proj[o+3];
+    const depth=Math.max(0,Math.min(1,(1.4-z)/2.8)); const c=palColor(.5-w*.55+ (seed[i]-.5)*.12);
+    const a=(.25+.65*depth)*fade; ctx.fillStyle=`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a.toFixed(3)})`;
+    const s=sz*(.6+depth*.9); ctx.fillRect(proj[o]-s/2,proj[o+1]-s/2,s,s); }
+  ctx.globalCompositeOperation="source-over";
+  requestAnimationFrame(frame);
+}
+let dragYaw=0;
+cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);});
+cv.addEventListener("pointermove",e=>{ if(!drag)return; const dx=e.clientX-drag.x,dy=e.clientY-drag.y; drag={x:e.clientX,y:e.clientY};
+  ang.yaw+=dx*.008; dragYaw+=dx*.008; ang.pitch=Math.max(-1,Math.min(1,(ang.pitch||0)+dy*.006)); spinV=dx*.05; });
+const end=()=>{drag=null;}; cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end);
+
+/* ---------- UI ---------- */
+const q=document.getElementById("q"), relBtn=document.getElementById("rel");
+document.getElementById("f").addEventListener("submit",e=>{ e.preventDefault(); const v=q.value; if(!v.trim())return;
+  const r=resolve(v); if(!r){statusEl.textContent="couldn't read that one, try another word";return;}
+  morphTo(r.pts,r.label,false); relBtn.disabled=false; q.blur(); });
+relBtn.addEventListener("click",release);
+const chips=document.getElementById("chips");
+["dragon","heart","Mjolnir","galaxy","skull","tree","eye","planet","lightning","wave","spiral","caduceus"].forEach(w=>{ const b=document.createElement("button"); b.type="button"; b.textContent=w;
+  b.onclick=()=>{ q.value=w; document.getElementById("go").click(); }; chips.appendChild(b); });
+// deep link: ?shape=dragon
+try{ const s=new URLSearchParams(location.search).get("shape"); if(s){ q.value=s; setTimeout(()=>document.getElementById("go").click(),300);} }catch(_){}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -113,7 +113,7 @@ const SCENES = {
     label: "4D — The Sense",
     short: "4D",
     hint: "Interactable 4D field",
-    urlKey: "sense",
+    url: "/sense/?v=4d-morph-3", // local morphing 4D page (was external telephanti.com/sense)
     mode: "external",
   },
   loft: {
@@ -269,7 +269,7 @@ function sceneUrlKeyRewrite(sceneId) {
   if (sceneId === "loft") return "/voltage-loft/";
   const base = lunaCampBase().replace(/\/$/, "");
   if (sceneId === "luna-3d") return `${base}/firmament/3d?hub=1`;
-  if (sceneId === "sense") return `${base}/sense`;
+  if (sceneId === "sense") return "/sense/?v=4d-morph-3";
   return `${base}/firmament/play?hub=1`;
 }
 

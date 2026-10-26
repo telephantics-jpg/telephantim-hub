@@ -275,6 +275,11 @@ function ensureBooth(audio) {
   if (isIOS() || isMobileRadio()) return null;
   if (!audio || typeof AudioContext === "undefined") return null;
   if (boothNodes.has(audio)) return boothNodes.get(audio);
+  // Never route a non-CORS cross-origin stream: Chrome would output pure silence
+  try {
+    const u = new URL(audio.currentSrc || audio.src || location.href, location.href);
+    if (u.origin !== location.origin && audio.crossOrigin !== "anonymous") return null;
+  } catch (_) {}
   try {
     if (!boothCtx) boothCtx = new AudioContext();
     boothCtx.resume?.();
@@ -468,9 +473,7 @@ function isHostedRadioUrl(url) {
 
 function hostedMp3Url(id) {
   const clip = encodeURIComponent(id);
-  if (isLocalHub()) {
-    return `/radio-mp3/${clip}.mp3`;
-  }
+  // Local + live: telephanti.com proxy (CORS *, audio/mpeg). /radio-mp3/ is not in this repo.
   // Luna proxy sets audio/mpeg — GitHub's octet-stream fails on iPhone
   return `https://telephanti.com/radio-mp3/${clip}.mp3`;
 }
@@ -1009,6 +1012,8 @@ function prepAudioElement(audio) {
     audio.playsInline = true;
     // Keep decoding friendly for long sessions
     audio.preload = "auto";
+    // CORS mode so WebAudio (DJ booth / crossfade) is never silent; telephanti.com sends ACAO *
+    if (!boothNodes.has(audio)) audio.crossOrigin = "anonymous";
     try {
       audio.setAttribute("x-webkit-airplay", "allow");
     } catch (_) {}
@@ -2139,8 +2144,9 @@ function wire() {
         const local = `/radio-mp3/${id}.mp3`;
         const gh = `${RADIO_MP3_BASE}/${id}.mp3`;
         const src = String(audio.currentSrc || audio.src || cur.url || "");
-        if (/radio-mp3/i.test(src) && !cur._triedGh) {
+        if (/radio-mp3/i.test(src) && !cur._triedGh && !boothNodes.has(audio)) {
           cur._triedGh = true;
+          audio.removeAttribute("crossorigin"); // GitHub sends no CORS header
           cur.url = gh;
           audio.src = gh;
           audio.play().catch(() => {});

@@ -1,0 +1,10 @@
+{
+ "state": "hop",
+ "frames": 24,
+ "width": 256,
+ "height": 256,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "hop.webp",
+ "sprite": "hop.png"
+}

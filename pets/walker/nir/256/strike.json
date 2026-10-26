@@ -1,0 +1,10 @@
+{
+ "state": "strike",
+ "frames": 15,
+ "width": 256,
+ "height": 256,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "strike.webp",
+ "sprite": "strike.png"
+}

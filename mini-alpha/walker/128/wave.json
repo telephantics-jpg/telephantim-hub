@@ -1,0 +1,10 @@
+{
+ "state": "wave",
+ "frames": 48,
+ "width": 128,
+ "height": 128,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "wave.webp",
+ "sprite": "wave.png"
+}

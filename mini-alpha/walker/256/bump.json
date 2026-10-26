@@ -1,0 +1,10 @@
+{
+ "state": "bump",
+ "frames": 24,
+ "width": 256,
+ "height": 256,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "bump.webp",
+ "sprite": "bump.png"
+}

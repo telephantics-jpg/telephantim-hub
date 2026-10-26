@@ -1,0 +1,19 @@
+#tp-pets-btn{position:fixed;z-index:134;display:flex;align-items:center;gap:6px;min-height:48px;padding:.5rem .95rem;border-radius:999px;font-weight:900;font-size:.85rem;letter-spacing:.02em;
+ border:2px solid rgba(142,155,176,.9);color:#e6ebf2;background:linear-gradient(135deg,#0b1a33 0%,#1b2a45 55%,#3a4a5e 100%);box-shadow:0 10px 28px rgba(11,26,51,.6);cursor:pointer;touch-action:manipulation;transition:box-shadow .2s,border-color .2s}
+#tp-pets-btn:hover{filter:brightness(1.08)}
+#tp-pets-btn.on{border-color:rgba(212,166,58,.95);color:#f4d782;box-shadow:0 0 18px rgba(212,166,58,.4),0 10px 28px rgba(11,26,51,.6)}
+@media (max-width:640px){#tp-pets-btn{min-height:44px;padding:.45rem .7rem}#tp-pets-btn .tp-pl{display:none}}
+html.tp-pets .mw-ctl,html.tp-pets #mw-listen,html.tp-pets #mw-tiltchip:not(.denied){display:none!important}
+#tp-pets-mode{position:fixed;z-index:134;min-height:30px;padding:.3rem .7rem;border-radius:999px;font-weight:800;font-size:.72rem;letter-spacing:.03em;border:1.5px solid rgba(212,166,58,.75);color:#f4d782;background:rgba(11,26,51,.9);box-shadow:0 6px 16px rgba(11,26,51,.5);cursor:pointer}
+#tp-pets-btn .tp-face{display:block;width:28px;height:28px;flex:0 0 28px;border-radius:50%}
+#tp-pets-btn .tp-f{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:0;opacity:0;transition:opacity .8s ease}
+#tp-pets-btn .tp-f.on{opacity:1}
+#tp-pets-btn .tp-f img{width:24px;height:24px;border-radius:50%;box-shadow:0 0 0 1px rgba(212,166,58,.6)}
+#tp-pets-btn .tp-f[data-f=both] img{width:20px;height:20px}
+#tp-pets-btn .tp-f[data-f=both] img+img{margin-left:-6px}
+#tp-pets-btn .tp-pl{min-width:3.6em;text-align:left}
+#tp-pets-tip{position:fixed;z-index:135;width:260px;padding:8px 12px;border-radius:12px;border:1px solid rgba(212,166,58,.7);background:rgba(11,26,51,.95);color:#e6ebf2;font:600 12.5px/1.35 system-ui,sans-serif;box-shadow:0 8px 20px rgba(11,26,51,.55);opacity:0;transform:translateY(4px);transition:opacity .6s,transform .6s;pointer-events:none}
+#tp-pets-tip.on{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){#tp-pets-btn .tp-f,#tp-pets-tip{transition:none}}
+#tp-pets-press{position:fixed;z-index:134;padding:1px 7px;border-radius:999px;font:800 10.5px/1.3 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#f4d782;background:rgba(11,26,51,.82);border:1px solid rgba(142,155,176,.55);pointer-events:none;white-space:nowrap}
+html.tp-pets .mw-walker{z-index:130}

@@ -1,0 +1,10 @@
+{
+ "state": "dazed",
+ "frames": 24,
+ "width": 256,
+ "height": 256,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "dazed.webp",
+ "sprite": "dazed.png"
+}

@@ -1,0 +1,10 @@
+{
+ "state": "walk",
+ "frames": 48,
+ "width": 256,
+ "height": 256,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "walk.webp",
+ "sprite": "walk.png"
+}

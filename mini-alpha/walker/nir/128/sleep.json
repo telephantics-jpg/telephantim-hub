@@ -1,0 +1,10 @@
+{
+ "state": "sleep",
+ "frames": 48,
+ "width": 128,
+ "height": 128,
+ "fps": 12,
+ "layout": "horizontal",
+ "webp": "sleep.webp",
+ "sprite": "sleep.png"
+}

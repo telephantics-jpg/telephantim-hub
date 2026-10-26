@@ -1,0 +1,13 @@
+.den{position:relative;overflow:hidden;--mood:#d4a63a;--den-dur:700ms;background:#060e1e}
+.den__glow{position:absolute;inset:0;background:var(--mood);-webkit-mask:url(moodglow.png) center/100% 100% no-repeat;mask:url(moodglow.png) center/100% 100% no-repeat;opacity:0;transition:opacity var(--den-dur);pointer-events:none;z-index:1}
+.den__door{position:absolute;top:0;bottom:0;width:50%;background-size:100% 100%;z-index:2;transition:transform var(--den-dur) cubic-bezier(.65,0,.35,1)}
+.den__door--l{left:0;background-image:url(door-left.png);transform:translateX(-100%)}
+.den__door--r{right:0;background-image:url(door-right.png);transform:translateX(100%)}
+.den__seal{position:absolute;left:50%;top:50%;width:min(52vw,200px);aspect-ratio:1;background:url(seal.png) center/contain no-repeat;transform:translate(-50%,-50%) scale(.9);opacity:0;transition:opacity 300ms,transform 300ms;z-index:3;pointer-events:none}
+.den.is-closed .den__door{transform:none}
+.den.is-closed .den__seal{opacity:1;transform:translate(-50%,-50%);transition-delay:var(--den-dur)}
+.den.is-closed .den__glow{z-index:3;opacity:.68;animation:den-pulse 4s ease-in-out var(--den-dur) infinite}
+@keyframes den-pulse{50%{opacity:.97}}
+.den.is-knock .den__door,.den.is-knock .den__seal{animation:den-knock 360ms}
+@keyframes den-knock{20%{translate:-4px 0}40%{translate:4px 0}60%{translate:-3px 0}80%{translate:2px 0}}
+@media (prefers-reduced-motion:reduce){.den{--den-dur:1ms}.den .den__glow{animation:none!important}.den.is-knock .den__door,.den.is-knock .den__seal{animation:none}.den.is-knock .den__seal{outline:2px solid #f4d782;border-radius:50%}}

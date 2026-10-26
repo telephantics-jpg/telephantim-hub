@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1a33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mini Alpha">
+<title>Mini Alpha</title>
+<script type="importmap">{"imports":{"three":"./sculpt/vendor/three.module.js"}}</script>
+<link rel="manifest" href="manifest.webmanifest?v=3">
+<link rel="icon" href="icons/icon-192.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png?v=3">
+<link rel="stylesheet" href="emblem.css?v=1">
+<link rel="stylesheet" href="den/den.css?v=1">
+<link rel="stylesheet" href="den/room/room.css?v=1">
+<link rel="stylesheet" href="nav/nav.css?v=1"><link rel="stylesheet" href="actions/actions.css?v=1"><link rel="stylesheet" href="styles.css?v=8"><link rel="stylesheet" href="beast.css?v=6"><link rel="stylesheet" href="walker/walker.css?v=9"><link rel="stylesheet" href="dance/dance.css?v=1">
+</head>
+<body>
+<div id="bd-atlas" class="bdlayer"></div><canvas id="bg" class="bdlayer"></canvas><div id="bg-media" class="bdlayer" hidden></div>
+<div id="banner" class="banner"></div>
+<div id="float-layer"></div>
+<aside class="drawer" id="rooms"><div class="dhead"><h2>Mini's rooms</h2><button class="chip" data-close>Close</button></div><div id="rooms-list"></div></aside>
+<aside class="drawer" id="settings"><div class="dhead"><h2>Settings</h2><button class="chip" data-close>Close</button></div>
+  <label class="tog"><input type="checkbox" id="roam" checked> Let Mini roam (reshape the space on its own)</label>
+  <button class="send wide" id="reset">Reset space</button>
+  <h3>Mini's mind</h3><div id="models"></div><p class="dim" id="model-note">Downloads once, then cached on this device. Bigger minds are smarter but slower; phones do best with the light one.</p>
+</aside>
+<div id="splash" class="splash"><img src="icons/splash-1080x1920.png" alt="Mini Alpha"></div>
+<script id="splash-failsafe">(function(){function k(){var s=document.getElementById("splash");if(s&&s.parentNode)s.parentNode.removeChild(s);}setTimeout(k,3000);document.addEventListener("touchstart",k,{once:true,passive:true});document.addEventListener("click",k,{once:true});window.addEventListener("error",function(){setTimeout(k,300);});})();</script>
+<header class="top">
+  <div class="brand"><span class="alpha">α</span> <span id="ma-name">Mini Alpha</span><small id="ma-sub"></small></div>
+  <div class="row hdr"><button id="btn-rooms" class="chip ico" aria-label="Mini's rooms">Rooms</button><button id="btn-settings" class="chip ico" aria-label="Settings">⚙</button><button id="mute" class="chip">Sound on</button><button id="install" class="chip" hidden>Install</button></div>
+</header>
+
+<div id="load" class="load" hidden>
+  <div id="load-t">Waking the mind… one-time download (~350–500 MB), cached after.</div>
+  <div class="pbar"><i id="pbar"></i></div>
+</div>
+
+<main>
+  <section class="pane active" id="pane-chat">
+    <div class="stage"><div class="ring-wrap"><div class="ring" id="ring"><div class="ring-in"><span>α</span></div></div><div class="nbadge" id="nbadge" hidden></div></div><div class="thought" id="thought"></div></div>
+    <button class="send wide mind" id="loadmind">Load Mini's mind</button>
+    <div class="log" id="chat-log"></div>
+    <form class="bar" id="chat-form">
+      <textarea id="chat-in" placeholder="Talk to Mini Alpha…" rows="1"></textarea>
+      <button class="send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <!-- WRITE -->
+  <section class="pane" id="pane-write">
+    <h2>Write</h2>
+    <label>What<select id="wr-mode"></select></label>
+    <label>About<input id="wr-topic" placeholder="a topic, a brief, a few notes"></label>
+    <label>Tone<select id="wr-tone"></select></label>
+    <div id="wr-lyric-opts"><label class="tog"><input type="checkbox" id="ly-swear"> Allow up to 2 swears (never in chorus)</label><p class="dim">Lyrics mode follows The Verse's rules: one Lowden tag, banned-word check, rewrite on a miss.</p></div>
+    <button class="send wide" id="wr-go">Write it</button>
+    <div class="log" id="wr-out"></div>
+  </section>
+
+  <!-- IDEAS -->
+  <section class="pane" id="pane-ideas">
+    <h2>Ideas</h2>
+    <label>Seed (optional)<input id="id-seed" placeholder="a word, a project, a problem"></label>
+    <button class="send wide" id="id-go">Brainstorm 3 ideas</button>
+    <div class="log" id="id-out"></div>
+  </section>
+
+  <!-- SKETCHPAD -->
+  <section class="pane" id="pane-sketch">
+    <h2>Sketchpad</h2>
+    <div class="grid" id="grid"></div>
+    <div class="row ctl">
+      <button class="send" id="sk-play">Play</button>
+      <label>Key<select id="sk-key"></select></label>
+      <label>BPM <b id="sk-bv">120</b><input type="range" id="sk-bpm" min="60" max="180" value="120"></label>
+    </div>
+    <label>Bass drone <b id="sk-dv">40%</b><input type="range" id="sk-drone" min="0" max="100" value="40"></label>
+    <button class="chip" id="sk-clear">Clear</button>
+  </section>
+
+  <!-- STUDIO -->
+  <section class="pane" id="pane-studio">
+    <h2>Studio</h2>
+    <div class="row st-top"><button class="send" id="st-play">Play block</button><button class="send" id="st-song">Play song</button>
+      <select id="st-load" aria-label="Load song"></select><button class="chip" id="st-save">Save</button><button class="chip" id="st-reset">New</button></div>
+    <div class="st-ctl">
+      <label>Key<select id="st-key"></select></label><label>Scale<select id="st-scale"></select></label>
+      <label>Octaves<select id="st-oct"></select></label><label>Steps<select id="st-len"></select></label>
+      <label>BPM <b id="st-bv"></b><input type="range" id="st-bpm" min="60" max="180"></label>
+      <label>Swing <b id="st-sv"></b><input type="range" id="st-swing" min="0" max="60"></label>
+      <label>Glide <b id="st-gv"></b><input type="range" id="st-glide" min="20" max="400"></label>
+      <label>Section<select id="st-label"></select></label>
+    </div>
+    <select id="st-prog" aria-label="Starter progression"></select>
+    <div class="label">Timeline <b id="st-bars"></b></div>
+    <div class="st-arr" id="st-arr"></div>
+    <div class="row"><button class="chip" id="st-chain">Chain</button><button class="chip" id="st-unchain">Unchain</button><button class="chip" id="st-new">New block</button><button class="chip" id="st-copy">Copy block</button><button class="chip" id="st-del">Delete block</button></div>
+    <div class="label">Blocks</div><div class="st-arr" id="st-blocks"></div>
+    <div class="st-tracks" id="st-tracks"></div>
+    <div class="row st-tools" id="st-tools"><button class="chip on" data-tool="draw">Draw</button><button class="chip" data-tool="length">Length</button><button class="chip" data-tool="slide">Slide</button><button class="chip" data-tool="bend">Bend</button><button class="chip" data-tool="erase">Erase</button><button class="chip" id="st-clear">Clear track</button></div>
+    <p class="dim">Tap to place a note. Drag from one note to another on Sub or Lead to glide. Scroll sideways for long patterns.</p>
+    <div class="st-scroll"><div id="st-grid"></div></div>
+  </section>
+
+  <!-- DEN (Mini's home) -->
+  <section class="pane" id="pane-den">
+    <div class="den den-stage" id="den">
+      <div id="den-room"></div>
+      <div class="den__glow"></div><div class="den__door den__door--l"></div><div class="den__door den__door--r"></div><div class="den__seal"></div>
+    </div>
+    <div class="row den-ui">
+      <button class="send" id="knock">Knock</button>
+      <label class="chip pic">Leave a picture<input type="file" id="leave-pic" accept="image/*" hidden></label>
+    </div>
+    <div class="shared" id="den-shared"></div>
+    <p class="dim" id="den-note"></p>
+  </section>
+
+  <section class="pane" id="pane-saved">
+    <h2>Saved</h2>
+    <div class="log" id="saved"></div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-p="chat" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12h1M11 9v6M14 10v4M17 12h-1"/></svg>Chat</button>
+  <button data-p="write"><svg viewBox="0 0 24 24"><path d="M20 3c-7 1-12 6-14 14l-2 4M6 17c4 0 8-3 9-7M10 13l4-1"/></svg>Write</button>
+  <button data-p="ideas"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 4l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></svg>Ideas</button>
+  <button data-p="sketch"><svg viewBox="0 0 24 24"><path d="M2 12h3l2-6 3 12 3-9 2 6 2-3h5"/></svg>Sketch</button>
+  <button data-p="studio"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9v6M11 8v8M15 10v4M19 9v6"/></svg>Studio</button>
+  <button data-p="den"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-5 8 5v12M10 21v-6h4v6"/></svg>Den</button>
+  <button data-p="saved"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</button>
+</nav>
+<script src="emblem.js?v=1"></script>
+<script src="backdrops/backdrops.js?v=1"></script>
+<script src="den/room/room.js?v=1"></script>
+<script src="nav/nav.js?v=1"></script><script src="sculpt/sculpt-boot.js?v=1"></script><script src="actions/actions.js?v=2"></script><script src="canvas/scene.js?v=1"></script><script type="module" src="app.js?v=20"></script><script src="bg3d-hook.js?v=3" defer></script><script src="walker/walker.js?v=32" defer></script><script src="/pets/pets.js?v=29" defer></script><script src="dance/dance.js?v=4" defer></script>
+<link rel="stylesheet" href="site-nav/site-nav.css?v=3"><script src="site-nav/site-nav.js?v=3" defer></script>
+</body>
+</html>

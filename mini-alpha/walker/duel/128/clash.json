@@ -1,0 +1,10 @@
+{
+ "state": "clash",
+ "frames": 12,
+ "width": 128,
+ "height": 128,
+ "fps": 24,
+ "layout": "horizontal",
+ "webp": "clash.webp",
+ "sprite": "clash.png"
+}

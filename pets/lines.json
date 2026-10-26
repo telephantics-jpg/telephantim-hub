@@ -1,0 +1,234 @@
+{
+ "cadu": {
+  "greet": [
+   "Greetings, traveler. Balance is optional. Wonder is mandatory.",
+   "Two strands, one mission: keeping this page steady.",
+   "Ah, a visitor. The helix approves.",
+   "Hello there. Spinning politely since page load.",
+   "Step in. Everything here is in harmony. Mostly."
+  ],
+  "click": [
+   "Gentle, please. Delicate instrument here.",
+   "That tickles the left strand.",
+   "Poked. Logged. Forgiven.",
+   "Curiosity: healthy. Repeated poking: under review.",
+   "A tap for balance. Wise choice."
+  ],
+  "fling": [
+   "Wheee! Equilibrium temporarily suspended!",
+   "Somebody skipped the handling instructions.",
+   "I am a symbol of healing, not a frisbee!",
+   "Airborne and still emotionally centered."
+  ],
+  "bump": [
+   "Found the edge of the world. It's firm.",
+   "Landed. Composure fully intact.",
+   "Steady again. As intended."
+  ],
+  "idle": [
+   "Even stillness is moving, if one looks closely.",
+   "Both things true: resting and spinning.",
+   "Somewhere, a pendulum envies this calm.",
+   "Breathe in. Breathe out. Rotate occasionally."
+  ],
+  "scroll": [
+   "Scrolling onward. The good stuff is further down.",
+   "Mind the speed. Relics bruise easily."
+  ],
+  "music": [
+   "Is this a beat? The strands are swaying.",
+   "Balanced rhythm detected. Dancing responsibly."
+  ],
+  "sleep": [
+   "Recalibrating in spirals... zzz.",
+   "Quiet hours. Wake gently."
+  ],
+  "duel": [
+   "Must we? Fine. Balance strikes!",
+   "Truce? No? Very well.",
+   "Harmony prevails. Gently."
+  ],
+  "banter": [
+   "Nir, indoor voice, please.",
+   "Careful. Some of us are delicate instruments.",
+   "Race to the corner. Gently.",
+   "Two relics, one screen. Try to share, Nir.",
+   "Order and thunder. Somehow it works."
+  ],
+  "ctx": {
+   "relics": [
+    "Home stage. Two relics, perfect balance.",
+    "The big ones are showing off again."
+   ],
+   "bio": [
+    "A story worth reading slowly.",
+    "Bio page. Spinning respectfully."
+   ],
+   "2d": [
+    "Flat world. Excellent for balance.",
+    "Two dimensions. Plenty for a helix."
+   ],
+   "3d": [
+    "Depth everywhere. Mind the corners.",
+    "Three dimensions. Strands approve."
+   ],
+   "random": [
+    "Odd tools ahead. Curious ones.",
+    "Random tab. Expect the unexpected."
+   ],
+   "socials": [
+    "Links to friends. Very social.",
+    "Say hello out there."
+   ],
+   "mini": [
+    "Mini Alpha. Small name, sharp mind.",
+    "The little lab. Mind the wires."
+   ]
+  }
+ },
+ "nir": {
+  "greet": [
+   "Ha! A worthy visitor at last!",
+   "Hail, friend! Mind the lightning, it's friendly.",
+   "Behold! A hammer with manners!",
+   "Greetings! Lift nothing heavy. That's my job.",
+   "Ha! The thunder announces a guest!"
+  ],
+  "click": [
+   "Ha! Bold move. I respect it.",
+   "Again! The lightning enjoyed that.",
+   "Only the worthy may poke. Proceed.",
+   "That was a mighty tap. Truly heroic.",
+   "Careful, the grip is decorative."
+  ],
+  "fling": [
+   "HA! Flight of the hammer!",
+   "Hurled across the realm! Magnificent!",
+   "Thrown like a true legend!",
+   "Thunder in motion! Clear the runway!"
+  ],
+  "bump": [
+   "The wall yields to no one. Respect.",
+   "Landed like a meteor. Ha!",
+   "Edge of the world! Strong edge!",
+   "Floor tested. Floor survived. Barely."
+  ],
+  "idle": [
+   "Strength is patience with lightning on standby.",
+   "Resting. Still mighty. Just quieter.",
+   "The hammer waits for a worthy task.",
+   "Nothing to smash? A peaceful day, then."
+  ],
+  "scroll": [
+   "Onward! Glory lies below the fold!",
+   "Faster! The relics await!"
+  ],
+  "music": [
+   "HA! A beat worth thundering to!",
+   "The lightning dances! Join in!"
+  ],
+  "sleep": [
+   "Storm resting... zzz... still mighty...",
+   "Even thunder naps."
+  ],
+  "duel": [
+   "HA! A clash of relics!",
+   "Worthy foe! Again!",
+   "The thunder claims this round!"
+  ],
+  "signature": [
+   "Loud and clear!"
+  ],
+  "banter": [
+   "Indoor voice? This IS my indoor voice!",
+   "Delicate? Ha! Sturdy as thunder!",
+   "Race? The hammer accepts!",
+   "Share? Ha! Take the left half, helix!",
+   "Order and thunder! The finest duo in the realm!"
+  ],
+  "ctx": {
+   "relics": [
+    "The relic stage! Glorious!",
+    "Big relics, small relics. All mighty."
+   ],
+   "bio": [
+    "The legend's tale! Read on!",
+    "A hero's page. Ha!"
+   ],
+   "2d": [
+    "Flat realm! Easy to conquer!",
+    "2D? The hammer adapts!"
+   ],
+   "3d": [
+    "A whole new axis! Ha!",
+    "3D! Thunder sounds bigger here!"
+   ],
+   "random": [
+    "Random? Bring it on!",
+    "Strange gadgets! Splendid!"
+   ],
+   "socials": [
+    "Rally the allies!",
+    "Friends of the realm! Ha!"
+   ],
+   "mini": [
+    "Mini Alpha! Small, mighty, ready!",
+    "The workshop! Ha! Build something bold!"
+   ]
+  }
+ },
+ "_note": "Swap freely. Groups: greet click fling bump idle scroll music sleep duel signature. Lines with banned words are dropped at load too.",
+ "_banned": [
+  "ash",
+  "back",
+  "become",
+  "black",
+  "blaze",
+  "boot",
+  "brick",
+  "burn",
+  "burned",
+  "came",
+  "clock",
+  "come",
+  "coming",
+  "crack",
+  "crown",
+  "crowns",
+  "deep",
+  "deeper",
+  "fire",
+  "flame",
+  "flavor",
+  "fog",
+  "forge",
+  "glow",
+  "gray",
+  "grey",
+  "harder",
+  "heat",
+  "king",
+  "kings",
+  "locked",
+  "overcome",
+  "rod",
+  "royalty",
+  "shaft",
+  "smoke",
+  "spark",
+  "staff",
+  "strap",
+  "taste",
+  "tempered",
+  "throne",
+  "tongue",
+  "veil",
+  "welcome",
+  "you",
+  "your",
+  "hook up",
+  "raw power",
+  "six in the morning",
+  "on my tongue"
+ ]
+}

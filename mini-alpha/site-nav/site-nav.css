@@ -1,0 +1,11 @@
+:root{--tp-tabbar-h:36px}
+#tp-tabbar{position:fixed;top:0;left:0;right:0;z-index:9400;height:var(--tp-tabbar-h);padding:0 max(6px,env(safe-area-inset-left)) 0 max(6px,env(safe-area-inset-right));display:flex;align-items:center;justify-content:center;gap:2px;background:linear-gradient(#0b1a33,#13243f);border-bottom:1px solid rgba(212,166,58,.45);box-shadow:0 2px 10px rgba(11,26,51,.5);overflow-x:auto;scrollbar-width:none}
+#tp-tabbar::-webkit-scrollbar{display:none}
+#tp-tabbar a{flex:0 0 auto;padding:6px 9px;border-radius:999px;color:#c9d2de;text-decoration:none;font:700 12px/1 system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap}
+#tp-tabbar a:hover,#tp-tabbar a:focus-visible{color:#f4d782;background:rgba(212,166,58,.14);outline:none}
+#tp-tabbar a.on{color:#0b1a33;background:linear-gradient(#f4d782,#d4a63a)}
+html.has-tp-tabbar body{padding-top:calc(var(--tp-tabbar-h) + env(safe-area-inset-top))}
+html.has-tp-tabbar #tp-tabbar{padding-top:env(safe-area-inset-top);height:calc(var(--tp-tabbar-h) + env(safe-area-inset-top))}
+@media (max-width:420px){#tp-tabbar{gap:0;justify-content:space-between}#tp-tabbar a{padding:6px 5px;font-size:11px}}
+html.has-tp-tabbar #mw-listen{top:calc(92px + env(safe-area-inset-top))}
+html.has-tp-tabbar #mw-dance-dbg{top:calc(128px + env(safe-area-inset-top))}

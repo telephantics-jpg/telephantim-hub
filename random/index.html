@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1a33">
+<title>Random - Telephantim</title>
+<meta name="description" content="Odds and ends from Telephantix. Get Mini Alpha, a free pocket companion.">
+<link rel="icon" href="/mini-alpha/icons/icon-192.png">
+<style>
+:root{--navy:#0b1a33;--navy2:#14213d;--gun:#2e3640;--steel:#9aa5b1;--steel2:#5b6672;--silver:#d8dee4;--gold:#c9a227;--gold2:#e2c15a;--red:#8c1a26;--ember:#e07a1f;--ink:#e9eef6}
+*{box-sizing:border-box}
+html{background:#0b1a33}html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -10%,#1b2a45 0%,#0b1a33 55%,#060e1e 100%) no-repeat #0b1a33;color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+/* same compact world picker as the home page */
+.world-switch{position:fixed;z-index:100;top:max(4px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:3px;border-radius:999px;border:1px solid rgba(201,162,39,.5);background:rgba(11,26,51,.92);box-shadow:0 6px 20px rgba(6,14,30,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);max-width:calc(100vw - 10px);overflow-x:auto;scrollbar-width:none}
+.world-switch::-webkit-scrollbar{display:none}
+.world-tab{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;letter-spacing:.02em;line-height:1;padding:.42rem .62rem;min-height:30px;min-width:3rem;border-radius:999px;color:#d7deea;white-space:nowrap}
+.world-tab.active{color:#0b1a33;background:linear-gradient(135deg,#f0d060,#c9a227);box-shadow:0 0 12px rgba(201,162,39,.35)}
+main{max-width:760px;margin:0 auto;padding:calc(max(4px,env(safe-area-inset-top,0px)) + 56px) 16px 40px}
+.rnd-small code{background:#0b1a33;color:#e2c15a;padding:1px 5px;border-radius:4px}
+body{min-height:100vh}html{background-color:#0b1a33}</style>
+<link rel="stylesheet" href="assets/emblem.css"><link rel="stylesheet" href="random.css">
+</head>
+<body>
+<nav class="world-switch" aria-label="Switch world">
+  <a class="world-tab" href="/?world=arcane" title="Arcane Runes - 3v3 battle-mage arena">Arcane</a>
+  <a class="world-tab" href="/" title="Bio">Bio</a>
+  <a class="world-tab" href="/2d.html" title="Luna Camp 2D">2D</a>
+  <a class="world-tab" href="/mini-alpha/" title="Mini Alpha - pocket AI companion">Mini</a>
+  <a class="world-tab" href="/3d.html" title="Luna Camp 3D">3D</a>
+  <a class="world-tab" href="/?world=4d" title="4D - interactable hyper-form">4D</a>
+  <a class="world-tab" href="/?world=relics" title="Telephantim - Mjolnir + Caduceus">Relics</a>
+  <!-- Random tab hidden 2026-10-26 (Mini tab replaces it). To restore, uncomment: <a class="world-tab active" href="/random/" aria-current="true" title="Random - odds and ends">Random</a> -->
+</nav>
+<main>
+<!-- RANDOM TAB START -->
+<section class="rnd-section" id="random" aria-labelledby="rnd-h">
+  <header class="rnd-head"><h2 id="rnd-h">Random</h2><p>Odd tools, side projects and things worth a look.</p></header>
+  <article class="rnd-card">
+    <div class="rnd-emblem"><img src="assets/icon-512.png" alt="Mini Alpha emblem" width="150" height="150"></div>
+    <p class="rnd-mood" aria-live="off"></p>
+    <h3 class="rnd-title">Mini Alpha</h3>
+    <p class="rnd-copy">Mini Alpha is a free pocket companion with no subscription and no account. It chats, sketches beats, writes, draws and keeps a little home called the Den. Its mind runs right on your device, so it's private. The first time you load it, it downloads about 660 MB, then it works from your phone or PC. On iPhone, open it in Safari and tap Share, then Add to Home Screen.</p>
+    <p class="rnd-small">The zip is the whole app for tinkering. It needs a local web server to run (for example <code>python -m http.server</code> in the unzipped folder, then open <code>localhost:8000/mini-alpha/</code>).</p>
+    <div class="rnd-actions">
+      <a class="rnd-btn rnd-btn-gold" href="/mini-alpha/">Get Mini</a>
+      <a class="rnd-btn rnd-btn-steel" href="mini-alpha.zip" download>Download zip</a>
+      <button type="button" class="rnd-btn rnd-btn-gold rnd-install" hidden>Install</button>
+    </div>
+    <p class="rnd-ios" hidden>Open in Safari, tap Share, then Add to Home Screen</p>
+  </article>
+</section>
+<!-- RANDOM TAB END -->
+</main>
+<script src="assets/emblem.js"></script><script src="random.js"></script>
+</body>
+</html>

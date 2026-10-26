@@ -78,6 +78,7 @@
     @media (max-width:480px){.help-pay-btn{font-size:1.15em;padding:13px 30px}}
     #sheet-toggle-label.sheet-toggle{font-size:1.05rem;padding:.5rem 1.05rem;background:#e8902a;color:#0d1320;border-color:#f0b25a;box-shadow:0 0 10px rgba(232,144,42,.4)}
   </style>
+<style>body[data-scene="sense"] .scene-fallback{display:none!important}</style>
 </head>
 <body class="scene-bio" data-scene="bio">
   <div class="flash" id="flash"></div>
@@ -511,9 +512,11 @@
     <a class="world-tab" href="/?world=arcane" data-scene="arcane" title="Arcane Runes — 3v3 battle-mage arena">Arcane</a>
     <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
     <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
+    <a class="world-tab" href="/mini-alpha/" title="Mini Alpha - pocket AI companion">Mini</a>
     <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
     <a class="world-tab" href="/?world=4d" data-scene="sense" title="4D — interactable hyper-form">4D</a>
     <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
+    <!-- Random tab hidden 2026-10-26 (Mini tab replaces it). To restore, uncomment: <a class="world-tab" href="/random/" title="Random - odd tools and side projects">Random</a> -->
   </nav>
 
   <!--
@@ -662,8 +665,8 @@
             />
           </div>
           <div class="music-stage" id="music-stage">
-            <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
-            <audio id="music-audio-b" class="music-audio" controls preload="none" hidden></audio>
+            <audio id="music-audio" class="music-audio" controls preload="none" crossorigin="anonymous" hidden></audio>
+            <audio id="music-audio-b" class="music-audio" controls preload="none" crossorigin="anonymous" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
           <p class="music-hint">One radio · Arcane · Bio · 2D · 3D · 4D · Relics · drag the box · minimize keeps the song</p>
@@ -833,12 +836,12 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v172-bio-default"></script>
+  <script type="module" src="scenes.js?v=v175-4d-morph"></script>
   <script type="module" src="relics-cms.js?v=v124-cad-quotes"></script>
   <script type="module" src="bio.js?v=v175-wide"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
   <script src="explore.js?v=1-local" defer></script>
-  <script type="module" src="music.js?v=v31-vox-first"></script>
+  <script type="module" src="music.js?v=v32-cors-audio"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
   <script type="module" src="mjolnir.js?v=v134-relic-duo"></script>
@@ -859,5 +862,6 @@
       }
     })();
   </script>
+<script src="/pets/pets.js?v=29" defer></script>
 </body>
 </html>

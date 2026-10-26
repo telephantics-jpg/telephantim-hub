@@ -1,0 +1,66 @@
+{
+  "name": "Mini Alpha Canvas",
+  "locked": true,
+  "swatches": [
+    {
+      "id": "navy-abyss",
+      "hex": "#060e1e",
+      "use": "darks/background (replaces black)"
+    },
+    {
+      "id": "navy-deep",
+      "hex": "#0b1a33",
+      "use": "base canvas"
+    },
+    {
+      "id": "navy-steel",
+      "hex": "#1a2c4a",
+      "use": "shadow tone"
+    },
+    {
+      "id": "gunmetal",
+      "hex": "#2e3640",
+      "use": "cards, plates"
+    },
+    {
+      "id": "steel",
+      "hex": "#5b6672",
+      "use": "mid metal"
+    },
+    {
+      "id": "steel-light",
+      "hex": "#9aa5b1",
+      "use": "highlights, edges"
+    },
+    {
+      "id": "steel-glint",
+      "hex": "#d8dee4",
+      "use": "specular glints"
+    },
+    {
+      "id": "gold",
+      "hex": "#d4a63a",
+      "use": "primary accent, strokes"
+    },
+    {
+      "id": "gold-bright",
+      "hex": "#f4d782",
+      "use": "glow core"
+    },
+    {
+      "id": "ember",
+      "hex": "#e07a1f",
+      "use": "glow, heat"
+    },
+    {
+      "id": "blood-red",
+      "hex": "#7a1414",
+      "use": "deep red accent"
+    },
+    {
+      "id": "crimson-ember",
+      "hex": "#b32020",
+      "use": "hot red"
+    }
+  ]
+}
