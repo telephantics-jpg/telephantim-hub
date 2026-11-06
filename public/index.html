@@ -31,44 +31,54 @@
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Telephantim — Relics, Music &amp; Luna Camp</title>
-  <meta name="build-stamp" content="v172-bio-default-2026-10-11" />
+  <meta name="build-stamp" content="v180-fresh-no-unburied" />
   <meta name="description" content="Telephantim: Mjolnir &amp; Caduceus, Telephantix music, and Luna Camp. Power, healing, pay links, and living worlds." />
-  <meta property="og:type" content="video.other" />
-  <meta property="og:site_name" content="Telephantim" />
-  <meta property="og:title" content="Telephantim — Mjolnir &amp; Caduceus" />
-  <meta property="og:description" content="Sacred dual relics · Telephantix radio · Luna Camp. Power · healing · music." />
-  <meta property="og:url" content="https://telephantim.com/" />
   <!-- VIDEO link preview (Discord / FB / iMessage / X player card when allowed) -->
-  <meta property="og:video" content="https://telephantim.com/media/share/link-preview-relics.mp4" />
-  <meta property="og:video:secure_url" content="https://telephantim.com/media/share/link-preview-relics.mp4" />
-  <meta property="og:video:type" content="video/mp4" />
-  <meta property="og:video:width" content="1280" />
-  <meta property="og:video:height" content="720" />
-  <meta property="og:video:url" content="https://telephantim.com/media/share/link-preview-relics.mp4" />
   <!-- Poster / fallback image — NEW filename so X drops the old cached card -->
-  <meta property="og:image" content="https://telephantim.com/media/share/link-preview-relics.jpg?v=2026-08-open" />
-  <meta property="og:image:secure_url" content="https://telephantim.com/media/share/link-preview-relics.jpg?v=2026-08-open" />
-  <meta property="og:image:type" content="image/jpeg" />
-  <meta property="og:image:width" content="1280" />
-  <meta property="og:image:height" content="720" />
-  <meta property="og:image:alt" content="Mjolnir and Caduceus — dual sacred relics of Telephantim" />
   <!--
     X/Twitter: use summary_large_image (NOT player).
     Player cards trap phone in-app browsers on the preview video and never open the real site.
     Video still works in Discord/FB via og:video above.
   -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:site" content="@Telephantix" />
-  <meta name="twitter:creator" content="@Telephantix" />
-  <meta name="twitter:title" content="Telephantim — Mjolnir &amp; Caduceus" />
-  <meta name="twitter:description" content="Sacred dual relics · Telephantix radio · Luna Camp." />
-  <meta name="twitter:image" content="https://telephantim.com/media/share/link-preview-relics.jpg?v=2026-08-open" />
-  <meta name="twitter:image:alt" content="Mjolnir and Caduceus dual relics" />
   <link rel="image_src" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
   <link rel="apple-touch-icon" href="https://telephantim.com/media/share/link-preview-relics.jpg" />
-  <link rel="stylesheet" href="styles.css?v=v176-daily-top" />
+  <link rel="stylesheet" href="styles.css?v=v180-fresh-no-unburied" />
   <!-- GA4 Measurement ID is set in api-config.js (TELEPHANTIM_GA_ID) -->
+  <style id="guest-views-style">
+    .guest-views {
+      margin: 1.25rem 0 0;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: #e8c07a;
+      opacity: 0.85;
+      text-align: center;
+      border: 1px solid rgba(200, 102, 42, 0.35);
+      border-radius: 999px;
+      background: rgba(10, 14, 24, 0.55);
+    }
+    .guest-views[hidden] { display: none !important; }
+  </style>
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://telephantim.com/">
+<meta property="og:title" content="Telephantim">
+<meta property="og:description" content="Music, games and videos by Telephantix.">
+<meta property="og:site_name" content="Telephantim">
+<meta property="og:image" content="https://telephantim.com/intro/share-card.jpg?v=cad1">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://telephantim.com/intro/share-card.jpg?v=cad1">  <style id="help-pay-style">
+    .help-pay-btn{display:inline-block;padding:15px 38px;font-size:1.3em;font-weight:800;letter-spacing:.12em;border-radius:999px;background:#e8902a;color:#0d1320;text-decoration:none;border:1px solid #f0b25a;box-shadow:0 0 14px rgba(232,144,42,.45);animation:helpPayPulse 2.4s ease-in-out 1.5s 1}
+    .help-pay-btn:hover,.help-pay-btn:focus-visible{background:#f0a040;color:#0d1320;box-shadow:0 0 22px rgba(232,144,42,.6)}
+    @keyframes helpPayPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+    @media (prefers-reduced-motion:reduce){.help-pay-btn{animation:none}}
+    @media (max-width:480px){.help-pay-btn{font-size:1.15em;padding:13px 30px}}
+    #sheet-toggle-label.sheet-toggle{font-size:1.05rem;padding:.5rem 1.05rem;background:#e8902a;color:#0d1320;border-color:#f0b25a;box-shadow:0 0 10px rgba(232,144,42,.4)}
+  </style>
+<style>body[data-scene="sense"] .scene-fallback{display:none!important}</style>
 </head>
 <body class="scene-bio" data-scene="bio">
   <div class="flash" id="flash"></div>
@@ -126,7 +136,39 @@
           <cite id="bio-quote-by"></cite>
         </blockquote>
 
-        <section class="bio-latest" aria-label="Videos">
+        <!-- newest-video spotlight (local preview) -->
+        <style id="newest-video-style">
+          .nv-wrap{margin:22px auto;max-width:640px;text-align:center;padding:20px 16px;border-radius:14px;background:linear-gradient(160deg,rgba(18,30,58,.92),rgba(42,48,58,.92));border:1px solid #c9a227;box-shadow:0 0 26px rgba(201,162,39,.28),inset 0 0 0 1px rgba(140,26,38,.45);color:#e6e9ef}
+          .nv-tag{display:inline-block;font-size:.72em;letter-spacing:.18em;text-transform:uppercase;color:#f4ecd8;background:#8c1a26;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+          .nv-title{font-size:1.9em;letter-spacing:.06em;margin:4px 0;color:#e2c15a}
+          .nv-line{font-style:italic;margin:0 0 12px;color:#b8c2d0}
+          .nv-wrap video{width:100%;border-radius:10px;display:block;background:#1b2436;border:1px solid #5a6474}
+          .nv-meta{font-size:.85em;color:#9aa6b8;margin-top:8px}
+          .nv-jump{position:fixed;right:16px;bottom:84px;z-index:60;padding:9px 14px;border-radius:999px;border:1px solid #c9a227;background:#14213d;color:#e2c15a;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(20,33,61,.6)}
+          .nv-jump:hover{background:#8c1a26;color:#f4ecd8}
+          .nv-drops{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0 0}
+          .nv-drops span{font-size:.78em;padding:5px 10px;border-radius:8px;background:rgba(58,66,80,.85);border:1px solid #5a6474;color:#d5dbe4}
+          .nv-drops b{color:#e2c15a}
+        </style>
+        <section class="nv-wrap" id="newest-video" aria-label="Newest Video">
+          <span class="nv-tag">Newest Video</span>
+          <h2 class="nv-title">Nobility's Plight</h2>
+          <p class="nv-line">Nobility's plight is to carry the light</p>
+          <video controls playsinline preload="metadata" poster="media/nobilitys_plight_poster.jpg" aria-label="Nobility's Plight music video"><source src="media/nobilitys_plight.mp4" type="video/mp4" /></video>
+          <p class="nv-meta">4:54 &middot; Goku vs Thor &middot; Telephantix</p>
+          <div class="nv-drops" aria-label="Latest drops"><span><b>Video</b> Nobility's Plight</span><span><b>Play</b> Arcane Runes</span></div>
+        </section>
+        <button type="button" class="nv-jump" id="nv-jump" onclick="document.getElementById('newest-video').scrollIntoView({behavior:'smooth',block:'center'})">&#9654; Newest Video</button>
+
+        <section class="bio-game" id="mythical-wallpapers" aria-label="Mythical Wallpapers" style="margin:28px auto;max-width:600px;text-align:center;padding:22px 18px;border-radius:14px;background:rgba(10,14,24,.82);border:1px solid #8fa3b8;box-shadow:0 0 24px rgba(200,102,42,.30);font-size:1.08em;color:#e8e4dc">
+          <p class="bio-links-label">Android live wallpaper</p>
+          <a id="mythical-wallpapers-tile-link" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/livewall-v8/MythicalWallpapers_v8.apk" rel="noopener" style="display:block;margin:6px 0 12px"><img src="media/mythical_wallpapers_tile.webp" alt="Mythical Wallpapers: Android, 13 live 3D scenes" width="600" height="315" loading="lazy" style="display:block;width:100%;max-width:100%;height:auto;border-radius:10px;border:1px solid #8fa3b8" /></a>
+          <p style="font-weight:700;letter-spacing:.12em;color:#f0b25a;margin:4px 0;font-size:1.6em">MYTHICAL WALLPAPERS</p>
+          <p style="max-width:520px;margin:0 auto 12px;line-height:1.45">Thirteen living scenes that shift with your hand. Tilt the phone and the symbols step out of the glass. Android only, free.</p>
+          <a id="mythical-wallpapers-download" href="https://github.com/telephantics-jpg/telephantim-hub/releases/download/livewall-v8/MythicalWallpapers_v8.apk" rel="noopener" style="display:inline-block;padding:18px 34px;font-size:1.15em;border-radius:10px;background:linear-gradient(#1b2433,#0d1320);border:1px solid #c8662a;color:#f0b25a;font-weight:700;letter-spacing:.06em;text-decoration:none">DOWNLOAD FOR ANDROID</a>
+          <p style="opacity:.7;font-size:.85em;margin-top:6px">Made for Pixel &middot; separate home and lock screen scenes &middot; 87 MB &middot; v8. Allow installs from unknown apps.</p>
+        </section>
+        <section class="bio-latest" id="bio-latest" aria-label="Videos">
           <p class="bio-links-label">Latest video</p>
           <h2 class="bio-latest-title">SUPER HIGH INTELLIGENCE</h2>
           <p class="bio-video-views"><span data-video-views="super-high-intelligence">—</span> views</p>
@@ -420,6 +462,8 @@
         </div>
 
         <div class="bio-links" id="bio-links" hidden></div>
+
+        <p id="guest-views" class="guest-views" hidden aria-live="polite">Guest views: <span data-guest-views>—</span></p>
       </div>
       <div class="bio-video-peek" aria-hidden="true"></div>
     </div>
@@ -430,9 +474,11 @@
     <a class="world-tab" href="/?world=arcane" data-scene="arcane" title="Arcane Runes — 3v3 battle-mage arena">Arcane</a>
     <a class="world-tab active" href="/" data-scene="bio" title="Bio — video or photo background" aria-current="true">Bio</a>
     <a class="world-tab" href="/2d.html" data-scene="luna-2d" title="Luna Camp 2D">2D</a>
+    <a class="world-tab" href="/mini-alpha/" title="Mini Alpha - pocket AI companion">Mini</a>
     <a class="world-tab" href="/3d.html" data-scene="luna-3d" title="Luna Camp 3D">3D</a>
     <a class="world-tab" href="/?world=4d" data-scene="sense" title="4D — interactable hyper-form">4D</a>
     <a class="world-tab" href="/?world=relics" data-scene="telephantim" title="Telephantim — Mjolnir + Caduceus">Relics</a>
+    <!-- Random tab hidden 2026-10-26 (Mini tab replaces it). To restore, uncomment: <a class="world-tab" href="/random/" title="Random - odd tools and side projects">Random</a> -->
   </nav>
 
   <!--
@@ -465,7 +511,8 @@
     <video
       id="stage-bg-video"
       class="stage-bg-video"
-      src="media/bg.mp4?v=caduceus-3d"
+      src="media/relics_caduceus_loop.mp4?v=caduceus-3d"
+      poster="media/relics_caduceus_poster.jpg"
       muted
       loop
       playsinline
@@ -580,8 +627,8 @@
             />
           </div>
           <div class="music-stage" id="music-stage">
-            <audio id="music-audio" class="music-audio" controls preload="none" hidden></audio>
-            <audio id="music-audio-b" class="music-audio" controls preload="none" hidden></audio>
+            <audio id="music-audio" class="music-audio" controls preload="none" crossorigin="anonymous" hidden></audio>
+            <audio id="music-audio-b" class="music-audio" controls preload="none" crossorigin="anonymous" hidden></audio>
           </div>
           <div class="music-track-list" id="music-track-list"></div>
           <p class="music-hint">One radio · Arcane · Bio · 2D · 3D · 4D · Relics · drag the box · minimize keeps the song</p>
@@ -617,6 +664,7 @@
 
       <section class="section">
         <h3>Support / Pay</h3>
+        <p class="support-blurb">Right now I'm working to raise money that actually reaches me, not a middleman or a platform. Every bit of real support goes into improving my life, strengthening my will, and pushing these projects further than one driver's paycheck can. If a song, a game or a single line here reached you, tap Pay below and help me build what's next.</p>
         <div class="links">
           <a class="link" href="https://www.paypal.com/donate/?hosted_button_id=7Q29UNGPVFAT4" target="_blank" rel="noopener noreferrer">
             <span class="ico ico-paypal" aria-hidden="true">PP</span>
@@ -740,6 +788,7 @@
   <script src="api-config.js?v=87-live-telephantim"></script>
   <script src="analytics.js?v=87-live-telephantim"></script>
   <script src="visitors.js?v=v155-bio"></script>
+  <script src="guest-views.js?v=v1-guest"></script>
   <!-- Local Three.js (no CDN) so Relics still load offline -->
   <script type="importmap">
   {
@@ -749,13 +798,32 @@
     }
   }
   </script>
-  <script type="module" src="scenes.js?v=v172-bio-default"></script>
-  <script type="module" src="relics-cms.js?v=v122-caduceus-3d"></script>
-  <script type="module" src="bio.js?v=v175-wide"></script>
+  <script type="module" src="scenes.js?v=v180-fresh-no-unburied"></script>
+  <script type="module" src="relics-cms.js?v=v124-cad-quotes"></script>
+  <script type="module" src="bio.js?v=v180-fresh-no-unburied"></script>
   <script type="module" src="daily-wisdom.js?v=87-live-telephantim"></script>
-  <script type="module" src="music.js?v=v31-vox-first"></script>
+  <script src="explore.js?v=1-local" defer></script>
+  <script type="module" src="music.js?v=v180-fresh-no-unburied"></script>
   <script type="module" src="studio.js?v=v141-playbar"></script>
   <script type="module" src="personality.js?v=v119-spoken-only"></script>
-  <script type="module" src="mjolnir.js?v=v130-boot-camp"></script>
+  <script type="module" src="mjolnir.js?v=v134-relic-duo"></script>
+  <script type="module" src="caduceus-mind.js?v=3-duo"></script>
+  <script>
+    // Help Pay: banner + button open the Pay sheet (PayPal link is the no-JS fallback)
+    (function () {
+      var links = document.querySelectorAll('.help-pay-open');
+      for (var i = 0; i < links.length; i++) {
+        links[i].addEventListener('click', function (e) {
+          var t = document.getElementById('sheet-toggle');
+          if (!t || !t.offsetParent) return;
+          e.preventDefault();
+          if (!document.body.classList.contains('sheet-open')) t.click();
+          var s = document.getElementById('link-sheet');
+          if (s && s.scrollIntoView) s.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        });
+      }
+    })();
+  </script>
+<script src="/pets/pets.js?v=29" defer></script>
 </body>
 </html>

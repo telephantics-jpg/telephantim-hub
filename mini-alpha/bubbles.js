@@ -29,7 +29,7 @@ const NOUNS = {
   machines: ["a circuit", "an engine", "a gear", "a server", "a spare wire", "a compass", "a steel plate", "a soldering iron", "a forgotten bolt", "a fresh battery", "a well-oiled hinge", "a robot's to-do list", "a tiny motor", "a firmware update"],
   dreams: ["a dream", "a half-remembered dream", "the moment before sleep", "a dream journal", "a recurring dream", "a daydream", "a dream about flying", "a dream map", "the last line of a dream"],
   den: ["my workbench", "the shelf in the Den", "the star window", "the Den's lantern", "my notebook", "the tuning fork on the shelf", "the map on the wall", "the gear on my shelf", "the crystal by the window"],
-  projects: ["The Unburied", "Arcane Runes", "the next Telephantix song", "Luna Camp", "the Relics page", "a new level", "the boss fight", "the next music video", "the site radio", "Mini's Studio"],
+  projects: ["Arcane Runes", "the next Telephantix song", "Luna Camp", "the Relics page", "a new level", "the boss fight", "the next music video", "the site radio", "Mini's Studio"],
 };
 const BE = ["a question waiting for the right ear", "practice wearing its best coat", "a map of where attention went", "a promise kept in small pieces", "a plan that learned to dance", "a habit that got good at disguises",
   "patience with a good soundtrack", "proof that small steps add up", "a door that only opens from the inside", "a story that has not picked its ending", "an echo of something built with care", "a reminder to start before it feels ready",
@@ -60,7 +60,7 @@ const SAYINGS = [["Heraclitus", "no one steps in the same river twice"], ["Marcu
   ["Hermes Trismegistus", "as above, so below"], ["Epictetus", "first decide who to be, then do what that takes"], ["Solomon", "iron sharpens iron"], ["Aristotle", "well begun is half done"], ["Plato", "the beginning is the most important part of the work"],
   ["Confucius", "it does not matter how slowly a person goes, as long as they do not stop"], ["Psalm 127", "unless the Lord builds the house, the builders labor in vain"], ["the Delphic oracle", "know thyself"], ["Pythagoras", "there is geometry in the humming of the strings"], ["Ecclesiastes", "there is a season for every purpose"]];
 const SAY_TWIST = ["Applies to basslines too.", "I'm taking that personally, in a good way.", "Same rule works for game design.", "Writing that on the workbench.", "Still true after a few thousand years.", "That one goes on the shelf.",
-  "Also a decent mixing tip.", "Today that means one more bar.", "Translation: start the sketch now.", "The Den agrees.", "Somehow it fits The Unburied.", "Good advice for boss fights."];
+  "Also a decent mixing tip.", "Today that means one more bar.", "Translation: start the sketch now.", "The Den agrees.", "Somehow it fits Arcane Runes.", "Good advice for boss fights."];
 const HALF = ["Half-built idea for %p: %i.", "Sketch for %p: %i. Needs one more piece.", "Unfinished thought about %p: %i...", "For %p, what about %i?"];
 const HALF_I = ["a room that changes music when the player stands still", "an enemy that only attacks off the beat", "a relic that remembers who held it last", "a hidden level unlocked by humming", "a map drawn by the players themselves",
   "a boss who switches sides if spared twice", "a chorus that returns in a new key at the end", "a menu screen that plays the theme in reverse", "a radio station that picks songs by the time of day", "a shrine that hands out riddles instead of loot",
@@ -104,7 +104,7 @@ export function comboCount() { const n = Object.values(NOUNS).flat().length; ret
 
 /* ---------- live thought from the model ---------- */
 const FORMS = ["a sharp question", "a one-line dare for Telephantix", "a tiny two-line poem", "a fake but kind news headline", "a half-built idea for a game or song", "a clear observation with light wit", "an old saying with a modern twist", "an odd true fact framed as a musing"];
-const THEMES = ["music", "the cosmos", "ancient wisdom", "machines", "dreams", "the Den (Mini's room with a star window and a shelf)", "Telephantix's projects (The Unburied, Arcane Runes, Telephantix songs)", "everyday life"];
+const THEMES = ["music", "the cosmos", "ancient wisdom", "machines", "dreams", "the Den (Mini's room with a star window and a shelf)", "Telephantix's projects (Arcane Runes, Telephantix songs, Luna Camp)", "everyday life"];
 async function liveThought(ctx) {
   const app = window.MiniApp; if (!app || !app.hasMind || !app.hasMind() || !app.bubble) return null;
   const hr = new Date().getHours(), tod = hr < 6 ? "late night" : hr < 12 ? "morning" : hr < 18 ? "afternoon" : "evening";

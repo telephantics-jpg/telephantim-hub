@@ -3,10 +3,8 @@
   var FEATURES = [
     { id: 'newest', name: "Newest Video", icon: '\u25B6', short: "The latest Telephantix drop, front and center. Press play and get pulled in.",
       long: "The latest Telephantix music video. Goku and Thor settle it the hard way while the nobility watch. Nobility's plight is to carry the light.", target: { section: 'newest-video' } },
-    { id: 'drops', name: "Latest drops", icon: '\u2605', short: "The newest video, game and world to play, all in one row.",
-      long: "A quick row of the newest releases: the Nobility's Plight video, The Unburied game and the Arcane Runes arena.", target: { section: 'newest-video' } },
-    { id: 'unburied', name: "The Unburied", icon: '\u2694', short: "Dark action RPG in the making. Rise, fight and stay standing.",
-      long: "Telephantix's dark action RPG, where the dead won't stay down. Watch the trailer and download it for Windows PC or Android.", target: { section: 'unburied' } },
+    { id: 'drops', name: "Latest drops", icon: '\u2605', short: "The newest video and world to play, all in one row.",
+      long: "A quick row of the newest releases: the Nobility's Plight video and the Arcane Runes arena.", target: { section: 'newest-video' } },
     { id: 'videos', name: "Music videos", icon: '\u266B', short: "Every Telephantix video in one place, start to finish.",
       long: "The full wall of Telephantix music videos, from SUPER HIGH INTELLIGENCE back through Vitriol, Breaking Hour, False Crown and more, with view counts.", target: { section: 'bio-latest' } },
     { id: 'radio', name: "Play Music", icon: '\u266A', short: "The Telephantix radio. It keeps playing while you explore the rest of the site.",
