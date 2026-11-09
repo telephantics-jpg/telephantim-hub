@@ -6,6 +6,15 @@
  * Profile: https://suno.com/@telephantix  (never @telephantix-demo)
  */
 
+import {
+  claimPlayback,
+  createPauseGate,
+  mutedLoopsToHold,
+  playbackOwner,
+  releasePlayback,
+  syncPlaybackSession,
+} from "./lock-playback.js";
+
 const SUNO_PROFILE = "https://suno.com/@telephantix";
 const SUNO_OPEN = "go-suno.html";
 const SUNO_CATALOG_URL = "suno-catalog.json";
@@ -169,6 +178,7 @@ let pendingEmbedAfterVox = null;
 let mediaSessionApi = null;
 let bgKeepAliveInstalled = false;
 let lastSoftResumeAt = 0;
+let osResume = false;
 
 function $(id) {
   return document.getElementById(id);
@@ -1071,8 +1081,14 @@ function softResumeMusic(why) {
     if (!same) {
       audio.src = cur.url;
     }
-    const p = audio.play();
-    if (p && typeof p.catch === "function") p.catch(() => {});
+    osResume = true;
+    let p;
+    try {
+      p = audio.play();
+    } catch (_) {
+      osResume = false;
+    }
+    if (p && typeof p.catch === "function") p.catch(() => { osResume = false; });
   } catch (_) {}
   updateMediaSessionMeta(true);
   try {
@@ -1080,35 +1096,47 @@ function softResumeMusic(why) {
   } catch (_) {}
 }
 
+function movieSession() {
+  const movie = window.__teleMovieLock;
+  if (playbackOwner() !== "movie" || !movie?.active?.()) return null;
+  return movie;
+}
+
 function updateMediaSessionMeta(playing) {
   if (!mediaSessionApi || typeof navigator === "undefined" || !("mediaSession" in navigator)) {
     return;
   }
+  const movie = movieSession();
   const cur = current();
+  const title = movie ? movie.title() : (cur && cur.title) || "Telephantix";
+  const artist = movie ? movie.artist() : (cur && cur.artist) || "Telephantix";
+  const album = movie ? "Telephantim" : "Telephantim Radio";
+  const artwork = movie ? movie.artwork() : [
+    { src: "/media/icon-192.png", sizes: "192x192", type: "image/png" },
+    { src: "/media/icon-512.png", sizes: "512x512", type: "image/png" },
+  ];
+  const sessionPlaying = movie ? true : !!playing;
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: (cur && cur.title) || "Telephantix",
-      artist: (cur && cur.artist) || "Telephantix",
-      album: "Telephantim Radio",
-      artwork: [
-        { src: "/media/icon-192.png", sizes: "192x192", type: "image/png" },
-        { src: "/media/icon-512.png", sizes: "512x512", type: "image/png" },
-      ].filter(() => true),
+      title: title || "Telephantix",
+      artist: artist || "Telephantix",
+      album,
+      artwork: artwork || [],
     });
   } catch (_) {
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: (cur && cur.title) || "Telephantix",
-        artist: (cur && cur.artist) || "Telephantix",
-        album: "Telephantim Radio",
+        title: title || "Telephantix",
+        artist: artist || "Telephantix",
+        album,
       });
     } catch (__) {}
   }
   try {
-    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+    navigator.mediaSession.playbackState = sessionPlaying ? "playing" : "paused";
   } catch (_) {}
   try {
-    const audio = liveAudioEl();
+    const audio = movie ? movie.mediaEl() : liveAudioEl();
     if (
       audio &&
       typeof navigator.mediaSession.setPositionState === "function" &&
@@ -1139,48 +1167,89 @@ function installMediaSession() {
     } catch (_) {}
   };
   bind("play", () => {
+    const movie = movieSession();
+    if (movie) {
+      movie.play();
+      return;
+    }
     userPaused = false;
+    claimPlayback("music");
+    syncPlaybackSession(true);
     softResumeMusic("ms-play");
   });
   bind("pause", () => {
+    const movie = movieSession();
+    if (movie) {
+      movie.pause();
+      return;
+    }
     userPaused = true;
+    musicPauseGate.cancel();
+    releasePlayback("music");
+    syncPlaybackSession(playbackOwner() === "movie");
     try {
       liveAudioEl()?.pause();
     } catch (_) {}
     updateMediaSessionMeta(false);
   });
   bind("stop", () => {
+    const movie = movieSession();
+    if (movie) {
+      movie.pause();
+      return;
+    }
     userPaused = true;
+    musicPauseGate.cancel();
     userStarted = false;
+    releasePlayback("music");
+    syncPlaybackSession(false);
     stopAllMedia();
     updateMediaSessionMeta(false);
   });
   bind("nexttrack", () => {
+    if (movieSession()) return;
     userPaused = false;
     next(true);
   });
   bind("previoustrack", () => {
+    if (movieSession()) return;
     userPaused = false;
     prev();
   });
   bind("seekbackward", (d) => {
+    const movie = movieSession();
+    const sec = Math.max(5, Number(d?.seekOffset) || 10);
+    if (movie) {
+      movie.seekBy(-sec);
+      return;
+    }
     const a = liveAudioEl();
     if (!a) return;
-    const sec = Math.max(5, Number(d?.seekOffset) || 10);
     a.currentTime = Math.max(0, (a.currentTime || 0) - sec);
     saveMusicPersist();
   });
   bind("seekforward", (d) => {
+    const movie = movieSession();
+    const sec = Math.max(5, Number(d?.seekOffset) || 10);
+    if (movie) {
+      movie.seekBy(sec);
+      return;
+    }
     const a = liveAudioEl();
     if (!a) return;
-    const sec = Math.max(5, Number(d?.seekOffset) || 10);
     const dur = Number(a.duration) || 0;
     a.currentTime = Math.min(dur || 1e9, (a.currentTime || 0) + sec);
     saveMusicPersist();
   });
   bind("seekto", (d) => {
+    if (typeof d?.seekTime !== "number") return;
+    const movie = movieSession();
+    if (movie) {
+      movie.seekTo(d.seekTime);
+      return;
+    }
     const a = liveAudioEl();
-    if (!a || typeof d?.seekTime !== "number") return;
+    if (!a) return;
     a.currentTime = Math.max(0, d.seekTime);
     saveMusicPersist();
   });
@@ -1191,6 +1260,44 @@ function installMediaSession() {
  * Keep Suno radio alive in background tabs / lock screen until browser closes
  * or the user pauses. Never reshuffles on unlock.
  */
+function holdMutedBackgroundVideos() {
+  mutedLoopsToHold([...document.querySelectorAll("video")]).forEach((v) => {
+    v.dataset.teleLockHold = "1";
+    try { v.pause(); } catch (_) {}
+  });
+}
+
+function releaseMutedBackgroundVideos() {
+  document.querySelectorAll("video").forEach((v) => {
+    if (v.dataset.teleLockHold !== "1") return;
+    v.dataset.teleLockHold = "";
+    const scene = document.body?.dataset?.scene || "";
+    if (v.id === "bio-video" && scene !== "bio") return;
+    if (v.id === "stage-bg-video" && scene !== "telephantim") return;
+    if (window.__teleMovieLock?.active?.()) return;
+    try { v.play()?.catch?.(() => {}); } catch (_) {}
+  });
+}
+
+const musicPauseGate = createPauseGate({
+  hidden: () => document.hidden || document.visibilityState === "hidden",
+  onUser() {
+    userPaused = true;
+    releasePlayback("music");
+    syncPlaybackSession(playbackOwner() === "movie");
+    try { djRadio?.hush?.(); } catch (_) {}
+    updateMediaSessionMeta(false);
+  },
+  onOs() {
+    if (!wantBackgroundPlay()) return;
+    if (playbackOwner() !== "movie") claimPlayback("music");
+    syncPlaybackSession(true);
+    setTimeout(() => {
+      if (!userPaused) softResumeMusic("os-pause");
+    }, 180);
+  },
+});
+
 function installBackgroundKeepAlive() {
   if (bgKeepAliveInstalled) return;
   bgKeepAliveInstalled = true;
@@ -1198,13 +1305,24 @@ function installBackgroundKeepAlive() {
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       saveMusicPersist();
-      // Do NOT pause — let the OS media session keep the stream
+      const handed = musicPauseGate.notePageLeft();
+      holdMutedBackgroundVideos();
+      if (!handed && wantBackgroundPlay() && !userPaused) {
+        syncPlaybackSession(true);
+        updateMediaSessionMeta(true);
+      }
       return;
     }
+    releaseMutedBackgroundVideos();
     setTimeout(() => softResumeMusic("visible"), 80);
     setTimeout(() => softResumeMusic("visible-late"), 500);
   });
-
+  window.addEventListener("pagehide", () => {
+    musicPauseGate.notePageLeft();
+  });
+  window.addEventListener("freeze", () => {
+    musicPauseGate.notePageLeft();
+  });
   window.addEventListener("pageshow", (e) => {
     setTimeout(() => softResumeMusic(e.persisted ? "bfcache" : "pageshow"), 80);
   });
@@ -2094,7 +2212,14 @@ function wire() {
     prepAudioElement(audio);
     audio.addEventListener("ended", onAudioEnded);
     audio.addEventListener("play", () => {
+      const fromOs = osResume;
+      osResume = false;
       userPaused = false;
+      musicPauseGate.cancel();
+      if (!fromOs) {
+        claimPlayback("music");
+        syncPlaybackSession(true);
+      }
       updateMusicChrome();
       updateMediaSessionMeta(true);
       saveMusicPersist();
@@ -2102,19 +2227,14 @@ function wire() {
     audio.addEventListener("pause", () => {
       updateMusicChrome();
       if (ignoringAudioEvents || mixing || introLock || voxHold) return;
-      // Lock-screen / hidden tab: OS may pause us — only fight if user didn't pause
-      if (document.hidden && wantBackgroundPlay() && !userPaused) {
-        setTimeout(() => {
-          if (!userPaused) softResumeMusic("hidden-pause");
-        }, 180);
+      if (!userStarted) return;
+      // Media Session Pause already marked this as the listener's pause.
+      if (userPaused) {
+        updateMediaSessionMeta(false);
         return;
       }
-      // Visible pause = user. Stick it and kill Vox so he doesn't start another line.
-      userPaused = true;
-      try {
-        djRadio?.hush?.();
-      } catch (_) {}
-      updateMediaSessionMeta(false);
+      // Power button often pauses before document.hidden flips.
+      musicPauseGate.notePause();
     });
     audio.addEventListener("timeupdate", () => {
       if (ignoringAudioEvents || mixing || introLock || voxHold) return;
@@ -2179,6 +2299,7 @@ function wire() {
     });
     audio.addEventListener("playing", () => {
       consecutiveLoadFails = 0;
+      musicPauseGate.cancel();
     });
   }
   bindDeck(document.getElementById("music-audio"));
@@ -2187,6 +2308,9 @@ function wire() {
 
   installMediaSession();
   installBackgroundKeepAlive();
+  window.__teleRefreshMediaSession = () => {
+    updateMediaSessionMeta(playbackOwner() === "movie" || isAudioPlaying());
+  };
 
   // Cold start: silent, no embed/audio attached — never auto-resume across reloads
   stopAllMedia();
