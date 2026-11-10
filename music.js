@@ -7,11 +7,16 @@
  */
 
 import {
+  canPlayTrackWhileHidden,
   claimPlayback,
   createPauseGate,
+  indexForHiddenSkip,
+  mediaSeekModeFor,
   mutedLoopsToHold,
+  pageIsHidden,
   playbackOwner,
   releasePlayback,
+  shouldSkipDjIntro,
   syncPlaybackSession,
 } from "./lock-playback.js";
 
@@ -179,6 +184,57 @@ let mediaSessionApi = null;
 let bgKeepAliveInstalled = false;
 let lastSoftResumeAt = 0;
 let osResume = false;
+/** True while a Media Session next/prev handler is running. */
+let mediaKeySkip = false;
+/** Ignore pause events caused by swapping audio.src during a skip. */
+let trackSwapUntil = 0;
+
+function markTrackSwap() {
+  trackSwapUntil = Date.now() + 800;
+}
+
+function swappingTrack() {
+  return Date.now() < trackSwapUntil;
+}
+
+function skipDjForBackground() {
+  return shouldSkipDjIntro({
+    pageHidden: pageIsHidden(),
+    fromMediaKey: mediaKeySkip,
+  });
+}
+
+function clearDjHold() {
+  introLock = false;
+  voxHold = false;
+  pendingEmbedAfterVox = null;
+  if (introWatch) {
+    clearTimeout(introWatch);
+    introWatch = null;
+  }
+}
+
+function forceHostedAudioForBackground(t) {
+  if (!t || !skipDjForBackground()) return;
+  if (t.type === "spotify" || t.type === "youtube") return;
+  if (t.radio === "distrokid" || isHostedRadioUrl(t.url)) {
+    t.type = "audio";
+    if (!t.url || /suno\.com\/embed/i.test(t.url)) {
+      const id = t.songId || String(t.id || "").replace(/^suno-/, "");
+      if (id) t.url = hostedMp3Url(id);
+    }
+    return;
+  }
+  const id = t.songId || String(t.id || "").replace(/^suno-/, "");
+  if (!id) return;
+  t.type = "audio";
+  t.url = hostedMp3Url(id);
+}
+
+function landOnBackgroundPlayable(direction) {
+  if (!skipDjForBackground() || !PLAYLIST.length) return;
+  index = indexForHiddenSkip(PLAYLIST, index, direction);
+}
 
 function $(id) {
   return document.getElementById(id);
@@ -880,6 +936,18 @@ function loadTrack(autoPlayHint) {
 
   if (!t) return;
 
+  if (skipDjForBackground()) {
+    forceHostedAudioForBackground(t);
+    if (!canPlayTrackWhileHidden(t)) {
+      landOnBackgroundPlayable(1);
+      const nextTrack = current();
+      if (nextTrack && nextTrack !== t) {
+        forceHostedAudioForBackground(nextTrack);
+        return loadTrack(autoPlayHint);
+      }
+    }
+  }
+
   const stage = $("music-stage");
   // Always only one source: kill the other before starting this track
   signalCampStopMusic();
@@ -917,20 +985,26 @@ function loadTrack(autoPlayHint) {
     const sameSrc =
       (want && (srcNow === want || srcNow.endsWith(want))) ||
       (t.songId && srcNow.includes(String(t.songId)));
+    if (autoPlayHint || !sameSrc) {
+      musicPauseGate.cancel();
+      markTrackSwap();
+    }
     if (!sameSrc) {
       audio.src = t.url;
     }
+    const booth = autoPlayHint && djBoothWanted() && !skipDjForBackground();
     try {
-      audio.volume = djBoothWanted() ? 0 : 1;
+      audio.volume = booth ? 0 : 1;
     } catch (_) {}
     if (autoPlayHint) {
       userPaused = false;
       unlockRadio();
-      const booth = djBoothWanted();
       if (booth) {
         introLock = true;
         voxHold = true;
         armIntroTimeout();
+      } else {
+        clearDjHold();
       }
       const afterPlay = () => {
         if (booth) void notifyDjTrackChange();
@@ -973,7 +1047,7 @@ function loadTrack(autoPlayHint) {
       stage.classList.add("has-embed");
       stage.classList.remove("has-audio");
     }
-    const booth = autoPlayHint && djBoothWanted();
+    const booth = autoPlayHint && djBoothWanted() && !skipDjForBackground();
     if (booth) {
       pendingEmbedAfterVox = t;
       introLock = true;
@@ -1097,8 +1171,11 @@ function softResumeMusic(why) {
 }
 
 function movieSession() {
+  if (playbackOwner() === "music") return null;
   const movie = window.__teleMovieLock;
   if (playbackOwner() !== "movie" || !movie?.active?.()) return null;
+  const audio = liveAudioEl();
+  if (audio && !audio.hidden && !audio.paused && !audio.ended) return null;
   return movie;
 }
 
@@ -1149,24 +1226,43 @@ function updateMediaSessionMeta(playing) {
       });
     }
   } catch (_) {}
+  syncMediaSessionHandlers();
 }
 
-function installMediaSession() {
-  if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
-    mediaSessionApi = null;
-    return;
+function bindMediaSessionAction(ms, action, fn) {
+  try {
+    ms.setActionHandler(
+      action,
+      fn
+        ? (details) => {
+            try {
+              fn(details);
+            } catch (_) {}
+          }
+        : null
+    );
+  } catch (_) {}
+}
+
+function runMediaKeySkip(fn) {
+  if (movieSession()) return;
+  userPaused = false;
+  claimPlayback("music");
+  syncPlaybackSession(true);
+  musicPauseGate.cancel();
+  mediaKeySkip = true;
+  try {
+    fn();
+  } finally {
+    mediaKeySkip = false;
   }
+  updateMediaSessionMeta(true);
+}
+
+function syncMediaSessionHandlers() {
+  if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
   const ms = navigator.mediaSession;
-  const bind = (action, fn) => {
-    try {
-      ms.setActionHandler(action, (details) => {
-        try {
-          fn(details);
-        } catch (_) {}
-      });
-    } catch (_) {}
-  };
-  bind("play", () => {
+  bindMediaSessionAction(ms, "play", () => {
     const movie = movieSession();
     if (movie) {
       movie.play();
@@ -1177,7 +1273,7 @@ function installMediaSession() {
     syncPlaybackSession(true);
     softResumeMusic("ms-play");
   });
-  bind("pause", () => {
+  bindMediaSessionAction(ms, "pause", () => {
     const movie = movieSession();
     if (movie) {
       movie.pause();
@@ -1192,7 +1288,7 @@ function installMediaSession() {
     } catch (_) {}
     updateMediaSessionMeta(false);
   });
-  bind("stop", () => {
+  bindMediaSessionAction(ms, "stop", () => {
     const movie = movieSession();
     if (movie) {
       movie.pause();
@@ -1206,42 +1302,13 @@ function installMediaSession() {
     stopAllMedia();
     updateMediaSessionMeta(false);
   });
-  bind("nexttrack", () => {
-    if (movieSession()) return;
-    userPaused = false;
-    next(true);
+  bindMediaSessionAction(ms, "nexttrack", () => {
+    runMediaKeySkip(() => next(true));
   });
-  bind("previoustrack", () => {
-    if (movieSession()) return;
-    userPaused = false;
-    prev();
+  bindMediaSessionAction(ms, "previoustrack", () => {
+    runMediaKeySkip(prev);
   });
-  bind("seekbackward", (d) => {
-    const movie = movieSession();
-    const sec = Math.max(5, Number(d?.seekOffset) || 10);
-    if (movie) {
-      movie.seekBy(-sec);
-      return;
-    }
-    const a = liveAudioEl();
-    if (!a) return;
-    a.currentTime = Math.max(0, (a.currentTime || 0) - sec);
-    saveMusicPersist();
-  });
-  bind("seekforward", (d) => {
-    const movie = movieSession();
-    const sec = Math.max(5, Number(d?.seekOffset) || 10);
-    if (movie) {
-      movie.seekBy(sec);
-      return;
-    }
-    const a = liveAudioEl();
-    if (!a) return;
-    const dur = Number(a.duration) || 0;
-    a.currentTime = Math.min(dur || 1e9, (a.currentTime || 0) + sec);
-    saveMusicPersist();
-  });
-  bind("seekto", (d) => {
+  bindMediaSessionAction(ms, "seekto", (d) => {
     if (typeof d?.seekTime !== "number") return;
     const movie = movieSession();
     if (movie) {
@@ -1253,7 +1320,38 @@ function installMediaSession() {
     a.currentTime = Math.max(0, d.seekTime);
     saveMusicPersist();
   });
-  mediaSessionApi = ms;
+  // Movies keep ±seek. Music must leave these unset so Chrome Android
+  // shows prev/next on the lock-screen card and routes AVRCP skip keys.
+  if (mediaSeekModeFor(movieSession() ? "movie" : playbackOwner()) === "seek") {
+    bindMediaSessionAction(ms, "seekbackward", (d) => {
+      const movie = movieSession();
+      const sec = Math.max(5, Number(d?.seekOffset) || 10);
+      if (movie) {
+        movie.seekBy(-sec);
+        return;
+      }
+    });
+    bindMediaSessionAction(ms, "seekforward", (d) => {
+      const movie = movieSession();
+      const sec = Math.max(5, Number(d?.seekOffset) || 10);
+      if (movie) {
+        movie.seekBy(sec);
+        return;
+      }
+    });
+  } else {
+    bindMediaSessionAction(ms, "seekbackward", null);
+    bindMediaSessionAction(ms, "seekforward", null);
+  }
+}
+
+function installMediaSession() {
+  if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+    mediaSessionApi = null;
+    return;
+  }
+  mediaSessionApi = navigator.mediaSession;
+  syncMediaSessionHandlers();
 }
 
 /**
@@ -2030,7 +2128,13 @@ function next(fromUser) {
   }
   notifyDjSkip();
   index = (index + 1) % PLAYLIST.length;
+  if (skipDjForBackground()) {
+    clearDjHold();
+    landOnBackgroundPlayable(1);
+  }
   userPaused = false;
+  musicPauseGate.cancel();
+  markTrackSwap();
   loadTrack(true);
 }
 
@@ -2043,7 +2147,13 @@ function prev() {
   unlockRadio();
   notifyDjSkip();
   index = (index - 1 + PLAYLIST.length) % PLAYLIST.length;
+  if (skipDjForBackground()) {
+    clearDjHold();
+    landOnBackgroundPlayable(-1);
+  }
   userPaused = false;
+  musicPauseGate.cancel();
+  markTrackSwap();
   loadTrack(true);
 }
 
@@ -2226,7 +2336,7 @@ function wire() {
     });
     audio.addEventListener("pause", () => {
       updateMusicChrome();
-      if (ignoringAudioEvents || mixing || introLock || voxHold) return;
+      if (ignoringAudioEvents || mixing || introLock || voxHold || swappingTrack()) return;
       if (!userStarted) return;
       // Media Session Pause already marked this as the listener's pause.
       if (userPaused) {

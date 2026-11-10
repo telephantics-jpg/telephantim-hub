@@ -115,3 +115,54 @@ export function movieResumeTime(audioTime, videoTime) {
   const v = Number(videoTime);
   return Number.isFinite(v) && v >= 0 ? v : 0;
 }
+
+export function pageIsHidden(doc = globalThis.document) {
+  try {
+    return !!(doc && (doc.hidden || doc.visibilityState === "hidden"));
+  } catch (_) {
+    return false;
+  }
+}
+
+/** DJ voice/intro cannot start reliably in a locked or hidden tab. */
+export function shouldSkipDjIntro({ pageHidden = false, fromMediaKey = false } = {}) {
+  return !!(pageHidden || fromMediaKey);
+}
+
+/**
+ * Chrome Android uses the same notification slots for seek and track skip.
+ * When seek handlers are set, the card often shows ±10s instead of prev/next.
+ */
+export function mediaSeekModeFor(ownerKind) {
+  return ownerKind === "movie" ? "seek" : "track";
+}
+
+/** Native/hosted radio can keep playing while hidden; iframes cannot. */
+export function canPlayTrackWhileHidden(track) {
+  if (!track) return false;
+  const type = String(track.type || "");
+  if (type === "spotify" || type === "youtube") return false;
+  if (track.radio === "distrokid") return true;
+  const url = String(track.url || "");
+  if (/\/releases\/download\/radio-|\/radio-mp3\//i.test(url) && /\.mp3(\?|$)/i.test(url)) {
+    return true;
+  }
+  if (type === "audio" && url && !/suno\.com\/embed/i.test(url)) return true;
+  if (track.songId) return true;
+  const id = String(track.id || "");
+  return !!(id && /^suno-/.test(id));
+}
+
+/** Walk to a track that can play natively while the page is hidden. */
+export function indexForHiddenSkip(tracks, startIndex, direction) {
+  const list = Array.isArray(tracks) ? tracks : [];
+  const n = list.length;
+  if (!n) return 0;
+  const dir = direction < 0 ? -1 : 1;
+  let i = ((Number(startIndex) || 0) % n + n) % n;
+  for (let step = 0; step < n; step++) {
+    if (canPlayTrackWhileHidden(list[i])) return i;
+    i = (i + dir + n) % n;
+  }
+  return ((Number(startIndex) || 0) % n + n) % n;
+}
